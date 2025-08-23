@@ -1,0 +1,74 @@
+2025-08-23T16:47:52.722Z: TEST LOG MESSAGE - Server would write here
+2025-08-23T16:49:51.678Z: BrainBridge MCP Server initialized
+2025-08-23T16:49:51.681Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:49:51.688Z: Received ListToolsRequest
+2025-08-23T16:49:51.690Z: Received ListResourcesRequest
+2025-08-23T16:52:35.930Z: Received CallToolRequest: add_memory with args: {"title":"Igor's Food Preferences","content":"Igor loves avocado but hates bananas.","category":"personal"}
+2025-08-23T16:56:12.753Z: BrainBridge MCP Server initialized
+2025-08-23T16:56:12.755Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:56:12.764Z: Received ListToolsRequest
+2025-08-23T16:56:12.766Z: Received ListResourcesRequest
+2025-08-23T16:57:58.951Z: BrainBridge MCP Server initialized
+2025-08-23T16:57:58.951Z: BrainBridge MCP Server initialized
+2025-08-23T16:57:58.951Z: BrainBridge MCP Server initialized
+2025-08-23T16:57:58.953Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:57:58.953Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:57:58.953Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:57:58.961Z: Received ListToolsRequest
+2025-08-23T16:57:58.962Z: Received ListToolsRequest
+2025-08-23T16:57:58.962Z: Received ListToolsRequest
+2025-08-23T16:57:58.963Z: Received ListResourcesRequest
+2025-08-23T16:57:58.963Z: Received ListResourcesRequest
+2025-08-23T16:57:58.963Z: Received ListResourcesRequest
+2025-08-23T16:58:04.148Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:04.148Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:04.148Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:04.150Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:04.150Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:04.150Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:04.166Z: Received ListToolsRequest
+2025-08-23T16:58:04.167Z: Received ListToolsRequest
+2025-08-23T16:58:04.168Z: Received ListResourcesRequest
+2025-08-23T16:58:04.168Z: Received ListResourcesRequest
+2025-08-23T16:58:04.169Z: Received ListToolsRequest
+2025-08-23T16:58:04.171Z: Received ListResourcesRequest
+2025-08-23T16:58:05.479Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:05.481Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:05.481Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:05.483Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:05.485Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:05.487Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:05.489Z: Received ListToolsRequest
+2025-08-23T16:58:05.491Z: Received ListToolsRequest
+2025-08-23T16:58:05.491Z: Received ListResourcesRequest
+2025-08-23T16:58:05.493Z: Received ListResourcesRequest
+2025-08-23T16:58:05.494Z: Received ListToolsRequest
+2025-08-23T16:58:05.497Z: Received ListResourcesRequest
+2025-08-23T16:58:11.205Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:11.207Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:11.220Z: Received ListToolsRequest
+2025-08-23T16:58:11.221Z: Received ListResourcesRequest
+2025-08-23T16:58:11.245Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:11.247Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:11.249Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:11.250Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:11.263Z: Received ListToolsRequest
+2025-08-23T16:58:11.264Z: Received ListToolsRequest
+2025-08-23T16:58:11.265Z: Received ListResourcesRequest
+2025-08-23T16:58:11.266Z: Received ListResourcesRequest
+2025-08-23T16:58:15.634Z: BrainBridge MCP Server initialized
+2025-08-23T16:58:15.636Z: BrainBridge MCP Server running on stdio
+2025-08-23T16:58:15.649Z: Received ListToolsRequest
+2025-08-23T16:58:15.650Z: Received ListResourcesRequest
+2025-08-23T16:59:00.736Z: Received CallToolRequest: search_memories with args: {"query":"Igor likes avocado","category":"personal"}
+2025-08-23T16:59:00.736Z: Searching memories: query="Igor likes avocado", category="personal", memoriesDir="/Users/igor/Documents/code/memories"
+2025-08-23T16:59:00.736Z: Found 0 memory files: 
+2025-08-23T16:59:00.736Z: Search complete: 0 files with matches
+2025-08-23T17:01:54.126Z: BrainBridge MCP Server initialized
+2025-08-23T17:01:54.128Z: BrainBridge MCP Server running on stdio
+2025-08-23T17:01:54.143Z: Received ListToolsRequest
+2025-08-23T17:01:54.145Z: Received ListResourcesRequest
+2025-08-23T17:02:18.207Z: BrainBridge MCP Server initialized
+2025-08-23T17:02:18.208Z: BrainBridge MCP Server running on stdio
+2025-08-23T17:02:18.220Z: Received ListToolsRequest
+2025-08-23T17:02:18.222Z: Received ListResourcesRequest
