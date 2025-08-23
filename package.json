@@ -1,0 +1,22 @@
+{
+  "name": "agiforme",
+  "version": "1.0.0",
+  "description": "AGIfor.me - Your Personal AI Memory Bank. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
+  "private": true,
+  "workspaces": ["brainbridge", "brainkeeper"],
+  "scripts": {
+    "dev": "npm run dev --workspace=brainbridge",
+    "dev:ui": "npm run dev --workspace=brainkeeper",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:ui\"",
+    "build": "npm run build --workspaces",
+    "install:all": "npm install --workspaces",
+    "start": "npm run start --workspace=brainbridge",
+    "start:ui": "npm run start --workspace=brainkeeper"
+  },
+  "keywords": ["agiforme", "personal-ai", "memory-bank", "privacy", "mcp", "knowledge-base", "ai-assistant", "claude"],
+  "author": "",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

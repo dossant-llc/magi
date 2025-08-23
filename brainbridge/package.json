@@ -1,0 +1,21 @@
+{
+  "name": "agiforme-brainbridge",
+  "version": "1.0.0",
+  "description": "BrainBridge - AGIfor.me MCP server that connects your memories to AI assistants with smart privacy controls",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "keywords": ["mcp", "ai", "knowledge-base", "privacy", "model-context-protocol"],
+  "author": "",
+  "license": "AGPL-3.0-or-later",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  }
+}
