@@ -1,3 +1,4 @@
 memories/
 .claude/
-brainbridge/logs/
+logs/
+*.log
