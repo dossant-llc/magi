@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "mcp__brainbridge-dev__search_memories",
+      "mcp__brainbridge-dev__add_memory",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
