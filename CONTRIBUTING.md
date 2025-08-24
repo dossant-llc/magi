@@ -1,6 +1,8 @@
-# Contributing to Personal AI Knowledge Base
+# Contributing to AGIfor.me
 
 We love your input! We want to make contributing to this project as easy and transparent as possible.
+
+**Project Owner**: Igor Ramos / Dossant LLC maintains ownership and control over AGIfor.me for dual licensing purposes while welcoming open source contributions.
 
 ## 🚀 Quick Contribution Guide
 
@@ -43,8 +45,8 @@ Share templates that work well for different domains:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/personal-ai-knowledge-base
-cd personal-ai-knowledge-base
+git clone https://github.com/yourusername/agiforme
+cd agiforme
 
 # Install dependencies
 npm install
@@ -95,9 +97,33 @@ All submissions require review. We'll look for:
 - **Issues**: Create an issue for bugs or feature requests
 - **Discord**: Join our community chat (coming soon!)
 
+## 📜 Contributor License Agreement (CLA)
+
+**We are not asking you to assign copyright to us, but to give us the right to distribute your code without restriction.**
+
+By submitting contributions, you agree to grant Igor Ramos / Dossant LLC the following rights:
+
+1. **Distribution Rights**: Permission to distribute your contributions under AGPL v3 and commercial licenses
+2. **Attribution Preserved**: You retain full credit and attribution for your contributions
+3. **Original Work Confirmation**: Your contributions are your original work or you have rights to contribute them
+4. **No Conflicting Agreements**: Your contributions don't violate existing agreements or third-party rights
+5. **Moral Rights Retained**: You keep moral rights to your contributions where applicable
+
+**Why do we need this?** Dual licensing enables us to:
+- Keep the project sustainable through commercial licensing
+- Offer AGPL-free licenses to companies that need them
+- Reinvest commercial proceeds into open source development
+- Maintain long-term project stability and growth
+
+You sign this agreement once, and it covers all your future contributions to AGIfor.me.
+
 ## 📜 License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+This project uses **dual licensing** for sustainability:
+- **🆓 AGPL v3**: Free for open source and personal use
+- **💼 Commercial License**: Available for companies needing proprietary use
+
+Your contributions enable both paths, helping build a thriving open source project with sustainable funding.
 
 ---
 
