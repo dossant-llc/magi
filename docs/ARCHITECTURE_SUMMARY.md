@@ -1,20 +1,13 @@
 # AGIfor.me Architecture Summary
-## Visual Documentation with Interactive Mermaid Diagrams
+## Visual Architecture Guide
 
-> **Complete architecture documentation using Mermaid for visual system design**
+> **Complete system architecture with interactive diagrams**
 
-This document serves as the definitive visual guide to AGIfor.me's architecture. All diagrams are rendered using **Mermaid** - a markdown-based diagramming syntax that creates beautiful, interactive visualizations directly from text.
-
-### Why Mermaid?
-- **Version Control Friendly**: Diagrams are pure text, perfect for Git
-- **Always Up-to-Date**: No separate diagram files to maintain
-- **Interactive**: Rendered diagrams are clickable and zoomable  
-- **Consistent**: Same styling across all architectural views
-- **Accessible**: Works in any markdown viewer or HTML renderer
+This document provides the definitive visual guide to AGIfor.me's architecture - from the current privacy-first memory system to the full vision of local AI intelligence with context-aware assistance.
 
 ## System Overview
 
-### Current Architecture: AGIfor.me Foundation
+### AGIfor.me: Privacy-First Personal AI Knowledge System
 ```mermaid
 graph TB
     subgraph "AI Assistants"
@@ -71,7 +64,7 @@ graph TB
     style CM fill:#f3e5f5
 ```
 
-### Extended Architecture: magi* Manual Profile System
+### Complete Vision: Local AI with Multi-Context Intelligence
 ```mermaid
 graph TB
     subgraph "AI Assistants"
@@ -204,9 +197,9 @@ graph TB
     style CM fill:#f3e5f5
 ```
 
-## Profile-Specific Memory Access Patterns
+## Smart Context Separation
 
-### magic (Personal) Profile - Complete Isolation
+### Personal Context: Family & Life Intelligence
 ```mermaid
 graph LR
     subgraph "magic Profile (Like Personal Email)"
@@ -250,7 +243,7 @@ graph LR
     classDef blocked fill:#ffcdd2
 ```
 
-### magik (Business) Profile - Complete Isolation
+### Business Context: Professional & Strategic Intelligence
 ```mermaid
 graph LR
     subgraph "magik Profile (Like Work Email)"
@@ -294,9 +287,9 @@ graph LR
     classDef blocked fill:#ffcdd2
 ```
 
-## Data Flow Architecture
+## AI-Powered Knowledge Processing
 
-### Query Processing Flow
+### Intelligent Query Resolution
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -321,7 +314,7 @@ sequenceDiagram
     MAGI-->>U: Answer with profile context
 ```
 
-### Memory Write Flow
+### AI-Assisted Knowledge Creation
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -351,9 +344,9 @@ sequenceDiagram
     PROFILE-->>U: Content written + audit log
 ```
 
-## Component Interaction Patterns
+## Context-Aware Intelligence
 
-### Manual Profile Selection Logic
+### Smart Context Switching (Email-like UX)
 ```mermaid
 graph TD
     START([User wants to work])
@@ -400,9 +393,9 @@ graph TD
     style CONFIRM_MAGIA fill:#f3e5f5
 ```
 
-## Technical Stack Visualization
+## Local AI Brain Architecture
 
-### Local AI Technology Stack
+### Complete Technology Stack for Privacy-First AI
 ```mermaid
 graph TB
     subgraph "User Layer"
@@ -540,21 +533,58 @@ graph TB
 
 ---
 
-## Diagram Usage Guide
+## Mermaid Documentation Guidelines
 
-### For Developers
+### Diagram Standards
+All architecture diagrams in this document follow these Mermaid conventions:
+
+#### Color Coding
+```mermaid
+graph LR
+    MAGI[magi Selector]:::controller
+    MAGIC[magic Profile]:::personal  
+    MAGIK[magik Profile]:::business
+    MAGIA[magia Profile]:::development
+    MCP[BrainBridge]:::core
+    PE[Privacy Engine]:::security
+    
+    classDef controller fill:#4caf50,color:#fff
+    classDef personal fill:#2196f3,color:#fff
+    classDef business fill:#ff9800,color:#fff
+    classDef development fill:#9c27b0,color:#fff
+    classDef core fill:#e1f5fe
+    classDef security fill:#fff3e0
+```
+
+#### Diagram Types Used
+- **Graph TB/LR**: System architecture and component relationships
+- **SequenceDiagram**: Data flow and interaction patterns
+- **Subgraphs**: Logical grouping of related components
+
+### Usage Guide
+
+#### For Developers
 - **System Overview**: Start with "Extended Architecture" to understand all components
 - **Implementation**: Use "Component Interaction Patterns" for development guidance
 - **Profile System**: Reference "Profile-Specific Memory Access" for access controls
 
-### For Users
+#### For Users  
 - **Understanding Profiles**: See "Profile Selection Logic" for how `magi` picks contexts
 - **Privacy Model**: Review "Data Flow Architecture" for privacy guarantees
 - **Future Vision**: Check "mAgi Network" for roadmap understanding
 
-### For Contributors
+#### For Contributors
 - **Architecture**: Use "Technical Stack Visualization" to understand dependencies
 - **Feature Planning**: Reference diagrams when proposing new features
 - **Documentation**: Keep diagrams updated as system evolves
 
-*These diagrams serve as the visual foundation for understanding AGIfor.me's evolution from simple memory storage to intelligent, context-aware personal AI.*
+### Viewing These Diagrams
+This document is designed to be viewed through:
+- **[architecture-viewer.html](./architecture-viewer.html)** - Interactive web viewer with enhanced Mermaid rendering
+- **GitHub/GitLab** - Native markdown with Mermaid support
+- **VS Code** - With Mermaid preview extensions
+- **Any Mermaid-compatible markdown viewer**
+
+---
+
+*These Mermaid diagrams serve as the living visual foundation for understanding AGIfor.me's evolution from simple memory storage to intelligent, context-aware personal AI.*

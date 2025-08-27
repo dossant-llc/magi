@@ -1,35 +1,74 @@
 # Multi-Profile AI System Design
-## magi* - Manual Profile Selection for AGIfor.me
+## magi* - Wake Word System for Personal AI Activation
 
-> **Multiple AI contexts - like having separate email accounts, each with smart internal organization**
+> **`magi` activates your personal AI knowledge system - like wake words for voice assistants**
 
-## The Profile Concept
+## The Wake Word Concept
 
-Your personal AI should have clear, intentional context boundaries just like you do with email accounts. You consciously choose your **work email** vs. **personal email** to prevent cross-contamination, but within each account you still have smart folders and organization.
+Just like "Hey Siri" or "Alexa" signals you want voice AI assistance, **`magi`** signals you want to access your personal AI knowledge base through MCP. Without the wake word, Claude gives generic responses. With it, Claude accesses your contextual memories and provides personalized assistance.
 
-**The magi* System**: Manual profile selection for explicit context separation:
+**The magi* Wake Word System**:
 
 ```bash
-magi     # Quick profile switcher / default profile selector
-magic    # Personal/family profile (consciously chosen)
-magik    # Business/professional profile (consciously chosen)  
-magia    # Development/experimental profile (consciously chosen)
-mago     # Custom user-defined profiles
+# Wake word activations (triggers MCP)
+magi [query]    # Smart context + local environment (default)
+magic [query]   # Personal context + cloud environment
+magik [query]   # Business context + local environment  
+magia [query]   # Development context + local environment
+magid [query]   # Smart context + development environment
+magico [query]  # Personal context + omni (auto environment selection)
 ```
 
-## Why Multi-Profile Architecture?
+**Environment Suffixes**:
+- **i** = local (intelligent/internal) - stays on your machine
+- **c** = cloud - can access cloud AI services with consent
+- **k** = local (keep private) - business context, local only
+- **a** = local (autonomous) - dev context, experimental features
+- **d** = development environment - dev tools and experimental access
+- **o** = omni (auto) - smart environment selection based on context
 
-### Intentional Context Separation (Like Email Accounts)
-- **Conscious choice** prevents accidental cross-contamination
-- **Business profile**: You would never accidentally enter personal information
-- **Personal profile**: You would never accidentally enter work-sensitive information  
-- **Dev profile**: Experimental work stays isolated from production contexts
+**Examples**:
+```bash
+# Generic Claude (no MCP access)
+"Help me plan a vacation to Italy"
+→ Generic travel advice
 
-### Extra Security Layer Through Manual Selection
-- **User explicitly chooses** which context they're operating in
-- **Mental mode switching** - like opening your work email vs. personal email
-- **No automatic guessing** - you decide the appropriate context
-- **Fail-safe boundaries** - impossible to accidentally mix contexts
+# Personal AI activated (local environment)
+"magi help me plan a vacation to Italy" 
+→ Local AI + smart context detection
+→ Accesses your travel memories, family preferences, past trips
+
+# Personal context with cloud access
+"magic help me plan a vacation to Italy"
+→ Cloud AI + personal context + consent for external services
+→ Can book flights, check real-time prices with your preferences
+
+# Business context, local only
+"magik analyze our Q4 performance trends"
+→ Local AI only + business context (privacy-first for sensitive data)
+→ Accesses work memories without any cloud exposure
+```
+
+## Why Wake Word + Context System?
+
+### MCP Activation Control
+- **Explicit intent**: Only accesses your personal knowledge when `magi*` is used
+- **Privacy by default**: Generic Claude responses unless explicitly activated
+- **Clear boundaries**: You control when AI gets personal context vs. generic help
+- **Familiar pattern**: Like voice assistant wake words everyone understands
+
+### Context + Environment Matrix
+- **magi**: Smart context + local environment (default safe mode)
+- **magic**: Personal context + cloud environment (with consent)
+- **magik**: Business context + local only (maximum privacy)
+- **magia**: Dev context + local with experimental features
+- **magid**: Smart context + development environment 
+- **magico**: Personal context + omni (auto environment selection)
+
+### Security Through Explicit Activation
+- **No accidental access**: Your memories stay private unless wake word is used
+- **Intentional engagement**: You consciously choose when to get personal AI help
+- **Context boundaries**: Business context can't access personal memories and vice versa
 
 ### Behavioral Adaptation Per Profile
 - **Business profile**: Professional tone, formal writing, industry terminology
@@ -107,21 +146,31 @@ interface ProfileConfig {
 }
 ```
 
-## Command Interface Design
+## Wake Word Interface Design
 
-### Manual Profile Selection (`magi` as Switcher)
+### Direct Wake Word Usage (Primary UX)
 ```bash
-# magi as profile switcher - user makes conscious choice
-magi use magic               # Switch to personal profile
-magi use magik               # Switch to business profile
-magi use magia               # Switch to development profile
+# Wake word queries (what users actually type)
+magi "plan family vacation"              # Smart context detection
+magic "plan family vacation"             # Explicit personal context
+magik "quarterly revenue analysis"       # Explicit business context  
+magia "test new embedding model"         # Explicit dev context
 
-# Or direct profile commands (explicit choice)
-magic query "plan family vacation"          # Consciously using personal
-magik query "quarterly revenue analysis"    # Consciously using business  
-magia query "test new embedding model"      # Consciously using development
+# The MCP Integration
+# Claude recognizes these wake words and calls MCP tools:
+# - search_memories with appropriate context filters
+# - add_memory with appropriate privacy classification
+# - Uses context-specific AI behavior (tone, focus, etc.)
+```
 
-# Current profile status
+### Profile Management (Secondary UX)
+```bash
+# Profile switching for persistent sessions
+magi use magic               # Switch default context to personal
+magi use magik               # Switch default context to business
+magi use magia               # Switch default context to development
+
+# Profile status and management
 magi status                  # Shows current active profile
 magi profiles                # Lists available profiles
 ```
@@ -280,22 +329,27 @@ magi profiles setup magic
 # → Sets behavioral parameters
 ```
 
-### Daily Usage Patterns (Manual Context Switching)
+### Daily Usage Patterns (Context + Environment)
 ```bash
-# Morning: Consciously switch to business mode
-magi use magik
-magik query "what should I prioritize today based on recent team discussions?"
+# Morning: Business context (privacy-first, local only)
+magik "what should I prioritize today based on recent team discussions?"
+# → Local AI + business context (sensitive work data stays local)
 
-# Lunch break: Consciously switch to personal mode  
-magi use magic
-magic query "what's a good restaurant near the office that Sarah would like?"
+# Lunch break: Personal context with cloud services
+magic "what's a good restaurant near the office that Sarah would like?"
+# → Cloud AI + personal context (can check real-time reviews, availability)
 
-# Evening: Already in personal mode, continue
-magic write "plan weekend activities based on weather and kids' interests"
+# Evening: Smart context detection, local processing
+magi "plan weekend activities based on weather and kids' interests"
+# → Local AI + smart context (detects personal context automatically)
 
-# Late night: Consciously switch to development mode
-magi use magia
-magia query "what experimental AI features should I test next?"
+# Late night: Development environment with experimental features
+magid "what experimental AI features should I test next?"
+# → Dev environment + smart context (access to dev tools and experimental features)
+
+# Work-from-home: Auto environment selection
+magico "help me balance work calls with kids' school pickup"
+# → Omni mode automatically balances local privacy with cloud convenience
 ```
 
 ### Profile Switching (Always Manual for Security)
@@ -396,21 +450,31 @@ magi use magik --from-personal
 
 ---
 
-## Conclusion: Manual Context AI Like Email Accounts
+## Conclusion: Wake Word Activation for Personal AI
 
-The magi* multi-profile system transforms your personal AI from a single tool into multiple consciously-chosen contexts, each with smart internal organization.
+The magi* wake word system transforms Claude from generic assistant to your personal AI through explicit MCP activation. Like voice assistant wake words, it provides clear intent signaling and context-aware responses.
 
 **Key Benefits**:
-- ✅ **Intentional context separation** - Like work vs. personal email accounts
-- ✅ **Impossible cross-contamination** - Business profile cannot access personal memories
-- ✅ **Conscious choice** - User explicitly selects appropriate context
-- ✅ **Smart organization within profiles** - AGIfor.me's privacy system works inside each profile
-- ✅ **Mental model alignment** - User always knows which "account" they're using
+- ✅ **Privacy by default** - Your memories stay private unless explicitly activated
+- ✅ **Familiar UX pattern** - Wake words like voice assistants everyone understands  
+- ✅ **Context-aware responses** - Business, personal, and dev contexts with appropriate tone
+- ✅ **Explicit intent** - Clear signal when you want personal AI vs. generic help
+- ✅ **MCP integration** - Seamless activation of your knowledge base through recognized patterns
 
-**The Two-Layer System**:
-1. **Manual Profile Selection** (like choosing email account) - `magic`, `magik`, `magia`
-2. **Automatic Smart Categorization** (like email folders) - `public/`, `team/`, `personal/`, `private/`, `sensitive/`
+**The Wake Word System**:
+1. **No wake word** → Generic Claude responses (no MCP access)
+2. **magi/magic/magik/magia** → Personal AI activated with appropriate context
+3. **Smart MCP integration** → Accesses your memories, applies context-specific behavior
 
-This isn't just about organizing commands - it's about creating AI contexts that match how you naturally separate different aspects of your life, while maintaining smart organization within each context.
+**How It Works**:
+```
+User: "magi help me plan my vacation"
+Claude: [recognizes wake word] → [calls MCP search_memories] → [personalized response]
 
-*Your AI should have the same intentional boundaries you do.*
+User: "help me plan my vacation" 
+Claude: [no wake word] → [generic travel advice]
+```
+
+This isn't just about organizing memories - it's about giving Claude the ability to recognize when you want personal AI assistance and respond with your contextual knowledge and preferences.
+
+*Your personal AI should activate when you need it, stay private when you don't.*
