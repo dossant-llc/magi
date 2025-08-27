@@ -250,7 +250,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 See [LICENSE](LICENSE) file for full details and [AGIFORME-LICENSE.md](AGIFORME-LICENSE.md) for complete terms.
 
-💼 **Commercial licensing available** for use cases not covered above - Contact igor@dossantllc.com
+💼 **Commercial licensing available** for use cases not covered above - See LICENSE file for contact details
 
 ## 🎯 The Bigger Picture
 
