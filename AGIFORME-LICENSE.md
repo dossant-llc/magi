@@ -4,42 +4,64 @@
 
 ## License Grant
 
-Subject to the terms and conditions of this License, Dossant LLC hereby grants you the right to use, copy, distribute, make available, and prepare derivative works of the software (the "Software"), in each case subject to the limitations below.
+Permission is hereby granted to any person obtaining a copy of this software (the "Software") to use and modify the Software subject to the limitations below.
 
-## Limitations
+## What You CAN Do
 
-You may not:
+**✅ PERSONAL & INTERNAL USE**
+- Use AGIfor.me for your personal knowledge management
+- Use AGIfor.me internally within your organization
+- Study, learn from, and analyze the source code
 
-1. **Provide the Software to third parties as a hosted or managed service**, where the service provides users with access to any substantial set of the features or functionality of the Software.
+**✅ MODIFY & CONTRIBUTE**
+- Modify the source code for your own use
+- Create derivative works for your own use
+- Contribute improvements back to the AGIfor.me project
 
-2. **Move, change, disable, or circumvent the license key functionality** in the Software, and you may not remove or obscure any functionality in the Software that is protected by license keys.
+## What You CANNOT Do
 
-3. **Remove or obscure any licensing, copyright, or other notices** of Dossant LLC in the Software or any copy of the Software which you distribute.
+**❌ DISTRIBUTION & SHARING**
+- Redistribute the Software to others
+- Share copies of the Software with third parties
+- Sublicense the Software to anyone
 
-## Examples of Permitted Use
+**❌ COMMERCIAL EXPLOITATION**
+- Sell the Software or include it in products you sell
+- Bundle the Software with commercial offerings
+- Offer the Software as a service to others
+- Provide hosting or managed services using the Software
 
-The following uses are explicitly permitted:
-- Using AGIfor.me for your personal or company knowledge management
-- Building applications that integrate with AGIfor.me APIs
-- Embedding AGIfor.me into your own applications  
-- Modifying AGIfor.me and distributing your modifications  
-- Bundling AGIfor.me with your software products
-- Offering consulting, support, or training services around AGIfor.me
-- Creating plugins, extensions, or add-ons for AGIfor.me
+**❌ CIRCUMVENTION**
+- Remove or obscure copyright, licensing, or attribution notices
+- Disable or circumvent any licensing mechanisms
+- Misrepresent the origin of the Software
 
-## Examples of Prohibited Use
+## Examples
 
-The following uses are prohibited:
-- **Offering "Knowledge-Management-as-a-Service"** where customers primarily access AGIfor.me functionality through your platform
-- Removing copyright notices or "Powered by AGIfor.me" attribution
-- Disabling paid features or license key functionality
+**✅ ALLOWED:**
+- Installing AGIfor.me for your team's internal knowledge management
+- Modifying AGIfor.me to better fit your personal workflow
+- Contributing bug fixes or improvements to the project
+- Building internal tools that integrate with your AGIfor.me installation
+
+**❌ NOT ALLOWED:**
+- Distributing AGIfor.me to clients as part of your consulting services
+- Including AGIfor.me in a software suite you sell
+- Offering "Personal AI Knowledge" as a hosted service using AGIfor.me
+- Removing "Powered by AGIfor.me" notices from the interface
 
 ## Disclaimer
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+## Commercial Licensing
+
+For any use not permitted by this license, commercial licenses are available from Dossant LLC.
+
 ---
 
-**Questions about this license?** Contact: igor@dossantllc.com
+**Questions about this license?** Contact: See below for details.
 
-**Need a commercial license?** We offer commercial licenses for organizations that need to use AGIfor.me in ways not permitted by this license.
+**Need a commercial license?** Contact Dossant LLC for organizations that need to use AGIfor.me in ways not permitted by this license.
+
+**Contact Information:** Available upon request through GitHub issues or project maintainers.

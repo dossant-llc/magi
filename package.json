@@ -15,7 +15,7 @@
   },
   "keywords": ["agiforme", "personal-ai", "memory-bank", "privacy", "mcp", "knowledge-base", "ai-assistant", "claude"],
   "author": "",
-  "license": "AGPL-3.0-or-later",
+  "license": "SEE LICENSE FILE",
   "devDependencies": {
     "concurrently": "^8.2.0"
   }

@@ -132,10 +132,10 @@ System automatically creates team-shareable entry:
 ```markdown
 # Company Privacy Model
 
-## public/ - Open Source Contributions
+## public/ - Source-Available Contributions
 - Code that could be shared externally
 - Generic engineering practices
-- Open source project contributions
+- Source-available project contributions
 
 ## team/ - Full Team Knowledge (Default for sharing)
 - Debugging solutions and lessons learned

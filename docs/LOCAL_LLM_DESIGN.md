@@ -306,7 +306,7 @@ mAGIc status  # Shows: model health, index freshness, memory count
 1. **Start small**: Basic query + write functionality first
 2. **Privacy first**: Ensure consent system integration before feature expansion  
 3. **Iterative improvement**: Add capabilities based on real usage patterns
-4. **Community feedback**: Open source development with user input driving priorities
+4. **Community feedback**: Source-available development with user input driving priorities
 
 ### Technical Decisions
 - **Node.js ecosystem**: Consistent with existing BrainBridge codebase

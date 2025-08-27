@@ -32,7 +32,7 @@
 - [ ] Personal memories never get committed to git
 - [ ] Different privacy levels work as expected
 - [ ] Consent system protects private information
-- [ ] AGPL v3 license protects commercial interests
+- [ ] AGIfor.me License v1 protects commercial interests
 - [ ] No sensitive information in public templates
 
 ### **Documentation Quality**
@@ -72,7 +72,7 @@
 ## **💼 Business Preparation**
 
 ### **Legal & Licensing**
-- [ ] AGPL v3 license properly applied
+- [ ] AGIfor.me License v1 properly applied
 - [ ] Commercial licensing terms are clear
 - [ ] Copyright notices are correct
 - [ ] No third-party IP issues

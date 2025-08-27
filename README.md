@@ -1,6 +1,6 @@
 # AGIfor.me
 
-> **Your Personal AI Knowledge Base - Privacy-First, Open Source**
+> **Your Personal AI Knowledge Base - Privacy-First, Source-Available**
 
 🔒 **PRIVATE DEVELOPMENT** - This repository is currently private for collaborative review before public launch.
 
@@ -55,10 +55,10 @@ npm install
 - **Clear intent**: You always know when AI is using your personal context vs. generic knowledge
 
 ### Transparent Development
-- **Open source**: All privacy and categorization logic is inspectable
+- **Source-available**: All privacy and categorization logic is inspectable and modifiable
 - **No vendor lock-in**: Your data in standard markdown files, portable anywhere
 - **Community-driven**: Features driven by user needs, not corporate interests
-- **Sustainable licensing**: Dual license model keeps the project viable long-term
+- **Sustainable licensing**: Source-available model allows community contributions while preventing exploitation
 
 ## 🛡️ Privacy-First Knowledge Organization
 
@@ -214,7 +214,7 @@ For cloud AI integration:
 
 ## 🤝 Contributing & Community
 
-**We're building this together!** AGIfor.me is designed as a community-driven project where privacy experts, AI ethicists, and developers collaborate to create ethical AI tooling.
+**We're building this together!** AGIfor.me is designed as a community-driven, source-available project where privacy experts, AI ethicists, and developers collaborate to create ethical AI tooling.
 
 ### Ways to Contribute
 - **AI Ethics**: Help refine consent systems, privacy boundaries, and ethical guidelines
@@ -243,10 +243,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 **AGIfor.me License v1** - Open source with sustainable boundaries:
 
-- ✅ **Personal & Commercial Use**: Use AGIfor.me freely for your own projects
+- ✅ **Personal & Commercial Use**: Use AGIfor.me freely for your own internal projects
 - ✅ **Modify & Distribute**: Build on top of AGIfor.me and share your improvements
 - ✅ **Integrations & Plugins**: Create tools that work with AGIfor.me
-- ❌ **No SaaS Competition**: Can't offer AGIfor.me as a hosted service to third parties
+- ❌ **No Commercial Distribution**: Can't sell, bundle, or distribute AGIfor.me as part of commercial products
+- ❌ **No SaaS Hosting**: Can't offer AGIfor.me as a hosted service to third parties
 
 See [LICENSE](LICENSE) file for full details and [AGIFORME-LICENSE.md](AGIFORME-LICENSE.md) for complete terms.
 
@@ -261,7 +262,7 @@ We believe:
 - **Your knowledge belongs to you** - not to tech companies
 - **Privacy is a fundamental right** - not a luxury feature  
 - **AI should augment human intelligence** - not replace human agency
-- **Transparent development creates better outcomes** - than proprietary black boxes
+- **Source-available development creates better outcomes** - than proprietary black boxes
 
 ### The Community We're Building
 - **Ethical AI practitioners** who prioritize user agency over engagement metrics

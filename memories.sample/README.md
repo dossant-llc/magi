@@ -2,20 +2,20 @@
 
 This is a **template** for organizing your personal memories. Your actual `memories/` folder will be ignored by git to keep your personal information private.
 
-## =€ Getting Started
+## =ï¿½ Getting Started
 
 1. **Copy this structure**: Run `./setup.sh` to create your personal `memories/` folder
 2. **Start adding memories**: Use the BrainBridge tools or edit files directly
 3. **Your memories stay private**: Git will ignore your personal `memories/` folder
 
-## =á Privacy Levels
+## =ï¿½ Privacy Levels
 
 ### < Public (`public/`)
 Information you'd be comfortable sharing in a blog post or conference talk.
 
 **Examples:**
 - General programming tips
-- Open source project insights  
+- Source-available project insights  
 - Public troubleshooting guides
 - Learning resources you recommend
 
@@ -28,7 +28,7 @@ Work-related information appropriate for colleagues and professional contacts.
 - Development environment setups
 - Project retrospectives (sanitized)
 
-### <à Personal (`personal/`)
+### <ï¿½ Personal (`personal/`)
 Life insights and experiences for close friends and family context.
 
 **Examples:**
@@ -46,7 +46,7 @@ Sensitive information for local AI assistants only - never shared with cloud ser
 - Financial planning and investment research
 - Private technical innovations
 
-### =¨ Sensitive (`sensitive/`)
+### =ï¿½ Sensitive (`sensitive/`)
 Maximum protection required - explicit consent for every access.
 
 **Examples:**
@@ -55,7 +55,7 @@ Maximum protection required - explicit consent for every access.
 - Personal emergency procedures
 - Confidential business information
 
-## =Ý File Templates
+## =ï¿½ File Templates
 
 Each privacy level includes:
 - **README.md** - Guidelines for what belongs in this level

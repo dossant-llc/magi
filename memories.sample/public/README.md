@@ -8,7 +8,7 @@ Knowledge in this folder can be accessed by any AI assistant without consent pro
 
 - ✅ General programming tips and tricks
 - ✅ Public troubleshooting guides  
-- ✅ Open source project insights
+- ✅ Source-available project insights
 - ✅ Industry best practices
 - ✅ Learning resources and tutorials
 - ✅ Non-sensitive workflow optimizations
@@ -26,7 +26,7 @@ Knowledge in this folder can be accessed by any AI assistant without consent pro
 ```markdown
 ---
 privacy: public
-tags: [programming, tutorial, open-source]
+tags: [programming, tutorial, source-available]
 created: 2025-01-20
 updated: 2025-01-20  
 share_freely: true
