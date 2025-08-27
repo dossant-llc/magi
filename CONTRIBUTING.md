@@ -2,13 +2,28 @@
 
 We welcome contributions to AGIfor.me!
 
-## Quick Start
+## Current Status: Base Development Phase
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Test locally: `npm run dev`
-5. Submit a pull request
+**Code Contributions**: Currently not accepting code contributions as the base architecture is still being developed.
+
+**What We Welcome**:
+- 💬 **Discussions**: Share ideas, feedback, and suggestions in issues
+- 🧪 **Testing**: Try the system and report bugs or usability issues
+- 💡 **Use Case Suggestions**: Real-world scenarios where this would be valuable
+- 📖 **Documentation**: Improvements to docs, examples, and guides
+
+## How to Help
+
+### Test and Provide Feedback
+1. Install and test the system
+2. Report issues with detailed reproduction steps
+3. Suggest improvements to user experience
+4. Share your use cases and requirements
+
+### Join Discussions
+1. Open issues for feature discussions
+2. Share your privacy and AI knowledge management needs
+3. Help shape the roadmap based on real user needs
 
 ## Development Setup
 

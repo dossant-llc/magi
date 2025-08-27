@@ -1,6 +1,6 @@
 # Smart Auto-Categorization System
 
-> **Vision**: Users capture knowledge naturally. AI handles the tedious categorization work.
+> **Vision**: Users capture memories naturally. AI handles the tedious categorization work.
 
 ## 🧠 Core Principle
 
@@ -8,7 +8,7 @@
 
 ```mermaid
 graph TD
-    A[User adds knowledge] --> B[AI analyzes content]
+    A[User adds memory] --> B[AI analyzes content]
     B --> C{Confidence > 80%?}
     C -->|Yes| D[Auto-categorize & store]
     C -->|No| E[Ask user to confirm]
@@ -21,14 +21,14 @@ graph TD
 
 ### High Confidence (Auto-categorize)
 ```
-You: "Add knowledge: Always check which WiFi you're on before network troubleshooting"
+You: "Add memory: Always check which WiFi you're on before network troubleshooting"
 AI:  ✅ Added to public/network-troubleshooting.md (confidence: 92%)
      📋 Tags: network, troubleshooting, wifi, debugging
 ```
 
 ### Medium Confidence (Quick confirmation)
 ```  
-You: "Add knowledge: Client meeting went well, they're interested in Q4 expansion"
+You: "Add memory: Client meeting went well, they're interested in Q4 expansion"
 AI:  🤔 This looks like team knowledge (confidence: 65%)
      
      Suggested: team/client-interactions.md
@@ -42,7 +42,7 @@ AI:  ✅ Added to team/client-interactions.md
 
 ### Low Confidence (Full review needed)
 ```
-You: "Add knowledge: Remember the incident response procedure we discussed"
+You: "Add memory: Remember the incident response procedure we discussed"
 AI:  ⚠️  I need help categorizing this (confidence: 35%)
      
      Could be:
@@ -60,24 +60,24 @@ AI:  ✅ Added to sensitive/incident-response.md
 
 ### High Confidence Indicators
 
-**Public Knowledge** (90%+ confidence):
+**Public Memories** (90%+ confidence):
 - ✅ General programming tips: "use git rebase for clean history"
 - ✅ Open source insights: "React hooks pattern works well for..."
 - ✅ Public troubleshooting: "DNS issues often cause..."
 - ✅ Learning resources: "This book taught me..."
 
-**Team Knowledge** (85%+ confidence):
+**Team Memories** (85%+ confidence):
 - ✅ Team processes: "our deployment process", "how we handle code reviews"
 - ✅ Work tools: "we use Jira for", "our Slack channels"
 - ✅ Project specifics: "the API refactor went well"
 - ✅ Company-specific (non-sensitive): "our engineering culture"
 
-**Private Knowledge** (80%+ confidence):
+**Private Memories** (80%+ confidence):
 - ✅ Business strategy: "competitive analysis shows", "my client strategy"
 - ✅ Financial insights: "pricing strategy", "revenue patterns"
 - ✅ Personal professional: "my career goals", "networking insights"
 
-**Sensitive Knowledge** (85%+ confidence):
+**Sensitive Memories** (85%+ confidence):
 - ✅ Security mentions: "incident response", "security procedure", "emergency contacts"
 - ✅ Legal contexts: "compliance issue", "legal strategy", "regulatory"
 - ✅ Explicit sensitivity: "confidential", "classified", "restricted"
