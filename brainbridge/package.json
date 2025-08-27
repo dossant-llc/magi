@@ -16,7 +16,8 @@
     "logs": "tail -f logs/brainbridge-mcp.log",
     "logs:clear": "echo '' > logs/brainbridge-mcp.log && echo 'Logs cleared'",
     "trace": "TRACE_MODE=true npm run dev:stdio",
-    "trace:logs": "tail -f logs/brainbridge-mcp.log | grep -E '\\[(TRACE|PERF|ERROR)\\]|Timer'"
+    "trace:logs": "tail -f logs/brainbridge-mcp.log | grep -E '\\[TRACE\\]|\\[PERF\\]|Timer'",
+    "qc": "tsx src/scripts/quality-check.ts"
   },
   "keywords": [
     "mcp",
@@ -40,7 +41,9 @@
     "glob": "^7.2.3",
     "ollama": "^0.5.17",
     "tsx": "^4.20.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

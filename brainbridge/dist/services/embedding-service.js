@@ -49,8 +49,8 @@ class EmbeddingService {
     constructor(loggerService) {
         this.ollama = new ollama_1.Ollama({ host: 'http://127.0.0.1:11434' });
         this.loggerService = loggerService;
-        this.indexPath = path.join(process.cwd(), '.index');
-        this.embeddingsPath = path.join(this.indexPath, 'embeddings.json');
+        this.indexPath = path.join(process.cwd(), '..', 'memories', 'embeddings');
+        this.embeddingsPath = path.join(this.indexPath, 'embeddings.txt');
     }
     /**
      * Generate embedding for text content
@@ -138,14 +138,19 @@ class EmbeddingService {
         };
     }
     /**
-     * Load existing embedding index
+     * Load existing embedding index from structured text format
      */
     async loadIndex() {
         try {
             await fs.mkdir(this.indexPath, { recursive: true });
             if (await fs.access(this.embeddingsPath).then(() => true).catch(() => false)) {
                 const data = await fs.readFile(this.embeddingsPath, 'utf8');
-                return JSON.parse(data);
+                // Try JSON format first for backward compatibility
+                if (data.trim().startsWith('{')) {
+                    return JSON.parse(data);
+                }
+                // Parse structured text format
+                return this.parseStructuredIndex(data);
             }
         }
         catch (error) {
@@ -162,12 +167,119 @@ class EmbeddingService {
         };
     }
     /**
-     * Save embedding index to disk
+     * Parse structured text format into EmbeddingIndex
+     */
+    parseStructuredIndex(data) {
+        const lines = data.split('\n');
+        const index = {
+            version: '1.0.0',
+            model: 'mxbai-embed-large',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+            totalEmbeddings: 0,
+            embeddings: []
+        };
+        let currentEmbedding = null;
+        let currentMetadata = {};
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('# Version:')) {
+                index.version = trimmed.substring(10).trim();
+            }
+            else if (trimmed.startsWith('# Model:')) {
+                index.model = trimmed.substring(8).trim();
+            }
+            else if (trimmed.startsWith('# Created:')) {
+                index.created = trimmed.substring(10).trim();
+            }
+            else if (trimmed.startsWith('# Updated:')) {
+                index.updated = trimmed.substring(10).trim();
+            }
+            else if (trimmed.startsWith('# Total Embeddings:')) {
+                index.totalEmbeddings = parseInt(trimmed.substring(20).trim());
+            }
+            else if (trimmed.startsWith('ID:')) {
+                // Start new embedding
+                if (currentEmbedding && currentEmbedding.id) {
+                    index.embeddings.push(currentEmbedding);
+                }
+                currentEmbedding = { id: trimmed.substring(3).trim() };
+                currentMetadata = {};
+            }
+            else if (trimmed.startsWith('File:')) {
+                if (currentEmbedding)
+                    currentEmbedding.filePath = trimmed.substring(5).trim();
+            }
+            else if (trimmed.startsWith('Hash:')) {
+                currentMetadata.contentHash = trimmed.substring(5).trim();
+            }
+            else if (trimmed.startsWith('Created:')) {
+                currentMetadata.embeddedAt = trimmed.substring(8).trim();
+            }
+            else if (trimmed.startsWith('Title:')) {
+                currentMetadata.title = trimmed.substring(6).trim();
+            }
+            else if (trimmed.startsWith('Category:')) {
+                currentMetadata.category = trimmed.substring(9).trim();
+            }
+            else if (trimmed.startsWith('Privacy:')) {
+                currentMetadata.privacy = trimmed.substring(8).trim();
+            }
+            else if (trimmed.startsWith('Tags:')) {
+                currentMetadata.tags = trimmed.substring(5).trim().split(',').map(s => s.trim());
+            }
+            else if (trimmed.startsWith('Vector:')) {
+                if (currentEmbedding) {
+                    currentEmbedding.embedding = trimmed.substring(7).trim().split(',').map(s => parseFloat(s.trim()));
+                    currentEmbedding.content = ''; // We'll need to extract this from the file if needed
+                    currentEmbedding.metadata = currentMetadata;
+                }
+            }
+            else if (trimmed === '---' && currentEmbedding && currentEmbedding.id) {
+                // End of current embedding
+                index.embeddings.push(currentEmbedding);
+                currentEmbedding = null;
+                currentMetadata = {};
+            }
+        }
+        // Handle last embedding if no final separator
+        if (currentEmbedding && currentEmbedding.id) {
+            index.embeddings.push(currentEmbedding);
+        }
+        return index;
+    }
+    /**
+     * Save embedding index to disk in structured text format
      */
     async saveIndex(index) {
         index.updated = new Date().toISOString();
         index.totalEmbeddings = index.embeddings.length;
-        await fs.writeFile(this.embeddingsPath, JSON.stringify(index, null, 2));
+        const lines = [
+            '# Embedding Index',
+            `# Version: ${index.version}`,
+            `# Model: ${index.model}`,
+            `# Created: ${index.created}`,
+            `# Updated: ${index.updated}`,
+            `# Total Embeddings: ${index.totalEmbeddings}`,
+            ''
+        ];
+        for (const embedding of index.embeddings) {
+            lines.push(`ID: ${embedding.id}`);
+            lines.push(`File: ${embedding.filePath}`);
+            lines.push(`Hash: ${embedding.metadata.contentHash}`);
+            lines.push(`Created: ${embedding.metadata.embeddedAt}`);
+            if (embedding.metadata.title)
+                lines.push(`Title: ${embedding.metadata.title}`);
+            if (embedding.metadata.category)
+                lines.push(`Category: ${embedding.metadata.category}`);
+            if (embedding.metadata.privacy)
+                lines.push(`Privacy: ${embedding.metadata.privacy}`);
+            if (embedding.metadata.tags)
+                lines.push(`Tags: ${embedding.metadata.tags.join(', ')}`);
+            lines.push(`Vector: ${embedding.embedding.join(',')}`);
+            lines.push('---');
+        }
+        await fs.writeFile(this.embeddingsPath, lines.join('\n'));
         this.loggerService.trace('Saved embedding index', {
             totalEmbeddings: index.totalEmbeddings,
             path: this.embeddingsPath
@@ -207,43 +319,14 @@ class EmbeddingService {
             // Load existing index
             const index = await this.loadIndex();
             // Calculate similarities
-            this.loggerService.trace('Debug embedding dimensions', {
-                queryEmbeddingLength: queryEmbedding.length,
-                queryEmbeddingFirst5: queryEmbedding.slice(0, 5),
-                indexEmbeddingsCount: index.embeddings.length,
-                firstMemoryEmbeddingLength: index.embeddings[0]?.embedding?.length,
-                firstMemoryEmbeddingFirst5: index.embeddings[0]?.embedding?.slice(0, 5)
-            });
-            const results = index.embeddings.map((memory, idx) => {
-                const similarity = this.cosineSimilarity(queryEmbedding, memory.embedding);
-                if (idx < 3) { // Debug first 3 similarities
-                    this.loggerService.trace(`Similarity debug [${idx}]`, {
-                        memoryFile: memory.filePath,
-                        similarity,
-                        queryNorm: Math.sqrt(queryEmbedding.reduce((sum, val) => sum + val * val, 0)),
-                        memoryNorm: Math.sqrt(memory.embedding.reduce((sum, val) => sum + val * val, 0))
-                    });
-                }
-                return { memory, similarity };
-            });
-            this.loggerService.trace('Pre-filter results count', {
-                totalResults: results.length,
-                threshold,
-                sampleSimilarities: results.slice(0, 3).map(r => r.similarity)
-            });
+            const results = index.embeddings.map(memory => ({
+                memory,
+                similarity: this.cosineSimilarity(queryEmbedding, memory.embedding)
+            }));
             const filteredResults = results.filter(result => result.similarity >= threshold);
-            this.loggerService.trace('Post-filter results count', {
-                filteredResults: filteredResults.length,
-                threshold
-            });
             const finalResults = filteredResults
                 .sort((a, b) => b.similarity - a.similarity)
                 .slice(0, limit);
-            this.loggerService.trace('Final results debug', {
-                finalResultsLength: finalResults.length,
-                limit,
-                topSimilarities: finalResults.slice(0, 3).map(r => r.similarity)
-            });
             this.loggerService.endTimer('vector_search', {
                 queryLength: query.length,
                 indexSize: index.totalEmbeddings,

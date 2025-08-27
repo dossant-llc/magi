@@ -49,34 +49,58 @@ class BrainBridgeServer {
       }
     );
 
-    this.loggerService.log('BrainBridge MCP Server initialized');
+    this.loggerService.winston.info('BrainBridge MCP Server initialized', { 
+      component: 'BrainBridgeServer',
+      action: 'initialize',
+      memoriesDir,
+      logFile
+    });
     this.setupHandlers();
   }
 
   private setupHandlers() {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      this.loggerService.log('Received ListToolsRequest');
+      this.loggerService.winston.info('Received MCP request', {
+        component: 'BrainBridgeServer',
+        action: 'list_tools',
+        requestType: 'ListToolsRequest'
+      });
       return this.getToolsList();
     });
 
     // List available resources
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      this.loggerService.log('Received ListResourcesRequest');
+      this.loggerService.winston.info('Received MCP request', {
+        component: 'BrainBridgeServer',
+        action: 'list_resources',
+        requestType: 'ListResourcesRequest'
+      });
       return this.getResourcesList();
     });
 
     // Read resource content
     this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const uri = request.params.uri;
-      this.loggerService.log(`Received ReadResourceRequest for: ${uri}`);
+      this.loggerService.winston.info('Received MCP request', {
+        component: 'BrainBridgeServer',
+        action: 'read_resource',
+        requestType: 'ReadResourceRequest',
+        uri
+      });
       return this.readResource(uri);
     });
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      this.loggerService.log(`Received CallToolRequest: ${name} with args: ${JSON.stringify(args)}`);
+      this.loggerService.winston.info('Received MCP request', {
+        component: 'BrainBridgeServer',
+        action: 'call_tool',
+        requestType: 'CallToolRequest',
+        toolName: name,
+        args
+      });
 
       if (!args) {
         throw new Error('Missing arguments');
@@ -294,24 +318,41 @@ class BrainBridgeServer {
       throw new Error('Content is required and must be a string');
     }
 
-    this.loggerService.log(`AI Save Memory: ${content.slice(0, 100)}...`);
+    this.loggerService.winston.info('AI Save Memory request', {
+      component: 'BrainBridgeServer',
+      action: 'ai_save_memory',
+      contentLength: content.length,
+      contentPreview: content.slice(0, 100),
+      privacy_level,
+      category_hint
+    });
     
     // Start async save process in background
     this.aiService.saveMemoryWithAI(content, privacy_level, category_hint)
       .then(result => {
         if (result.success) {
-          this.loggerService.log(`Background save completed: ${result.filePath}`);
-          this.loggerService.trace('Save details', {
+          this.loggerService.winston.info('Background save completed', {
+            component: 'BrainBridgeServer',
+            action: 'ai_save_memory_complete',
+            filePath: result.filePath,
             category: result.aiAnalysis?.category,
             tags: result.aiAnalysis?.tags,
             title: result.aiAnalysis?.title
           });
         } else {
-          this.loggerService.log(`Background save failed: ${result.error}`, 'error');
+          this.loggerService.winston.error('Background save failed', {
+            component: 'BrainBridgeServer',
+            action: 'ai_save_memory_failed',
+            error: result.error
+          });
         }
       })
       .catch(error => {
-        this.loggerService.log(`Background save error: ${error}`, 'error');
+        this.loggerService.winston.error('Background save error', {
+          component: 'BrainBridgeServer',
+          action: 'ai_save_memory_error',
+          error: error.message || error
+        });
       });
     
     // Return immediately with acknowledgment
@@ -332,7 +373,14 @@ class BrainBridgeServer {
       throw new Error('Question is required and must be a string');
     }
 
-    this.loggerService.log(`AI Query Memories: "${question}" (${synthesis_mode} mode)`);
+    this.loggerService.winston.info('AI Query Memories request', {
+      component: 'BrainBridgeServer',
+      action: 'ai_query_memories',
+      question,
+      synthesis_mode,
+      max_privacy,
+      limit
+    });
     
     if (synthesis_mode === 'raw') {
       // Fast mode: Just return the raw memories, let Claude do synthesis
@@ -402,7 +450,10 @@ class BrainBridgeServer {
   }
 
   private async handleAIStatus() {
-    this.loggerService.log('AI Status check requested');
+    this.loggerService.winston.info('AI Status check requested', {
+      component: 'BrainBridgeServer',
+      action: 'ai_status'
+    });
     
     const status = await this.aiService.getAIStatus();
     
@@ -490,13 +541,22 @@ class BrainBridgeServer {
   async runStdio() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    this.loggerService.log('BrainBridge MCP Server running on stdio');
+    this.loggerService.winston.info('BrainBridge MCP Server running', {
+      component: 'BrainBridgeServer',
+      action: 'start_stdio',
+      transport: 'stdio'
+    });
     console.error('BrainBridge MCP Server running on stdio');
   }
 
   async runHTTP(port: number = 8147) {
     const app = express();
-    this.loggerService.log(`Starting BrainBridge MCP Server on HTTP port ${port}`);
+    this.loggerService.winston.info('Starting BrainBridge MCP Server', {
+      component: 'BrainBridgeServer',
+      action: 'start_http',
+      transport: 'http',
+      port
+    });
     
     app.use(express.json());
     app.use((req, res, next) => {

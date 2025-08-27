@@ -160,7 +160,7 @@ ${content}
       // Performance tracking for search only
       this.loggerService.startTimer('memory_search_fast');
       
-      const memories = await this.searchMemories(question, maxPrivacy, { limit } as any);
+      const memories = await this.searchMemories(question, maxPrivacy, limit);
       
       this.loggerService.endTimer('memory_search_fast', {
         foundCount: memories.length,
@@ -371,17 +371,22 @@ If the memories don't contain enough information to fully answer the question, s
     
     try {
       // Try vector search first (if embeddings are available)
-      const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.0);
+      const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.2);
       
       if (vectorResults && vectorResults.length > 0) {
         this.loggerService.trace('Using vector similarity search', { foundResults: vectorResults.length });
         
-        // TEMPORARY: Skip privacy filtering to test if that's the issue
-        this.loggerService.trace('TEMP: Bypassing privacy filter for debugging', {
-          vectorResultsCount: vectorResults.length
-        });
-
+        // Filter by privacy level
+        const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
+        const maxLevel = privacyLevels.indexOf(maxPrivacy);
+        const allowedLevels = privacyLevels.slice(0, maxLevel + 1);
+        
         return vectorResults
+          .filter(result => {
+            const pathParts = result.memory.filePath.split('/');
+            const privacyLevel = pathParts[1]; // memories/personal/file.md -> personal
+            return allowedLevels.includes(privacyLevel);
+          })
           .map(result => ({
             filename: result.memory.filePath.split('/').pop() || 'unknown',
             content: result.memory.content,

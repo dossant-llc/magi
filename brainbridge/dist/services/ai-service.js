@@ -127,7 +127,7 @@ ${content}
             this.loggerService.trace('Starting fast memory search (no AI synthesis)', { question, maxPrivacy, limit });
             // Performance tracking for search only
             this.loggerService.startTimer('memory_search_fast');
-            const memories = await this.searchMemories(question, maxPrivacy, { limit });
+            const memories = await this.searchMemories(question, maxPrivacy, limit);
             this.loggerService.endTimer('memory_search_fast', {
                 foundCount: memories.length,
                 searchQuery: question,
@@ -295,38 +295,19 @@ If the memories don't contain enough information to fully answer the question, s
         this.loggerService.trace('Starting memory search', { query, maxPrivacy, limit });
         try {
             // Try vector search first (if embeddings are available)
-            const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.0);
+            const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.2);
             if (vectorResults && vectorResults.length > 0) {
                 this.loggerService.trace('Using vector similarity search', { foundResults: vectorResults.length });
                 // Filter by privacy level
                 const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
                 const maxLevel = privacyLevels.indexOf(maxPrivacy);
                 const allowedLevels = privacyLevels.slice(0, maxLevel + 1);
-                this.loggerService.trace('Privacy filtering debug', {
-                    maxPrivacy,
-                    allowedLevels,
-                    vectorResultsCount: vectorResults.length,
-                    samplePaths: vectorResults.slice(0, 3).map(r => r.memory.filePath)
-                });
-                const privacyFiltered = vectorResults.filter(result => {
+                return vectorResults
+                    .filter(result => {
                     const pathParts = result.memory.filePath.split('/');
                     const privacyLevel = pathParts[1]; // memories/personal/file.md -> personal
-                    const isAllowed = allowedLevels.includes(privacyLevel);
-                    if (!isAllowed) {
-                        this.loggerService.trace('Privacy filter blocked', {
-                            filePath: result.memory.filePath,
-                            extractedPrivacyLevel: privacyLevel,
-                            allowedLevels,
-                            isAllowed
-                        });
-                    }
-                    return isAllowed;
-                });
-                this.loggerService.trace('After privacy filtering', {
-                    originalCount: vectorResults.length,
-                    filteredCount: privacyFiltered.length
-                });
-                return privacyFiltered
+                    return allowedLevels.includes(privacyLevel);
+                })
                     .map(result => ({
                     filename: result.memory.filePath.split('/').pop() || 'unknown',
                     content: result.memory.content,
