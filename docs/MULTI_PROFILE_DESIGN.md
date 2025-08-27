@@ -478,3 +478,34 @@ Claude: [no wake word] → [generic travel advice]
 This isn't just about organizing memories - it's about giving Claude the ability to recognize when you want personal AI assistance and respond with your contextual knowledge and preferences.
 
 *Your personal AI should activate when you need it, stay private when you don't.*
+
+---
+
+## A Nostalgic Note: AI "Drive Letters"
+
+The magi* suffix system is inspired by the classic DOS/Windows drive letter concept that defined computing for decades:
+
+```bash
+# The good old days
+C:\> dir          # Local hard drive
+A:\> dir          # Floppy disk
+D:\> dir          # CD-ROM drive
+```
+
+```bash
+# The AI era
+magi> query       # Local smart context (your new C: drive)
+magic> query      # Personal context + cloud drive  
+magik> query      # Business context + local drive
+magid> query      # Smart context + development drive
+```
+
+Just like drive letters told you **where** your files lived and **what** capabilities you had access to, magi* suffixes tell you **where** your AI processing happens and **what** context you're operating in.
+
+The mental model is instantly familiar:
+- You'd never put sensitive business files on a floppy disk (A:\)
+- You'd never use `magic` (cloud) for sensitive business queries - you'd use `magik` (local only)
+- `C:\>` was your reliable default drive
+- `magi>` is your reliable default safe mode
+
+Sometimes the best new interfaces are the ones that feel like home. 🏠💾
