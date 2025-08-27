@@ -54,11 +54,11 @@ npm install
 - **Revokable access**: Change permissions anytime, instantly effective
 - **Clear intent**: You always know when AI is using your personal context vs. generic knowledge
 
-### Open Source Ethics
-- **Community owned**: AGPL v3 ensures improvements benefit everyone
-- **Transparent algorithms**: All privacy and categorization logic is inspectable
+### Transparent Development
+- **Open source**: All privacy and categorization logic is inspectable
 - **No vendor lock-in**: Your data in standard markdown files, portable anywhere
-- **Democratic development**: Features driven by user needs, not corporate interests
+- **Community-driven**: Features driven by user needs, not corporate interests
+- **Sustainable licensing**: Dual license model keeps the project viable long-term
 
 ## 🛡️ Privacy-First Knowledge Organization
 
@@ -235,20 +235,22 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 ### Values-Driven Development
 - **Privacy advocates welcome**: Help us build better consent systems
 - **Hackers & tinkerers**: Architecture designed for experimentation and wild ideas
-- **Open source enthusiasts**: Democratic development, no corporate overlords
+- **Community contributors**: Democratic development, user-driven priorities  
 - **AI researchers**: Contribute to ethical AI patterns and privacy-preserving techniques
 - **Real users**: Your use cases and hacks drive our feature priorities
 
 ## 📄 License
 
-**Dual Licensed** - Choose what works for you:
+**AGIfor.me License v1** - Open source with sustainable boundaries:
 
-- 🏠 **Personal Use**: Free under AGPL v3 license
-- 🏢 **Commercial Use**: Commercial license available for proprietary modifications
+- ✅ **Personal & Commercial Use**: Use AGIfor.me freely for your own projects
+- ✅ **Modify & Distribute**: Build on top of AGIfor.me and share your improvements
+- ✅ **Integrations & Plugins**: Create tools that work with AGIfor.me
+- ❌ **No SaaS Competition**: Can't offer AGIfor.me as a hosted service to third parties
 
-This ensures the project stays open source while protecting innovation. See [LICENSE](LICENSE) file for full details.
+See [LICENSE](LICENSE) file for full details and [AGIFORME-LICENSE.md](AGIFORME-LICENSE.md) for complete terms.
 
-💼 **Commercial licensing inquiries welcome** - Contact maintainers for enterprise licensing options.
+💼 **Commercial licensing available** for use cases not covered above - Contact igor@dossantllc.com
 
 ## 🎯 The Bigger Picture
 
@@ -259,7 +261,7 @@ We believe:
 - **Your knowledge belongs to you** - not to tech companies
 - **Privacy is a fundamental right** - not a luxury feature  
 - **AI should augment human intelligence** - not replace human agency
-- **Open source creates better outcomes** - than proprietary black boxes
+- **Transparent development creates better outcomes** - than proprietary black boxes
 
 ### The Community We're Building
 - **Ethical AI practitioners** who prioritize user agency over engagement metrics
