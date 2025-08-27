@@ -12,7 +12,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "magic": "tsx src/magic/index.ts",
-    "magic:test": "tsx tests/magic/integration.test.ts"
+    "magic:test": "tsx tests/magic/integration.test.ts",
+    "logs": "tail -f logs/brainbridge-mcp.log",
+    "logs:clear": "echo '' > logs/brainbridge-mcp.log && echo 'Logs cleared'",
+    "trace": "TRACE_MODE=true npm run dev:stdio",
+    "trace:logs": "tail -f logs/brainbridge-mcp.log | grep -E '\\[(TRACE|PERF|ERROR)\\]|Timer'"
   },
   "keywords": [
     "mcp",

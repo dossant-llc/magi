@@ -3,3 +3,4 @@ memories/
 logs/
 *.log
 /.vscode
+/brainbridge/logs
