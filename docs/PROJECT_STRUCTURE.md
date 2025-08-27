@@ -6,20 +6,20 @@ This is a monorepo with three main components:
 
 ```
 personal-ai-knowledge-base/
-├── mcp-server/          # MCP server for AI assistant integration
-├── brain-gatekeeper/    # Your knowledge guardian, analytics & insights dashboard  
+├── brainbridge/         # MCP server for AI assistant integration
+├── brainkeeper/         # Your memory guardian, analytics & insights dashboard  
 ├── shared/              # Shared TypeScript types
-├── knowledge/           # Privacy-organized knowledge files
+├── memories/            # Privacy-organized memory files
 └── docs/                # Design and architecture documentation
 ```
 
 ## Components
 
-### 🔧 MCP Server (`mcp-server/`)
-**Purpose**: Bridge between AI assistants and knowledge base
+### 🔧 BrainBridge (`brainbridge/`)
+**Purpose**: Bridge between AI assistants and memory bank
 - TypeScript MCP server implementation
 - Smart privacy classification
-- Knowledge search and storage
+- Memory search and storage
 - Consent request handling
 
 **Key files**:
@@ -27,12 +27,12 @@ personal-ai-knowledge-base/
 - `package.json` - Dependencies and scripts
 - `tsconfig.json` - TypeScript configuration
 
-### 🧠 Brain Gatekeeper (`brain-gatekeeper/`)
-**Purpose**: Your personal knowledge guardian and analytics dashboard
+### 🧠 BrainKeeper (`brainkeeper/`)
+**Purpose**: Your personal memory guardian and analytics dashboard
 - 🛡️ **Access Control**: Real-time consent request notifications and permission management
-- 📔 **Knowledge Diary**: Timeline of knowledge growth, access patterns, learning insights
-- 🔥 **Knowledge Heatmap**: Visualize which knowledge gets accessed most/least
-- 🕳️ **Knowledge Gaps**: Detect questions that couldn't be answered, suggest areas to expand
+- 📔 **Memory Diary**: Timeline of memory growth, access patterns, learning insights
+- 🔥 **Memory Heatmap**: Visualize which memories get accessed most/least
+- 🕳️ **Memory Gaps**: Detect questions that couldn't be answered, suggest areas to expand
 - 📊 **Analytics**: Usage patterns, trust scores, privacy level distribution
 
 **Key files**:
@@ -44,8 +44,8 @@ personal-ai-knowledge-base/
 **Purpose**: Common TypeScript interfaces and types
 - `types/index.ts` - Shared data structures for requests, permissions, etc.
 
-### 📚 Knowledge (`knowledge/`)
-**Purpose**: Privacy-organized knowledge storage
+### 📚 Memories (`memories/`)
+**Purpose**: Privacy-organized memory storage
 - `public/` - Shareable knowledge
 - `team/` - Work colleagues only
 - `personal/` - Close friends/family
@@ -90,14 +90,14 @@ npm run dev:ui     # Consent UI
 └─────────────────┘    └──────────┬───────┘    └─────────────────┘
                                   │                      │
                        ┌──────────▼───────┐    ┌─────────▼──────────┐
-                       │  Knowledge Store │    │   User Consent     │
+                       │  Memory Store    │    │   User Consent     │
                        │ (File System)    │    │   Management       │
                        └──────────────────┘    └────────────────────┘
 ```
 
 ## Development Workflow
 
-1. **Add knowledge**: Use MCP server's `add_knowledge` tool
+1. **Add memory**: Use MCP server's `add_memory` tool
 2. **Classify privacy**: AI suggests privacy level, user confirms if uncertain  
 3. **Access requests**: AI assistants request permission via consent UI
 4. **User approval**: Review and approve/deny via web dashboard

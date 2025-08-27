@@ -46,10 +46,21 @@ memories/
 
 ## 🛠️ Setup
 
+### System Requirements
+- **Node.js**: v22+ (recommended)
+- **Operating System**: macOS, Linux (tested on macOS)
+- **Memory**: 4GB+ RAM for basic operation
+- **Storage**: 1GB+ free space for memories and dependencies
+- **AI Assistant**: MCP-compatible (Claude Code, Claude Desktop)
+
+### Optional (for local AI models)
+- **Additional RAM**: 8-16GB+ for running local LLMs
+- **GPU**: CUDA-compatible GPU for faster local model inference
+- **Storage**: Additional 5-50GB for local model weights
+
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- MCP-compatible AI assistant (like Claude Code)
+- npm or yarn package manager
+- Git for version control
 
 ### Installation
 

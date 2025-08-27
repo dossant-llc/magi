@@ -4,7 +4,7 @@
 
 ## Core Concept
 
-Transform scattered lessons learned into an AI-accessible, privacy-aware knowledge base. Users capture insights naturally; AI handles intelligent categorization and privacy protection.
+Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank. Users capture insights naturally; AI handles intelligent categorization and privacy protection.
 
 ## System Architecture
 
@@ -22,9 +22,9 @@ Transform scattered lessons learned into an AI-accessible, privacy-aware knowled
 
 ## Privacy-First Design
 
-### Knowledge Organization
+### Memory Organization
 ```
-knowledge/
+memories/
 ├── public/          🌍 Anyone can access
 ├── team/           👥 Work colleagues only
 ├── personal/       🏠 Close friends/family context  
@@ -34,7 +34,7 @@ knowledge/
 ```
 
 ### Smart Categorization Flow
-1. **User adds knowledge** - Natural language, no manual categorization
+1. **User adds memory** - Natural language, no manual categorization
 2. **AI analyzes content** - Privacy classifier with confidence scoring  
 3. **Auto-categorize** (high confidence) or **Ask user** (low confidence)
 4. **Learn from feedback** - Improve suggestions over time
@@ -49,10 +49,10 @@ knowledge/
 ## Technical Components
 
 ### 1. MCP Server (`src/server.ts`)
-**Purpose**: Bridge between AI assistants and knowledge base
+**Purpose**: Bridge between AI assistants and memory bank
 **Key features**:
-- `add_knowledge` tool with smart categorization
-- `search_knowledge` tool with privacy filtering
+- `add_memory` tool with smart categorization
+- `search_memories` tool with privacy filtering
 - Resource access for direct file reading
 - Consent request handling
 
@@ -65,15 +65,15 @@ knowledge/
 - Conservative bias for uncertainty
 
 ### 3. Consent Engine (`src/privacy/consent.ts`)
-**Purpose**: User control over knowledge access
+**Purpose**: User control over memory access
 **Features**:
 - Interactive CLI prompts
 - Permission rule storage
 - Trust score management  
 - Access audit logging
 
-### 4. Knowledge Store (File system)
-**Purpose**: Organized, searchable knowledge storage
+### 4. Memory Store (File system)
+**Purpose**: Organized, searchable memory storage
 **Structure**:
 - Privacy-level directories
 - YAML frontmatter for metadata
@@ -82,17 +82,17 @@ knowledge/
 
 ## Data Flow
 
-### Adding Knowledge
+### Adding Memories
 ```typescript
-User: "Add knowledge: Always check WiFi network first when troubleshooting"
+User: "Add memory: Always check WiFi network first when troubleshooting"
 ├─> Privacy Classifier analyzes content
 ├─> High confidence (92%): "public" level  
 ├─> Auto-generate tags: [network, troubleshooting, wifi]
 ├─> Store in public/network-troubleshooting.md
-└─> Confirm to user: "✅ Added to public knowledge"
+└─> Confirm to user: "✅ Added to public memories"
 ```
 
-### Searching Knowledge  
+### Searching Memories  
 ```typescript
 AI Assistant: "Search for network troubleshooting tips"
 ├─> Check AI assistant permissions
@@ -104,7 +104,7 @@ AI Assistant: "Search for network troubleshooting tips"
 
 ### Consent Flow
 ```typescript
-Cloud AI: "I want to access team-level knowledge about deployment"
+Cloud AI: "I want to access team-level memories about deployment"
 ├─> Generate consent request
 ├─> Show user: requester, intent, files needed
 ├─> User decision: allow/deny/modify
@@ -115,7 +115,7 @@ Cloud AI: "I want to access team-level knowledge about deployment"
 ## Key Design Principles
 
 ### 1. **Privacy by Default**
-- New knowledge starts private until classified
+- New memories start private until classified
 - Conservative bias: when uncertain, choose more restrictive
 - User always has final control over categorization
 
@@ -138,7 +138,7 @@ Cloud AI: "I want to access team-level knowledge about deployment"
 
 ### ✅ Phase 0: Foundation (Complete)
 - Basic MCP server with search/add tools
-- File-based knowledge storage
+- File-based memory storage
 - Privacy-level directory structure
 - Template system and documentation
 

@@ -2,3 +2,4 @@ memories/
 .claude/
 logs/
 *.log
+/.vscode
