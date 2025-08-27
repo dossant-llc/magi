@@ -1,29 +1,28 @@
-GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3, 19 November 2007
+# AGIfor.me License
 
-Copyright (C) 2025 Igor Ramos / Dossant LLC
+**Copyright (c) 2025 Dossant LLC**
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+AGIfor.me is licensed under the AGIfor.me License v1.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
+## AGIfor.me License v1
 
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+This license allows you to:
+- ✅ Use AGIfor.me for personal or commercial purposes
+- ✅ Modify and distribute AGIfor.me  
+- ✅ Embed AGIfor.me in your applications
+- ✅ Build integrations and plugins
+- ❌ Offer AGIfor.me as a hosted service to third parties
+
+## Full License Text
+
+See [AGIfor.me License v1](AGIFORME-LICENSE.md) for complete terms and conditions.
+
+## Commercial Licensing
+
+For use cases not permitted by the AGIfor.me License v1 (such as offering AGIfor.me as a hosted service), commercial licenses are available.
+
+**Contact:** igor@dossantllc.com
 
 ---
 
-COMMERCIAL LICENSE AVAILABLE
-
-This software is dual-licensed under AGPL v3 and a commercial license.
-
-• PERSONAL USE: Free under AGPL v3 terms
-• COMMERCIAL USE: Requires commercial license for proprietary modifications
-  or distribution without copyleft requirements
-
-For commercial licensing inquiries, contact Igor Ramos at Dossant LLC.
+**Questions?** Email igor@dossantllc.com
