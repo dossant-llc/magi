@@ -1,0 +1,11 @@
+{
+  "name": "brainxchange-test",
+  "version": "1.0.0",
+  "description": "Test client for BrainXchange P2P network",
+  "scripts": {
+    "test": "node test-complete-e2e.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  }
+}

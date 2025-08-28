@@ -1,28 +1,33 @@
-# AGIfor.me License
+# AGIfor.me License v1
 
 **Copyright (c) 2025 Dossant LLC**
 
-AGIfor.me is licensed under the AGIfor.me License v1.
+## License Grant
 
-## AGIfor.me License v1
+Permission is hereby granted to any person obtaining a copy of this software to:
 
-This license allows you to:
-- ✅ Use AGIfor.me for personal or commercial purposes
-- ✅ Modify and distribute AGIfor.me  
-- ✅ Embed AGIfor.me in your applications
-- ✅ Build integrations and plugins
-- ❌ Offer AGIfor.me as a hosted service to third parties
+**✅ USE**
+- Run AGIfor.me for personal use
+- Run AGIfor.me internally within your organization
+- Study and learn from the source code
 
-## Full License Text
+**✅ MODIFY**
+- Modify the source code for your own use
+- Contribute improvements back to the project
 
-See [AGIfor.me License v1](AGIFORME-LICENSE.md) for complete terms and conditions.
+**❌ DISTRIBUTE** 
+- You may NOT redistribute, sell, sublicense, or share AGIfor.me
+- You may NOT bundle AGIfor.me in any product or service
+- You may NOT offer AGIfor.me as a service to others
 
-## Commercial Licensing
+## Commercial Use
 
-For use cases not permitted by the AGIfor.me License v1 (such as offering AGIfor.me as a hosted service), commercial licenses are available.
+For any use not permitted above, contact Dossant LLC for a commercial license.
 
-**Contact:** igor@dossantllc.com
+## Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ---
 
-**Questions?** Email igor@dossantllc.com
+**Questions?** See AGIFORME-LICENSE.md for complete terms and contact information.

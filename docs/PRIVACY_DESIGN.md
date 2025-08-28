@@ -17,7 +17,7 @@
 **Directory Structure**:
 ```
 knowledge/
-├── public/           # Freely shareable (CC/MIT-like)
+├── public/           # Freely shareable
 ├── team/            # Work colleagues only  
 ├── personal/        # Close friends, family context
 ├── private/         # Local AI only

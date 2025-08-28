@@ -14,7 +14,7 @@ Build a privacy-first, consent-driven personal AI knowledge base that puts users
 - [x] Search and add knowledge tools  
 - [x] File-based knowledge storage
 - [x] Example templates and documentation
-- [x] Open source project setup
+- [x] Source-available project setup
 
 ### 🔒 Phase 1: Smart Privacy & Consent (Next)
 **Status**: 📋 Planned  

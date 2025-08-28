@@ -28,7 +28,7 @@ We welcome contributions to AGIfor.me!
 ## Development Setup
 
 ```bash
-git clone https://github.com/yourusername/agiforme
+git clone https://github.com/dossant-llc/agiforme
 cd agiforme
 npm install
 npm run dev
@@ -39,13 +39,13 @@ npm run dev
 By submitting a pull request or otherwise contributing to AGIfor.me, you agree to assign copyright of your contributions to **Dossant LLC**.
 
 **What this means:**
-- Dossant LLC can use your contributions in both open source and commercial versions
+- Dossant LLC can use your contributions in both source-available and commercial versions
 - You retain full attribution and credit for your work
 - You can still use your contributed code in other projects
 - This enables us to offer commercial licenses and keep the project sustainable
 
 **Why we need this:**
-Like MongoDB, Elastic, and other successful dual-licensed projects, copyright assignment allows us to:
+Like MongoDB, Elastic, and other successful source-available projects, copyright assignment allows us to:
 - Maintain consistent licensing across the project
 - Offer commercial licenses to enterprises that need them
 - Make future licensing decisions as the project evolves
@@ -53,6 +53,6 @@ Like MongoDB, Elastic, and other successful dual-licensed projects, copyright as
 
 ## Questions?
 
-Email igor@dossantllc.com for any licensing or contribution questions.
+See LICENSE file for contact details regarding licensing or contribution questions.
 
 Thanks for helping make personal AI knowledge management better! 🚀

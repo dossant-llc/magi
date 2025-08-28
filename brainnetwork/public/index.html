@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrainNetwork Dashboard 🧠🌐</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            padding: 20px;
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #00ff41;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .brains-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .brain-card {
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .brain-card.alice { border-color: #ff6b6b; }
+        .brain-card.bob { border-color: #4ecdc4; }  
+        .brain-card.carol { border-color: #ffe66d; }
+        
+        .brain-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        
+        .brain-card.alice .brain-name { color: #ff6b6b; }
+        .brain-card.bob .brain-name { color: #4ecdc4; }
+        .brain-card.carol .brain-name { color: #ffe66d; }
+        
+        .brain-status {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .message-input {
+            width: 100%;
+            height: 80px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #00ff41;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #00ff41;
+        }
+        
+        .send-btn {
+            width: 100%;
+            background: #333;
+            color: #00ff41;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        .send-btn:hover {
+            background: #555;
+            border-color: #00ff41;
+        }
+        
+        .brain-log {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            white-space: pre-wrap;
+        }
+        
+        .bx-logs {
+            background: #111;
+            border: 2px solid #9d4edd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .bx-logs h2 {
+            color: #9d4edd;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .bx-log {
+            background: #0a0a0a;
+            border: 1px solid #9d4edd;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            white-space: pre-wrap;
+        }
+        
+        .panel {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .panel h2 {
+            color: #00ff41;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        .instance {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .instance.running { border-color: #00ff41; }
+        .instance.stopped { border-color: #ff4444; }
+        
+        .instance-info {
+            flex-grow: 1;
+        }
+        
+        .instance-name {
+            color: #00ff41;
+            font-weight: bold;
+        }
+        
+        .instance-status {
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .instance-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        button {
+            background: #333;
+            color: #00ff41;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8em;
+        }
+        
+        button:hover {
+            background: #555;
+            border-color: #00ff41;
+        }
+        
+        button:disabled {
+            background: #222;
+            color: #666;
+            border-color: #333;
+            cursor: not-allowed;
+        }
+        
+        .topology {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .topology-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            color: #00ff41;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        
+        .message-form {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        label {
+            color: #00ff41;
+            font-size: 0.9em;
+        }
+        
+        input, select, textarea {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #00ff41;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00ff41;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .log {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            white-space: pre-wrap;
+        }
+        
+        .flow-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .flow-path {
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        
+        .new-instance {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .brains-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .brain-log {
+                height: 150px;
+            }
+            
+            .bx-log {
+                height: 200px;
+            }
+            
+            .topology-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .brains-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 BrainNetwork Dashboard 🌐</h1>
+        <div class="status" id="status">Connecting...</div>
+    </div>
+    
+    <!-- Three Brain Cards -->
+    <div class="brains-grid">
+        <!-- Alice -->
+        <div class="brain-card alice">
+            <div class="brain-name">🔴 Alice</div>
+            <div class="brain-status" id="alice-status">Checking...</div>
+            <textarea class="message-input" id="alice-input" placeholder="Alice's message or query..."></textarea>
+            <button class="send-btn" onclick="sendToBrain('alice')">Send as Alice</button>
+            <div class="brain-log" id="alice-log">Alice's logs will appear here...</div>
+        </div>
+        
+        <!-- Bob -->
+        <div class="brain-card bob">
+            <div class="brain-name">🔵 Bob</div>
+            <div class="brain-status" id="bob-status">Checking...</div>
+            <textarea class="message-input" id="bob-input" placeholder="Bob's message or query..."></textarea>
+            <button class="send-btn" onclick="sendToBrain('bob')">Send as Bob</button>
+            <div class="brain-log" id="bob-log">Bob's logs will appear here...</div>
+        </div>
+        
+        <!-- Carol -->
+        <div class="brain-card carol">
+            <div class="brain-name">🟡 Carol</div>
+            <div class="brain-status" id="carol-status">Checking...</div>
+            <textarea class="message-input" id="carol-input" placeholder="Carol's message or query..."></textarea>
+            <button class="send-btn" onclick="sendToBrain('carol')">Send as Carol</button>
+            <div class="brain-log" id="carol-log">Carol's logs will appear here...</div>
+        </div>
+    </div>
+    
+    <!-- BrainXchange Logs -->
+    <div class="bx-logs">
+        <h2>🌐 BrainXchange Network Stream</h2>
+        <div class="bx-log" id="bx-log">BrainXchange network logs streaming...</div>
+    </div>
+    
+    <script>
+        let socket;
+        let instances = [];
+        let brainStatuses = { alice: 'unknown', bob: 'unknown', carol: 'unknown' };
+        
+        // Initialize dashboard
+        async function init() {
+            updateStatus('Connecting to BrainNetwork...');
+            
+            try {
+                // Connect WebSocket
+                socket = io();
+                
+                socket.on('connect', () => {
+                    updateStatus('Connected 🟢');
+                    logToBX('🔗 Connected to BrainNetwork Dashboard');
+                    // Subscribe to real-time logs
+                    socket.emit('subscribe_logs', 'alice');
+                    socket.emit('subscribe_logs', 'bob');
+                    socket.emit('subscribe_logs', 'carol');
+                    socket.emit('subscribe_bx_network');
+                });
+                
+                socket.on('disconnect', () => {
+                    updateStatus('Disconnected 🔴');
+                    logToBX('💔 Disconnected from BrainNetwork');
+                });
+                
+                socket.on('network_event', (event) => {
+                    // Show in BX stream for network-level events
+                    if (event.type.includes('message') || event.type.includes('brainxchange')) {
+                        logToBX(`📡 ${event.type}: ${event.instanceName || event.messageId || 'system'}`);
+                    }
+                    refreshBrainStatuses();
+                });
+                
+                // Handle brain instance logs
+                socket.on('brain_log', (data) => {
+                    if (data.instance && data.log) {
+                        logToBrain(data.instance, data.log, true);
+                    }
+                });
+                
+                // Handle BrainXchange network logs
+                socket.on('bx_network_log', (data) => {
+                    logToBX(data.log || data);
+                });
+                
+                // Initial data load
+                await refreshBrainStatuses();
+                
+                // Auto-refresh every 3 seconds
+                setInterval(refreshBrainStatuses, 3000);
+                
+                // Start streaming logs from containers
+                startLogStreaming();
+                
+                // Check BrainXchange connection
+                checkBrainXchangeConnection();
+                
+            } catch (error) {
+                updateStatus('Connection failed 🔴');
+                logToBX(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        // Refresh brain statuses
+        async function refreshBrainStatuses() {
+            try {
+                const response = await fetch('/api/instances');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch instances: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                instances = data.instances || [];
+                
+                // Update each brain's status
+                ['alice', 'bob', 'carol'].forEach(brainName => {
+                    const brain = instances.find(i => i.name === brainName);
+                    const statusElement = document.getElementById(`${brainName}-status`);
+                    
+                    if (brain) {
+                        brainStatuses[brainName] = brain.status;
+                        statusElement.textContent = `${brain.status.toUpperCase()} • ${brain.stats?.memoryFiles || 0} memories`;
+                        statusElement.style.color = brain.status === 'running' ? '#00ff41' : '#ff6b6b';
+                    } else {
+                        brainStatuses[brainName] = 'not found';
+                        statusElement.textContent = 'NOT FOUND';
+                        statusElement.style.color = '#666';
+                    }
+                });
+                
+            } catch (error) {
+                logToBX(`❌ Error loading brain statuses: ${error.message}`);
+            }
+        }
+        
+        // Send message to specific brain
+        async function sendToBrain(brainName) {
+            const inputElement = document.getElementById(`${brainName}-input`);
+            const message = inputElement.value.trim();
+            
+            if (!message) {
+                logToBrain(brainName, '⚠️  Please enter a message');
+                return;
+            }
+            
+            if (brainStatuses[brainName] !== 'running') {
+                logToBrain(brainName, `❌ ${brainName} is not running (${brainStatuses[brainName]})`);
+                return;
+            }
+            
+            try {
+                logToBrain(brainName, `📤 Sending: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
+                logToBX(`📤 Sending message to ${brainName}`);
+                
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ from: brainName, query: message })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logToBrain(brainName, `✅ Message sent (Flow ID: ${data.flow.id})`);
+                    logToBX(`✅ Message delivered to ${brainName}`);
+                    inputElement.value = '';
+                } else {
+                    const error = await response.json();
+                    logToBrain(brainName, `❌ Error: ${error.error}`);
+                    logToBX(`❌ Failed to send to ${brainName}: ${error.error}`);
+                }
+            } catch (error) {
+                logToBrain(brainName, `❌ Network error: ${error.message}`);
+                logToBX(`💥 Network error sending to ${brainName}`);
+            }
+        }
+        
+        // Log to specific brain's log
+        function logToBrain(brainName, message, skipTimestamp = false) {
+            const logElement = document.getElementById(`${brainName}-log`);
+            if (!logElement) return;
+            
+            // Clean up ANSI codes and format log
+            let cleanMessage = message
+                .replace(/\\u001b\[[0-9;]*m/g, '')  // Remove ANSI escape codes
+                .replace(/\x1b\[[0-9;]*m/g, '')    // Remove hex ANSI codes
+                .replace(/\\r\\n/g, '\n')          // Normalize line endings
+                .replace(/\\r/g, '\n')             // Convert remaining \\r to \n
+                .trim();
+            
+            // Extract meaningful log lines and filter out noise
+            const lines = cleanMessage.split('\n').filter(line => {
+                line = line.trim();
+                if (!line) return false;
+                
+                // Filter out raw data and JSON
+                if (line.startsWith('data:') || line.startsWith('{') || line.startsWith('}')) return false;
+                if (line.includes('BrainBridge MCP Server running on stdio')) return false;
+                
+                return true;
+            });
+            
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                
+                // Format structured logs nicely
+                if (line.includes('│')) {
+                    // Parse structured log: timestamp │ level │ message │ metadata
+                    const parts = line.split('│').map(p => p.trim());
+                    if (parts.length >= 3) {
+                        const time = parts[0].replace('🕐 ', '');
+                        const level = parts[1];
+                        const msg = parts[2];
+                        
+                        // Color code by log level
+                        let emoji = '📝';
+                        if (level.includes('info')) emoji = 'ℹ️';
+                        else if (level.includes('error')) emoji = '❌';
+                        else if (level.includes('warn')) emoji = '⚠️';
+                        else if (level.includes('trace')) emoji = '🔍';
+                        else if (level.includes('perf')) emoji = '⚡';
+                        
+                        logElement.textContent += `${emoji} ${time} ${msg}\n`;
+                    }
+                } else {
+                    // Handle simple messages
+                    let emoji = '📝';
+                    if (line.includes('✅')) emoji = '✅';
+                    else if (line.includes('❌')) emoji = '❌';
+                    else if (line.includes('🔗')) emoji = '🔗';
+                    else if (line.includes('🧠')) emoji = '🧠';
+                    else if (line.includes('Connecting')) emoji = '🔄';
+                    else if (line.includes('Connected')) emoji = '✅';
+                    else if (line.includes('Disconnected')) emoji = '❌';
+                    
+                    const timestamp = new Date().toLocaleTimeString();
+                    logElement.textContent += `${emoji} ${timestamp} ${line}\n`;
+                }
+            });
+            
+            // Keep only last 50 lines for readability
+            const allLines = logElement.textContent.split('\n');
+            if (allLines.length > 50) {
+                logElement.textContent = allLines.slice(-50).join('\n');
+            }
+            
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Log to BrainXchange stream
+        function logToBX(message) {
+            const logElement = document.getElementById('bx-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Start streaming real logs from brain containers
+        async function startLogStreaming() {
+            // Stream logs from each brain
+            ['alice', 'bob', 'carol'].forEach(async (brainName) => {
+                try {
+                    const response = await fetch(`/api/instances/${brainName}/logs/stream`);
+                    if (!response.ok) return;
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const text = decoder.decode(value, { stream: true });
+                        const lines = text.split('\n').filter(line => line.trim());
+                        
+                        lines.forEach(line => {
+                            // Filter interesting logs
+                            if (line.includes('Memory') || line.includes('Query') || 
+                                line.includes('Save') || line.includes('BrainXchange') ||
+                                line.includes('✅') || line.includes('📡') || line.includes('💬')) {
+                                logToBrain(brainName, line, true);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Failed to stream logs for ${brainName}:`, error);
+                }
+            });
+        }
+        
+        // Check and display BrainXchange connection status
+        async function checkBrainXchangeConnection() {
+            try {
+                const response = await fetch('/api/brainxchange/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    logToBX('🌐 BrainXchange Network Status:');
+                    logToBX(`📡 Connected to: ${data.endpoint || 'wss://m3u.dossant.com'}`);
+                    logToBX(`👥 Active nodes: ${data.activeNodes || 'checking...'}`);
+                    logToBX(`💾 Shared memories: ${data.sharedMemories || 'syncing...'}`);
+                } else {
+                    logToBX('🌐 BrainXchange endpoint: wss://m3u.dossant.com');
+                    logToBX('⚡ Waiting for network connection...');
+                }
+            } catch (error) {
+                logToBX('🌐 BrainXchange Network: wss://m3u.dossant.com');
+                logToBX('📡 Network discovery in progress...');
+            }
+            
+            // Check again in 30 seconds
+            setTimeout(checkBrainXchangeConnection, 30000);
+        }
+        
+        // Utility functions
+        function updateStatus(status) {
+            document.getElementById('status').textContent = status;
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+</body>
+</html>

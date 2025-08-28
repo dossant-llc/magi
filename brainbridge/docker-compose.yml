@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  brainbridge:
+    build: .
+    container_name: brainbridge-mcp
+    volumes:
+      # Mount memories directory (persistent storage) - one level up
+      - ../memories:/app/memories
+      # Mount logs directory for debugging
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - MEMORIES_DIR=/app/memories
+      - LOG_FILE=/app/logs/brainbridge-mcp.log
+      - TRACE_MODE=true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - brainbridge-net
+
+  # Optional: Ollama service for embeddings
+  ollama:
+    image: ollama/ollama:latest
+    container_name: brainbridge-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - brainbridge-net
+    # GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+networks:
+  brainbridge-net:
+    driver: bridge
+
+volumes:
+  ollama-data:
+    driver: local
