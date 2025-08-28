@@ -47,7 +47,10 @@ export class EmbeddingService {
     
     this.ollama = new Ollama({ host: ollamaUrl });
     this.loggerService = loggerService;
-    this.indexPath = path.join(process.cwd(), '..', 'memories', 'embeddings');
+    
+    // Use configured memories directory from environment, fallback to default
+    const baseMemoriesDir = process.env.MEMORIES_DIR || path.join(process.cwd(), '..', 'memories');
+    this.indexPath = path.join(baseMemoriesDir, 'embeddings');
     this.embeddingsPath = path.join(this.indexPath, 'embeddings.txt');
   }
 

@@ -9,6 +9,7 @@
     "dev": "concurrently \"npm run start\" \"sleep 5 && npm run dashboard\"",
     "stop": "pkill -f 'node.*brainbridge'",
     "logs": "tail -f logs/*.log",
+    "logs:viewer": "node logs-viewer.js",
     "clean": "rm -rf logs/*.log"
   },
   "keywords": ["brainbridge", "mcp", "ai", "local", "development"],

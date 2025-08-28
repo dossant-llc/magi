@@ -105,7 +105,9 @@ ${content}
             // Save to memory service
             const fs = require('fs/promises');
             const path = require('path');
-            const memoriesDir = path.join(process.cwd(), '..', 'memories', privacyLevel);
+            // Use configured memories directory from environment, fallback to default
+            const baseMemoriesDir = process.env.MEMORIES_DIR || path.join(process.cwd(), '..', 'memories');
+            const memoriesDir = path.join(baseMemoriesDir, privacyLevel);
             await fs.mkdir(memoriesDir, { recursive: true });
             const filePath = path.join(memoriesDir, filename);
             await fs.writeFile(filePath, markdownContent, 'utf8');
@@ -337,12 +339,14 @@ If the memories don't contain enough information to fully answer the question, s
             });
             throw new Error(`Search unavailable: ${error instanceof Error ? error.message : String(error)}`);
         }
-        // DISABLED: Fallback to keyword search
-        throw new Error('This code should not be reached - vector search should have succeeded or thrown');
+        // Fallback to keyword search when vector search returns no results
+        this.loggerService.log('Vector search returned no results, falling back to keyword search');
         const fs = require('fs/promises');
         const path = require('path');
         const glob = require('glob');
-        const memoriesDir = path.join(process.cwd(), 'memories');
+        // Use configured memories directory from environment, fallback to default
+        const baseMemoriesDir = process.env.MEMORIES_DIR || path.join(process.cwd(), '..', 'memories');
+        const memoriesDir = baseMemoriesDir;
         const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
         const maxLevel = privacyLevels.indexOf(maxPrivacy);
         const searchDirs = privacyLevels.slice(0, maxLevel + 1);

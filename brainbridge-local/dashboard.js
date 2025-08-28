@@ -169,6 +169,106 @@ app.get('/api/metrics', async (req, res) => {
   }
 });
 
+// API endpoint to stream live logs via Server-Sent Events
+app.get('/api/logs/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({
+    timestamp: new Date().toISOString(),
+    instance: 'system',
+    message: 'Live log stream connected',
+    level: 'info'
+  })}\n\n`);
+
+  // Watch log files for changes
+  const fs = require('fs');
+  const path = require('path');
+  
+  const logWatchers = [];
+  const logPositions = {};
+  
+  // Watch each instance's log file
+  INSTANCES.forEach(instance => {
+    const logFile = path.join(__dirname, 'logs', `${instance.name}.log`);
+    logPositions[instance.name] = 0;
+    
+    try {
+      // Get initial file size to start watching from end
+      const stats = fs.statSync(logFile);
+      logPositions[instance.name] = stats.size;
+      
+      const watcher = fs.watchFile(logFile, { interval: 500 }, (curr, prev) => {
+        if (curr.size > logPositions[instance.name]) {
+          // Read new content
+          const stream = fs.createReadStream(logFile, {
+            start: logPositions[instance.name],
+            end: curr.size
+          });
+          
+          let buffer = '';
+          stream.on('data', chunk => {
+            buffer += chunk.toString();
+          });
+          
+          stream.on('end', () => {
+            const lines = buffer.split('\n').filter(line => line.trim());
+            lines.forEach(line => {
+              const parsed = parseLogLine(line, instance.name);
+              if (parsed) {
+                res.write(`data: ${JSON.stringify(parsed)}\n\n`);
+              }
+            });
+          });
+          
+          logPositions[instance.name] = curr.size;
+        }
+      });
+      
+      logWatchers.push(() => fs.unwatchFile(logFile));
+    } catch (error) {
+      console.error(`Failed to watch ${logFile}:`, error.message);
+    }
+  });
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    logWatchers.forEach(cleanup => cleanup());
+  });
+});
+
+// Parse log lines into structured format
+function parseLogLine(line, instance) {
+  // Match the log format: timestamp | level | message
+  const match = line.match(/^[^│]*│\s*\[.*?\]\s*│\s*(.+)$/);
+  if (!match) return null;
+  
+  const message = match[1];
+  
+  // Extract timestamp from beginning of line
+  const timeMatch = line.match(/(\d{2}:\d{2}:\d{2})/);
+  const timestamp = timeMatch ? timeMatch[1] : new Date().toLocaleTimeString().slice(0, 8);
+  
+  // Determine log level from emoji/color
+  let level = 'info';
+  if (line.includes('🚨') || line.includes('[31m')) level = 'error';
+  else if (line.includes('⚡') || line.includes('[32m')) level = 'perf';
+  else if (line.includes('🔍') || line.includes('[90m')) level = 'trace';
+  
+  // Clean ANSI codes from message
+  const cleanMessage = message.replace(/\x1b\[[0-9;]*m/g, '');
+  
+  return {
+    timestamp,
+    instance,
+    message: cleanMessage,
+    level
+  };
+}
+
 // API endpoint to execute command in a brain terminal
 app.post('/api/terminal', async (req, res) => {
   const { instance, command } = req.body;
@@ -179,9 +279,53 @@ app.post('/api/terminal', async (req, res) => {
       throw new Error(`Unknown instance: ${instance}`);
     }
     
-    // Parse command - for now just handle basic queries and saves
     let result;
-    if (command.startsWith('query ')) {
+    
+    // Handle explicit commands first
+    if (command === 'help') {
+      result = {
+        content: [{
+          type: 'text',
+          text: `🧠 ${instance.charAt(0).toUpperCase() + instance.slice(1)} Brain Terminal
+
+Available commands:
+• query [question] - Explicitly query memories
+• save [content] - Explicitly save content to memory  
+• help - Show this help
+• clear - Clear terminal
+• auto [on|off] - Toggle auto-routing mode (default: on)
+
+🎯 Auto-routing mode (default):
+Just type naturally! The AI will detect your intent:
+• "magi, what's @alice's favorite food?" → Cross-brain query to Alice
+• "remember that I like pizza" → Save to memory
+• "what do I know about jazz?" → Query your memories
+• "@bob what music do you like?" → Query Bob's memories
+
+The terminal understands natural language and routes intelligently!`
+        }]
+      };
+    } else if (command === 'clear') {
+      result = { content: [{ type: 'text', text: '' }], clear: true };
+    } else if (command.startsWith('auto ')) {
+      const mode = command.substring(5).trim();
+      if (mode === 'on' || mode === 'off') {
+        result = {
+          content: [{
+            type: 'text',
+            text: `Auto-routing mode ${mode === 'on' ? 'enabled' : 'disabled'}. ${mode === 'on' ? 'Just type naturally!' : 'Use explicit commands like "query" or "save".'}`
+          }]
+        };
+      } else {
+        result = {
+          content: [{
+            type: 'text',
+            text: `Usage: auto [on|off]. Current mode: on (default)`
+          }]
+        };
+      }
+    } else if (command.startsWith('query ')) {
+      // Explicit query command
       const question = command.substring(6);
       const mcpQuery = {
         method: 'tools/call',
@@ -199,6 +343,7 @@ app.post('/api/terminal', async (req, res) => {
       
       result = await response.json();
     } else if (command.startsWith('save ')) {
+      // Explicit save command
       const content = command.substring(5);
       const mcpQuery = {
         method: 'tools/call',
@@ -215,22 +360,9 @@ app.post('/api/terminal', async (req, res) => {
       });
       
       result = await response.json();
-    } else if (command === 'help') {
-      result = {
-        content: [{
-          type: 'text',
-          text: `Available commands:\n- query [question] - Query memories\n- save [content] - Save content to memory\n- help - Show this help\n- clear - Clear terminal`
-        }]
-      };
-    } else if (command === 'clear') {
-      result = { content: [{ type: 'text', text: '' }], clear: true };
     } else {
-      result = {
-        content: [{
-          type: 'text',
-          text: `Unknown command: ${command}\nType 'help' for available commands`
-        }]
-      };
+      // AUTO MODE: Intelligent routing based on natural language
+      result = await handleAutoCommand(command, instance, targetInstance);
     }
     
     res.json(result);
@@ -243,6 +375,105 @@ app.post('/api/terminal', async (req, res) => {
     });
   }
 });
+
+// Intelligent command routing using simple pattern detection
+async function handleAutoCommand(command, fromInstance, targetInstanceConfig) {
+  const lowerCommand = command.toLowerCase();
+  
+  // Detect @mentions for cross-brain queries
+  const mentionMatch = command.match(/@(\w+)/i);
+  if (mentionMatch) {
+    const mentionedBrain = mentionMatch[1].toLowerCase();
+    const availableBrains = ['alice', 'bob', 'carol'];
+    
+    if (availableBrains.includes(mentionedBrain)) {
+      // Route to the mentioned brain
+      const targetInstance = INSTANCES.find(i => i.name === mentionedBrain);
+      const cleanQuestion = command.replace(/@\w+/gi, '').replace(/^(magi,?\s*|hey\s*|hi\s*)/i, '').trim();
+      
+      const mcpQuery = {
+        method: 'tools/call',
+        params: {
+          name: 'ai_query_memories',
+          arguments: { question: cleanQuestion }
+        }
+      };
+      
+      const response = await fetch(`http://localhost:${targetInstance.port}/mcp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mcpQuery)
+      });
+      
+      const result = await response.json();
+      
+      // Add routing info to response
+      if (result.content && result.content[0]) {
+        result.content[0].text = `🎯 Routed to ${mentionedBrain}:\n\n${result.content[0].text}`;
+      }
+      
+      return result;
+    }
+  }
+  
+  // Detect save/remember intent
+  const savePatterns = [
+    /^(remember|save|store|note|magi save)/i,
+    /^(i like|my favorite|i prefer|i enjoy)/i,
+    /^(today i|yesterday i|i just|i recently)/i
+  ];
+  
+  if (savePatterns.some(pattern => pattern.test(command))) {
+    const mcpQuery = {
+      method: 'tools/call',
+      params: {
+        name: 'ai_save_memory',
+        arguments: { content: command }
+      }
+    };
+    
+    const response = await fetch(`http://localhost:${targetInstanceConfig.port}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mcpQuery)
+    });
+    
+    const result = await response.json();
+    
+    // Add routing info
+    if (result.content && result.content[0]) {
+      result.content[0].text = `💾 Auto-saved to ${fromInstance}'s memories:\n\n${result.content[0].text}`;
+    }
+    
+    return result;
+  }
+  
+  // Default: treat as query
+  const cleanQuestion = command.replace(/^(magi,?\s*|hey\s*|hi\s*)/i, '').trim();
+  
+  const mcpQuery = {
+    method: 'tools/call',
+    params: {
+      name: 'ai_query_memories',
+      arguments: { question: cleanQuestion }
+    }
+  };
+  
+  const response = await fetch(`http://localhost:${targetInstanceConfig.port}/mcp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(mcpQuery)
+  });
+  
+  const result = await response.json();
+  
+  // Add routing info
+  if (result.content && result.content[0]) {
+    result.content[0].text = `🔍 Searched ${fromInstance}'s memories:\n\n${result.content[0].text}`;
+  }
+  
+  return result;
+}
 
 // Serve the dashboard HTML
 app.get('/', (req, res) => {
@@ -397,10 +628,17 @@ app.get('/', (req, res) => {
     .bob { color: #FFD700; }
     .carol { color: #DA70D6; }
     .bx { color: #ff6b6b; }
+    .system { color: #90EE90; }
     
     .log-message {
       flex: 1;
     }
+    
+    /* Log level styling */
+    .log-entry.error .log-message { color: #ff4444; }
+    .log-entry.perf .log-message { color: #32cd32; }
+    .log-entry.trace .log-message { color: #888888; }
+    .log-entry.info .log-message { color: #e0e0e0; }
     
     .brainxchange-terminal {
       background: #0f1419;
@@ -679,7 +917,7 @@ app.get('/', (req, res) => {
     function updateConsoleLog() {
       const consoleLog = document.getElementById('console-log');
       consoleLog.innerHTML = logEntries.map(entry => \`
-        <div class="log-entry">
+        <div class="log-entry \${entry.type || 'info'}">
           <div class="log-time">\${entry.time}</div>
           <div class="log-instance \${entry.instance}">\${entry.instance.toUpperCase()}</div>
           <div class="log-message">\${entry.message}</div>
@@ -714,13 +952,27 @@ app.get('/', (req, res) => {
     setInterval(refreshStatus, 3000);
     setInterval(refreshMetrics, 5000);
     
-    // Simulate some console logs for demo
-    setTimeout(() => {
-      addConsoleLog('alice', 'Memory indexing started...');
-      setTimeout(() => {
-        addConsoleLog('alice', 'Found 1 memory file to process');
-      }, 1000);
-    }, 2000);
+    // Connect to live log stream
+    const eventSource = new EventSource('/api/logs/stream');
+    
+    eventSource.onmessage = function(event) {
+      try {
+        const logData = JSON.parse(event.data);
+        addConsoleLog(logData.instance, logData.message, logData.level);
+      } catch (error) {
+        console.error('Failed to parse log data:', error);
+      }
+    };
+    
+    eventSource.onerror = function(error) {
+      console.error('EventSource connection error:', error);
+      addConsoleLog('system', 'Log stream connection lost - attempting reconnect...', 'error');
+    };
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+      eventSource.close();
+    });
   </script>
 </body>
 </html>
