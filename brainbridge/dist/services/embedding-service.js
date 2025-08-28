@@ -74,7 +74,14 @@ class EmbeddingService {
             return response.embedding;
         }
         catch (error) {
-            this.loggerService.log(`Embedding generation failed: ${error}`, 'error');
+            this.loggerService.error('Embedding generation failed', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                contentLength: content.length,
+                ollamaHost: 'http://127.0.0.1:11434',
+                model: 'nomic-embed-text',
+                cause: error instanceof Error && error.cause ? error.cause : 'Unknown - likely Ollama server not running or model not available'
+            });
             throw error;
         }
     }
@@ -336,7 +343,17 @@ class EmbeddingService {
             return finalResults;
         }
         catch (error) {
-            this.loggerService.log(`Vector search failed: ${error}`, 'error');
+            this.loggerService.error('Vector search failed', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                query,
+                maxResults: limit,
+                threshold: threshold,
+                searchQuery: query,
+                indexExists: require('fs').existsSync(this.embeddingsPath),
+                ollamaHost: 'http://127.0.0.1:11434',
+                cause: 'Likely embedding generation failed or vector index corrupted'
+            });
             throw error;
         }
     }

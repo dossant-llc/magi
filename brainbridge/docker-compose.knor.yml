@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  brainbridge-knor:
+    build: .
+    container_name: brainbridge-knor
+    volumes:
+      # Mount knor-specific memories directory - one level up
+      - ../memories.knor:/app/memories
+      # Mount logs to knor-specific subdirectory
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - MEMORIES_DIR=/app/memories
+      - LOG_FILE=/app/logs/brainbridge-knor.log
+      - TRACE_MODE=true
+      - INSTANCE_NAME=knor
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - brainbridge-knor-net
+
+  # Dedicated Ollama instance for knor
+  ollama-knor:
+    image: ollama/ollama:latest
+    container_name: brainbridge-ollama-knor
+    ports:
+      - "11435:11434"  # Different port to avoid conflicts
+    volumes:
+      - ollama-knor-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - brainbridge-knor-net
+
+networks:
+  brainbridge-knor-net:
+    driver: bridge
+
+volumes:
+  ollama-knor-data:
+    driver: local

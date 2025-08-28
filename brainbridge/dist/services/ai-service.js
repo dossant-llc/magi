@@ -321,7 +321,14 @@ If the memories don't contain enough information to fully answer the question, s
             }
         }
         catch (error) {
-            this.loggerService.trace('Vector search failed, falling back to keyword search', { error });
+            this.loggerService.warn('Vector search failed, falling back to keyword search', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                searchQuery: query,
+                searchLimit: limit,
+                privacy: maxPrivacy,
+                fallbackReason: 'Vector search unavailable - using text-based search instead'
+            });
         }
         // Fallback to keyword search
         this.loggerService.trace('Using fallback keyword search');

@@ -45,6 +45,7 @@ const express_1 = __importDefault(require("express"));
 const index_js_2 = require("./services/index.js");
 const index_js_3 = require("./handlers/index.js");
 const index_js_4 = require("./routes/index.js");
+const brainxchange_integration_js_1 = require("./integrations/brainxchange-integration.js");
 class BrainBridgeServer {
     server;
     loggerService;
@@ -53,9 +54,10 @@ class BrainBridgeServer {
     memoryHandler;
     patternHandler;
     constructor() {
-        // Initialize services
-        const memoriesDir = path.join(process.cwd(), '..', 'memories');
-        const logFile = path.join(__dirname, '..', 'logs', 'brainbridge-mcp.log');
+        // Initialize services with environment configuration
+        const instanceName = process.env.INSTANCE_NAME || 'default';
+        const memoriesDir = process.env.MEMORIES_DIR || path.join(process.cwd(), '..', 'memories');
+        const logFile = process.env.LOG_FILE || path.join(__dirname, '..', 'logs', `brainbridge-${instanceName}.log`);
         this.loggerService = new index_js_2.LoggerService(logFile);
         this.memoryService = new index_js_2.MemoryService(memoriesDir, this.loggerService);
         this.aiService = new index_js_2.AIService(this.loggerService);
@@ -72,30 +74,88 @@ class BrainBridgeServer {
                 resources: {},
             },
         });
-        this.loggerService.log('BrainBridge MCP Server initialized');
+        this.loggerService.winston.info('BrainBridge MCP Server initialized', {
+            component: 'BrainBridgeServer',
+            action: 'initialize',
+            instanceName,
+            memoriesDir,
+            logFile
+        });
         this.setupHandlers();
+        this.initializeBrainXchange();
+    }
+    async initializeBrainXchange() {
+        // Initialize BrainXchange integration with environment variables
+        const userEmail = process.env.BRAINXCHANGE_EMAIL || 'user@example.com';
+        const userName = process.env.BRAINXCHANGE_NAME || 'User';
+        try {
+            this.loggerService.winston.info('Initializing BrainXchange integration', {
+                component: 'BrainBridgeServer',
+                action: 'initialize_brainxchange',
+                userEmail,
+                userName
+            });
+            await brainxchange_integration_js_1.brainXchangeIntegration.initialize(userEmail, userName, this.memoryService);
+            this.loggerService.winston.info('BrainXchange integration initialized successfully', {
+                component: 'BrainBridgeServer',
+                action: 'brainxchange_ready',
+                userEmail,
+                userName
+            });
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.loggerService.winston.warn('BrainXchange integration failed - continuing without', {
+                component: 'BrainBridgeServer',
+                action: 'brainxchange_failed',
+                error: errorMessage,
+                userEmail,
+                userName
+            });
+            console.error('⚠️  BrainXchange integration failed:', errorMessage);
+            console.error('   Continuing without BrainXchange support...');
+        }
     }
     setupHandlers() {
         // List available tools
         this.server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
-            this.loggerService.log('Received ListToolsRequest');
+            this.loggerService.winston.info('Received MCP request', {
+                component: 'BrainBridgeServer',
+                action: 'list_tools',
+                requestType: 'ListToolsRequest'
+            });
             return this.getToolsList();
         });
         // List available resources
         this.server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
-            this.loggerService.log('Received ListResourcesRequest');
+            this.loggerService.winston.info('Received MCP request', {
+                component: 'BrainBridgeServer',
+                action: 'list_resources',
+                requestType: 'ListResourcesRequest'
+            });
             return this.getResourcesList();
         });
         // Read resource content
         this.server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
             const uri = request.params.uri;
-            this.loggerService.log(`Received ReadResourceRequest for: ${uri}`);
+            this.loggerService.winston.info('Received MCP request', {
+                component: 'BrainBridgeServer',
+                action: 'read_resource',
+                requestType: 'ReadResourceRequest',
+                uri
+            });
             return this.readResource(uri);
         });
         // Handle tool calls
         this.server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
-            this.loggerService.log(`Received CallToolRequest: ${name} with args: ${JSON.stringify(args)}`);
+            this.loggerService.winston.info('Received MCP request', {
+                component: 'BrainBridgeServer',
+                action: 'call_tool',
+                requestType: 'CallToolRequest',
+                toolName: name,
+                args
+            });
             if (!args) {
                 throw new Error('Missing arguments');
             }
@@ -238,6 +298,21 @@ class BrainBridgeServer {
                         required: [],
                     },
                 },
+                // BrainXchange tools
+                {
+                    name: 'brainxchange_command',
+                    description: 'Handle BrainXchange P2P communication commands (magi create invite, magi connect, magi ask)',
+                    inputSchema: {
+                        type: 'object',
+                        properties: {
+                            command: {
+                                type: 'string',
+                                description: 'BrainXchange command to execute',
+                            },
+                        },
+                        required: ['command'],
+                    },
+                },
             ],
         };
     }
@@ -284,6 +359,8 @@ class BrainBridgeServer {
                 return await this.handleAIStatus();
             case 'toggle_trace_mode':
                 return await this.handleToggleTraceMode(args);
+            case 'brainxchange_command':
+                return await this.handleBrainXchangeCommand(args);
             default:
                 throw new Error(`Unknown tool: ${name}`);
         }
@@ -294,24 +371,41 @@ class BrainBridgeServer {
         if (!content || typeof content !== 'string') {
             throw new Error('Content is required and must be a string');
         }
-        this.loggerService.log(`AI Save Memory: ${content.slice(0, 100)}...`);
+        this.loggerService.winston.info('AI Save Memory request', {
+            component: 'BrainBridgeServer',
+            action: 'ai_save_memory',
+            contentLength: content.length,
+            contentPreview: content.slice(0, 100),
+            privacy_level,
+            category_hint
+        });
         // Start async save process in background
         this.aiService.saveMemoryWithAI(content, privacy_level, category_hint)
             .then(result => {
             if (result.success) {
-                this.loggerService.log(`Background save completed: ${result.filePath}`);
-                this.loggerService.trace('Save details', {
+                this.loggerService.winston.info('Background save completed', {
+                    component: 'BrainBridgeServer',
+                    action: 'ai_save_memory_complete',
+                    filePath: result.filePath,
                     category: result.aiAnalysis?.category,
                     tags: result.aiAnalysis?.tags,
                     title: result.aiAnalysis?.title
                 });
             }
             else {
-                this.loggerService.log(`Background save failed: ${result.error}`, 'error');
+                this.loggerService.winston.error('Background save failed', {
+                    component: 'BrainBridgeServer',
+                    action: 'ai_save_memory_failed',
+                    error: result.error
+                });
             }
         })
             .catch(error => {
-            this.loggerService.log(`Background save error: ${error}`, 'error');
+            this.loggerService.winston.error('Background save error', {
+                component: 'BrainBridgeServer',
+                action: 'ai_save_memory_error',
+                error: error.message || error
+            });
         });
         // Return immediately with acknowledgment
         return {
@@ -328,7 +422,14 @@ class BrainBridgeServer {
         if (!question || typeof question !== 'string') {
             throw new Error('Question is required and must be a string');
         }
-        this.loggerService.log(`AI Query Memories: "${question}" (${synthesis_mode} mode)`);
+        this.loggerService.winston.info('AI Query Memories request', {
+            component: 'BrainBridgeServer',
+            action: 'ai_query_memories',
+            question,
+            synthesis_mode,
+            max_privacy,
+            limit
+        });
         if (synthesis_mode === 'raw') {
             // Fast mode: Just return the raw memories, let Claude do synthesis
             const rawResult = await this.aiService.searchMemoriesOnly(question, max_privacy, limit);
@@ -390,7 +491,10 @@ class BrainBridgeServer {
         }
     }
     async handleAIStatus() {
-        this.loggerService.log('AI Status check requested');
+        this.loggerService.winston.info('AI Status check requested', {
+            component: 'BrainBridgeServer',
+            action: 'ai_status'
+        });
         const status = await this.aiService.getAIStatus();
         let response = '🤖 **mAGIc AI System Status**\n\n';
         // Ollama status
@@ -464,15 +568,76 @@ class BrainBridgeServer {
             ]
         };
     }
+    async handleBrainXchangeCommand(args) {
+        const { command } = args;
+        if (!command || typeof command !== 'string') {
+            throw new Error('Command is required and must be a string');
+        }
+        this.loggerService.winston.info('BrainXchange command received', {
+            component: 'BrainBridgeServer',
+            action: 'brainxchange_command',
+            command
+        });
+        try {
+            const response = await brainxchange_integration_js_1.brainXchangeIntegration.handleCommand(command);
+            if (response) {
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: response
+                        }
+                    ]
+                };
+            }
+            else {
+                // Not a BrainXchange command
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `❓ Unknown BrainXchange command: "${command}"\n\n${brainxchange_integration_js_1.brainXchangeIntegration.getHelpText()}`
+                        }
+                    ]
+                };
+            }
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.loggerService.winston.error('BrainXchange command failed', {
+                component: 'BrainBridgeServer',
+                action: 'brainxchange_command_error',
+                command,
+                error: errorMessage
+            });
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `❌ BrainXchange command failed: ${errorMessage}`
+                    }
+                ]
+            };
+        }
+    }
     async runStdio() {
         const transport = new stdio_js_1.StdioServerTransport();
         await this.server.connect(transport);
-        this.loggerService.log('BrainBridge MCP Server running on stdio');
+        this.loggerService.winston.info('BrainBridge MCP Server running', {
+            component: 'BrainBridgeServer',
+            action: 'start_stdio',
+            transport: 'stdio'
+        });
         console.error('BrainBridge MCP Server running on stdio');
     }
     async runHTTP(port = 8147) {
         const app = (0, express_1.default)();
-        this.loggerService.log(`Starting BrainBridge MCP Server on HTTP port ${port}`);
+        this.loggerService.winston.info('Starting BrainBridge MCP Server', {
+            component: 'BrainBridgeServer',
+            action: 'start_http',
+            transport: 'http',
+            port
+        });
         app.use(express_1.default.json());
         app.use((req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');

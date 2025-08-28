@@ -163,5 +163,9 @@ class LoggerService {
     getWinstonLogger() {
         return this.logger;
     }
+    // Direct access to winston logger for structured logging
+    get winston() {
+        return this.logger;
+    }
 }
 exports.LoggerService = LoggerService;

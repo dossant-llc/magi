@@ -13,6 +13,7 @@ import express from 'express';
 import { LoggerService, MemoryService, AIService } from './services/index.js';
 import { MemoryHandler, PatternHandler } from './handlers/index.js';
 import { McpRoutes, HealthRoutes } from './routes/index.js';
+import { brainXchangeIntegration } from './integrations/brainxchange-integration.js';
 
 class BrainBridgeServer {
   private server: Server;
@@ -23,9 +24,10 @@ class BrainBridgeServer {
   private patternHandler: PatternHandler;
 
   constructor() {
-    // Initialize services
-    const memoriesDir = path.join(process.cwd(), '..', 'memories');
-    const logFile = path.join(__dirname, '..', 'logs', 'brainbridge-mcp.log');
+    // Initialize services with environment configuration
+    const instanceName = process.env.INSTANCE_NAME || 'default';
+    const memoriesDir = process.env.MEMORIES_DIR || path.join(process.cwd(), '..', 'memories');
+    const logFile = process.env.LOG_FILE || path.join(__dirname, '..', 'logs', `brainbridge-${instanceName}.log`);
     
     this.loggerService = new LoggerService(logFile);
     this.memoryService = new MemoryService(memoriesDir, this.loggerService);
@@ -52,10 +54,47 @@ class BrainBridgeServer {
     this.loggerService.winston.info('BrainBridge MCP Server initialized', { 
       component: 'BrainBridgeServer',
       action: 'initialize',
+      instanceName,
       memoriesDir,
       logFile
     });
     this.setupHandlers();
+    this.initializeBrainXchange();
+  }
+
+  private async initializeBrainXchange() {
+    // Initialize BrainXchange integration with environment variables
+    const userEmail = process.env.BRAINXCHANGE_EMAIL || 'user@example.com';
+    const userName = process.env.BRAINXCHANGE_NAME || 'User';
+    
+    try {
+      this.loggerService.winston.info('Initializing BrainXchange integration', {
+        component: 'BrainBridgeServer',
+        action: 'initialize_brainxchange',
+        userEmail,
+        userName
+      });
+      
+      await brainXchangeIntegration.initialize(userEmail, userName, this.memoryService);
+      
+      this.loggerService.winston.info('BrainXchange integration initialized successfully', {
+        component: 'BrainBridgeServer',
+        action: 'brainxchange_ready',
+        userEmail,
+        userName
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.loggerService.winston.warn('BrainXchange integration failed - continuing without', {
+        component: 'BrainBridgeServer',
+        action: 'brainxchange_failed',
+        error: errorMessage,
+        userEmail,
+        userName
+      });
+      console.error('⚠️  BrainXchange integration failed:', errorMessage);
+      console.error('   Continuing without BrainXchange support...');
+    }
   }
 
   private setupHandlers() {
@@ -246,6 +285,21 @@ class BrainBridgeServer {
             required: [],
           },
         },
+        // BrainXchange tools
+        {
+          name: 'brainxchange_command',
+          description: 'Handle BrainXchange P2P communication commands (magi create invite, magi connect, magi ask)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              command: {
+                type: 'string',
+                description: 'BrainXchange command to execute',
+              },
+            },
+            required: ['command'],
+          },
+        },
       ],
     };
   }
@@ -304,6 +358,8 @@ class BrainBridgeServer {
         return await this.handleAIStatus();
       case 'toggle_trace_mode':
         return await this.handleToggleTraceMode(args);
+      case 'brainxchange_command':
+        return await this.handleBrainXchangeCommand(args);
       
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -536,6 +592,62 @@ class BrainBridgeServer {
         }
       ]
     };
+  }
+
+  private async handleBrainXchangeCommand(args: any) {
+    const { command } = args;
+    
+    if (!command || typeof command !== 'string') {
+      throw new Error('Command is required and must be a string');
+    }
+
+    this.loggerService.winston.info('BrainXchange command received', {
+      component: 'BrainBridgeServer',
+      action: 'brainxchange_command',
+      command
+    });
+    
+    try {
+      const response = await brainXchangeIntegration.handleCommand(command);
+      
+      if (response) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: response
+            }
+          ]
+        };
+      } else {
+        // Not a BrainXchange command
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❓ Unknown BrainXchange command: "${command}"\n\n${brainXchangeIntegration.getHelpText()}`
+            }
+          ]
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.loggerService.winston.error('BrainXchange command failed', {
+        component: 'BrainBridgeServer',
+        action: 'brainxchange_command_error',
+        command,
+        error: errorMessage
+      });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ BrainXchange command failed: ${errorMessage}`
+          }
+        ]
+      };
+    }
   }
 
   async runStdio() {
