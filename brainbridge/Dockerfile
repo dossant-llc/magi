@@ -36,17 +36,18 @@ RUN chown -R brainbridge:brainbridge /app
 # Switch to non-root user
 USER brainbridge
 
-# Expose ports (if needed for HTTP API)
-EXPOSE 3000
+# Expose ports for HTTP API
+EXPOSE 8147
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV MEMORIES_DIR=/app/memories
 ENV LOG_FILE=/app/logs/brainbridge-mcp.log
+ENV MCP_PORT=8147
 
-# Health check
+# Health check - use HTTP endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "console.log('Health check passed')" || exit 1
+    CMD curl -f http://localhost:8147/health || exit 1
 
-# Default command - run MCP server on stdio
-CMD ["node", "dist/server.js", "stdio"]
+# Default command - run MCP server on HTTP
+CMD ["node", "dist/server.js", "http", "8147"]

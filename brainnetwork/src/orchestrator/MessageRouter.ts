@@ -315,7 +315,7 @@ export class MessageRouter extends EventEmitter {
       
       let mcpQuery;
       if (intent === 'query') {
-        // Use ai_query_memories for questions
+        // Use search_memories for questions (fallback when AI unavailable)
         mcpQuery = {
           jsonrpc: "2.0",
           id: 1,
@@ -323,23 +323,22 @@ export class MessageRouter extends EventEmitter {
           params: {
             name: "ai_query_memories",
             arguments: {
-              question: query,
-              limit: 5,
-              synthesis_mode: "raw"
+              question: query.replace(/^magi,?\s*/i, '').trim()
             }
           }
         };
       } else {
-        // Use ai_save_memory for statements/memories
+        // Use add_memory for statements/memories (fallback when AI categorization is unavailable)
         mcpQuery = {
           jsonrpc: "2.0",
           id: 1,
           method: "tools/call",
           params: {
-            name: "ai_save_memory",
+            name: "add_memory",
             arguments: {
+              title: query.substring(0, 50) + (query.length > 50 ? '...' : ''),
               content: query,
-              privacy_level: "personal"
+              category: "personal"
             }
           }
         };
@@ -361,39 +360,39 @@ export class MessageRouter extends EventEmitter {
 
   async sendMcpQuery(instance: BrainInstance, queryData: string): Promise<string> {
     try {
-      // Execute MCP query via docker exec with proper escaping
-      // Use printf to avoid shell escaping issues with quotes
-      const command = `printf '%s\\n' ${JSON.stringify(queryData)} | ${instance.mcpEndpoint}`;
-      const { stdout, stderr } = await execAsync(command, { timeout: 30000 });
+      // Execute MCP query via HTTP POST to the persistent server
+      const mcpQuery = JSON.parse(queryData);
+      const httpEndpoint = `${instance.mcpEndpoint}/mcp`;
+      
+      console.log(`🔗 Making HTTP request to ${httpEndpoint}`);
+      
+      const response = await fetch(httpEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: queryData
+      });
 
-      if (stderr && stderr.includes('error')) {
-        throw new Error(`Instance error: ${stderr}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Parse MCP response
-      const lines = stdout.split('\n').filter(line => line.trim());
-      let mcpResponse = null;
-
-      // Find the JSON response line (ignore log output)
-      for (const line of lines) {
-        try {
-          const parsed = JSON.parse(line);
-          if (parsed.jsonrpc) {
-            mcpResponse = parsed;
-            break;
-          }
-        } catch (e) {
-          // Skip non-JSON lines (logs)
-          continue;
-        }
-      }
+      const mcpResponse = await response.json();
 
       if (!mcpResponse) {
         throw new Error('No valid MCP response received');
       }
 
       if (mcpResponse.error) {
-        throw new Error(`MCP Error: ${mcpResponse.error.message || mcpResponse.error}`);
+        const errorMsg = mcpResponse.error.message || mcpResponse.error;
+        
+        // FATAL ERROR: AI tools not available - do NOT fallback to inferior search
+        if (errorMsg.includes('Unknown tool: ai_query_memories') || errorMsg.includes('ai_query_memories')) {
+          throw new Error(`🚨 FATAL: AI-powered search is not available! This is a system failure - Ollama/AI services must be working for proper semantic search. Raw error: ${errorMsg}`);
+        }
+        
+        throw new Error(`MCP Error: ${errorMsg}`);
       }
 
       return mcpResponse.result?.content || JSON.stringify(mcpResponse.result) || 'Command completed successfully';
@@ -495,7 +494,7 @@ export class MessageRouter extends EventEmitter {
       /\b(know|remember|recall|think|believe)\b.*\?/
     ];
     
-    // Memory/save patterns - should use ai_save_memory  
+    // Memory/save patterns - will use add_memory (fallback when AI unavailable)  
     const savePatterns = [
       // Self-description
       /^(about me|my name is|i am|i'm|i like|i love|i hate|i prefer)\b/,
@@ -539,5 +538,64 @@ export class MessageRouter extends EventEmitter {
     this.routingStats.clear();
     this.connections.clear();
     console.log('📊 Routing statistics reset');
+  }
+
+  // Smart query cleaning for better search results
+  private cleanSearchQuery(query: string): string {
+    // Step 1: Remove magi wake word but preserve everything else initially
+    let cleaned = query.replace(/^magi,?\s*/i, '').trim();
+    
+    // Step 2: Remove @mentions for search (they're used for routing, not content search)
+    // The @mention has already done its job for routing, now we focus on content search
+    cleaned = cleaned.replace(/@\w+\s*/g, '').trim();
+    
+    // Step 3: Remove conversational fluff but keep key search terms
+    // Remove question words at start: "what is", "what are", "does", etc.
+    cleaned = cleaned.replace(/^(what\s+(is|are|do|does|did|will|would|can|could)\s+)/gi, '');
+    cleaned = cleaned.replace(/^(does|do|did|will|would|can|could)\s+/gi, '');
+    
+    // Step 4: Remove filler words but preserve core meaning
+    // Remove words like "likes", "preferences" when they're not the main subject
+    const fillerWords = /\b(likes?|preferences?|about|regarding|concerning|related to)\b/gi;
+    cleaned = cleaned.replace(fillerWords, ' ');
+    
+    // Step 5: Clean up extra whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Step 6: Extract the most specific/important terms first
+    // Priority order: specific nouns > general nouns > adjectives
+    const specificTerms = cleaned.match(/\b(?:sushi|wine|coffee|tea|pizza|pasta|music|jazz|rock|classical|book|novel|movie|film|sport|football|soccer|basketball|travel|japan|france|italy|work|job|programming|coding|art|painting|photography)\b/gi);
+    const generalTerms = cleaned.match(/\b(?:food|drink|hobby|color|favorite|skill|knowledge|preference)\b/gi);
+    
+    // Step 7: Choose the best search term
+    let finalQuery = '';
+    
+    if (specificTerms && specificTerms.length > 0) {
+      // Use the first specific term (most likely to get results)
+      finalQuery = specificTerms[0];
+    } else if (generalTerms && generalTerms.length > 0) {
+      // Use general term if no specific ones found
+      finalQuery = generalTerms[0];
+    } else if (cleaned && cleaned.length > 0) {
+      // Take the first meaningful word from cleaned query
+      const words = cleaned.split(/\s+/).filter(word => 
+        word.length > 2 && 
+        !word.match(/^(the|and|or|is|are|was|were|do|does|did|will|would|can|could|what|how|when|where|why)$/i)
+      );
+      finalQuery = words[0] || cleaned;
+    }
+    
+    // Step 8: Fallback if nothing meaningful found
+    if (!finalQuery || finalQuery.length < 2) {
+      // Extract any meaningful words as last resort
+      const words = query.replace(/^magi,?\s*/i, '').split(/\s+/).filter(word => 
+        word.length > 2 && 
+        !word.match(/^(@\w+|the|and|or|is|are|was|were|do|does|did|will|would|can|could|what|how|when|where|why|likes?|preferences?)$/i)
+      );
+      finalQuery = words[0] || 'food'; // Ultimate fallback
+    }
+    
+    console.log(`🔍 Query cleaning: "${query}" → "${finalQuery}"`);
+    return finalQuery;
   }
 }

@@ -132,8 +132,8 @@ Rich, contextual logs with visual indicators:
 
 ```
 🔌 [00:26:51.638] INFO: New WebSocket connection • ID:abc123 • From:remote
-👤 [00:27:59.460] INFO: User identified • ID:abc123 • User:john@example.com • (John)
-🎫 [00:28:15.123] INFO: Invitation created • Code:ABC123 • User:john@example.com
+👤 [00:27:59.460] INFO: User identified • ID:abc123 • User:john@example.com • Name:John
+🎫 [00:28:15.123] INFO: Invitation created • Code:ABC123 • User:john@example.com • Name:John
 🤝 [00:28:30.456] INFO: Users connected • Conn:def456 • User1:john • User2:jane
 ❓ [00:28:45.789] INFO: Question forwarded • From:john • To:jane • Length:142chars
 💬 [00:29:01.234] INFO: Answer forwarded • From:jane • To:john • Length:89chars

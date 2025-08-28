@@ -399,18 +399,19 @@ If the memories don't contain enough information to fully answer the question, s
           .slice(0, limit);
       }
     } catch (error) {
-      this.loggerService.warn('Vector search failed, falling back to keyword search', {
+      this.loggerService.error('Vector search failed - NO FALLBACK', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         searchQuery: query,
         searchLimit: limit,
         privacy: maxPrivacy,
-        fallbackReason: 'Vector search unavailable - using text-based search instead'
+        reason: 'Ollama/embedding service unavailable'
       });
+      throw new Error(`Search unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Fallback to keyword search
-    this.loggerService.trace('Using fallback keyword search');
+    // DISABLED: Fallback to keyword search
+    throw new Error('This code should not be reached - vector search should have succeeded or thrown');
     
     const fs = require('fs/promises');
     const path = require('path');

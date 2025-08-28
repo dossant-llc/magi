@@ -4,6 +4,8 @@ services:
   brainbridge-bob:
     build: .
     container_name: brainbridge-bob
+    ports:
+      - "8148:8147"  # Expose MCP HTTP API for Bob
     volumes:
       # Mount instance-specific memories directory
       - ../memories.bob:/app/memories
@@ -17,13 +19,7 @@ services:
       - TRACE_MODE=true
       - OLLAMA_HOST=brainbridge-ollama
       - OLLAMA_PORT=11434
-            - NODE_ENV=production
-      - MEMORIES_DIR=/app/memories
-      - LOG_FILE=/app/logs/brainbridge-bob.log
-      - INSTANCE_NAME=bob
-      - TRACE_MODE=true
-    stdin_open: true
-    tty: true
+      - MCP_PORT=8147
     restart: unless-stopped
     networks:
       - brainbridge-shared-net

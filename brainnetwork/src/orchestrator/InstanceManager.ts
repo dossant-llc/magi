@@ -56,7 +56,7 @@ export class InstanceManager extends EventEmitter {
       name,
       containerName,
       memoriesPath,
-      mcpEndpoint: `docker exec -i ${containerName} node dist/server.js stdio`,
+      mcpEndpoint: `http://localhost:${this.getHttpPort(name)}`,
       status: 'running',
       created: new Date(),
       lastActivity: new Date(),
@@ -206,7 +206,7 @@ export class InstanceManager extends EventEmitter {
       containerId: containerInfo.Id,
       containerName,
       memoriesPath,
-      mcpEndpoint: `docker exec -i ${containerName} node dist/server.js stdio`,
+      mcpEndpoint: `http://localhost:${this.getHttpPort(instanceName)}`,
       status: containerInfo.State === 'running' ? 'running' : 'stopped',
       created: new Date(details.Created),
       lastActivity: details.State?.StartedAt ? new Date(details.State.StartedAt) : undefined,
@@ -326,5 +326,19 @@ networks:
       console.error(`Failed to get logs for ${instance.name}:`, error);
       return [];
     }
+  }
+
+  private getHttpPort(instanceName: string): number {
+    // Map instance names to their HTTP ports
+    const portMap: Record<string, number> = {
+      'alice': 8147,
+      'bob': 8148,
+      'carol': 8149,
+      'default': 8150,
+      'mcp': 8151,
+      'knor': 8152
+    };
+    
+    return portMap[instanceName] || 8150;
   }
 }
