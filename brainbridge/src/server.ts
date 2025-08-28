@@ -59,7 +59,35 @@ class BrainBridgeServer {
       logFile
     });
     this.setupHandlers();
+    
+    // FATAL ERROR CHECK: AI tools must be available
+    this.verifyAIToolsOrDie();
+    
     this.initializeBrainXchange();
+  }
+
+  private verifyAIToolsOrDie() {
+    // Test if AI tools are properly registered
+    const toolsList = this.getToolsList();
+    const hasAIQuery = toolsList.tools.some(t => t.name === 'ai_query_memories');
+    const hasAISave = toolsList.tools.some(t => t.name === 'ai_save_memory');
+    
+    this.loggerService.log(`🔍 Tools verification: Found ${toolsList.tools.length} tools`);
+    this.loggerService.log(`AI Query tool available: ${hasAIQuery}`);
+    this.loggerService.log(`AI Save tool available: ${hasAISave}`);
+    
+    if (!hasAIQuery || !hasAISave) {
+      const error = `🚨 FATAL ERROR: AI-powered tools are not available! 
+This is unacceptable - semantic search requires AI tools.
+Available tools: ${toolsList.tools.map(t => t.name).join(', ')}
+Expected: ai_query_memories, ai_save_memory
+Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`;
+      
+      this.loggerService.log(error);
+      throw new Error(error);
+    }
+    
+    this.loggerService.log('✅ AI tools verification passed');
   }
 
   private async initializeBrainXchange() {
@@ -149,9 +177,10 @@ class BrainBridgeServer {
     });
   }
 
-  private getToolsList() {
-    return {
-      tools: [
+  getToolsList() {
+    try {
+      this.loggerService.log('Building tools list...');
+      const tools = [
         {
           name: 'search_memories',
           description: 'Search through personal memories',
@@ -300,11 +329,20 @@ class BrainBridgeServer {
             required: ['command'],
           },
         },
-      ],
-    };
+      ];
+      
+      this.loggerService.log(`Built ${tools.length} tools successfully`);
+      return { tools };
+      
+    } catch (error) {
+      const errorMsg = `🚨 FATAL ERROR building tools list: ${error}`;
+      this.loggerService.log(errorMsg);
+      console.error(errorMsg);
+      throw new Error(errorMsg); // NO MORE FALLBACKS - FAIL HARD
+    }
   }
 
-  private getResourcesList() {
+  getResourcesList() {
     const knowledgeFiles = this.memoryService.getMemoryFiles();
     return {
       resources: knowledgeFiles.map(file => ({
@@ -315,7 +353,7 @@ class BrainBridgeServer {
     };
   }
 
-  private readResource(uri: string) {
+  readResource(uri: string) {
     if (uri.startsWith('knowledge://')) {
       const filename = uri.replace('knowledge://', '');
       const content = this.memoryService.readMemoryFile(filename);
@@ -333,7 +371,7 @@ class BrainBridgeServer {
     throw new Error(`Resource not found: ${uri}`);
   }
 
-  private async handleToolCall(name: string, args: any) {
+  async handleToolCall(name: string, args: any) {
     switch (name) {
       case 'search_memories':
         return await this.memoryHandler.searchMemories(
@@ -683,7 +721,7 @@ class BrainBridgeServer {
     });
 
     // Use route handlers
-    const mcpRoutes = new McpRoutes(this.memoryService);
+    const mcpRoutes = new McpRoutes(this);
     const healthRoutes = new HealthRoutes();
     
     app.use(mcpRoutes.getRouter());

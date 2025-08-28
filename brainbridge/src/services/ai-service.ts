@@ -15,9 +15,17 @@ export class AIService {
   private embeddingService: EmbeddingService;
 
   constructor(loggerService: LoggerService) {
-    this.ollama = new Ollama({ host: 'http://127.0.0.1:11434' });
+    // Use Docker environment variables or fallback to localhost
+    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
+    const ollamaPort = process.env.OLLAMA_PORT || '11434';
+    const ollamaUrl = `http://${ollamaHost}:${ollamaPort}`;
+    
+    this.ollama = new Ollama({ host: ollamaUrl });
     this.loggerService = loggerService;
     this.embeddingService = new EmbeddingService(loggerService);
+    
+    // Log the Ollama connection info for debugging
+    this.loggerService.log(`AI Service connecting to Ollama at: ${ollamaUrl}`);
   }
 
   /**

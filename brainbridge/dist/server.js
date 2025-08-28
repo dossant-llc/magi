@@ -82,7 +82,28 @@ class BrainBridgeServer {
             logFile
         });
         this.setupHandlers();
+        // FATAL ERROR CHECK: AI tools must be available
+        this.verifyAIToolsOrDie();
         this.initializeBrainXchange();
+    }
+    verifyAIToolsOrDie() {
+        // Test if AI tools are properly registered
+        const toolsList = this.getToolsList();
+        const hasAIQuery = toolsList.tools.some(t => t.name === 'ai_query_memories');
+        const hasAISave = toolsList.tools.some(t => t.name === 'ai_save_memory');
+        this.loggerService.log(`🔍 Tools verification: Found ${toolsList.tools.length} tools`);
+        this.loggerService.log(`AI Query tool available: ${hasAIQuery}`);
+        this.loggerService.log(`AI Save tool available: ${hasAISave}`);
+        if (!hasAIQuery || !hasAISave) {
+            const error = `🚨 FATAL ERROR: AI-powered tools are not available! 
+This is unacceptable - semantic search requires AI tools.
+Available tools: ${toolsList.tools.map(t => t.name).join(', ')}
+Expected: ai_query_memories, ai_save_memory
+Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`;
+            this.loggerService.log(error);
+            throw new Error(error);
+        }
+        this.loggerService.log('✅ AI tools verification passed');
     }
     async initializeBrainXchange() {
         // Initialize BrainXchange integration with environment variables
@@ -163,8 +184,9 @@ class BrainBridgeServer {
         });
     }
     getToolsList() {
-        return {
-            tools: [
+        try {
+            this.loggerService.log('Building tools list...');
+            const tools = [
                 {
                     name: 'search_memories',
                     description: 'Search through personal memories',
@@ -313,8 +335,16 @@ class BrainBridgeServer {
                         required: ['command'],
                     },
                 },
-            ],
-        };
+            ];
+            this.loggerService.log(`Built ${tools.length} tools successfully`);
+            return { tools };
+        }
+        catch (error) {
+            const errorMsg = `🚨 FATAL ERROR building tools list: ${error}`;
+            this.loggerService.log(errorMsg);
+            console.error(errorMsg);
+            throw new Error(errorMsg); // NO MORE FALLBACKS - FAIL HARD
+        }
     }
     getResourcesList() {
         const knowledgeFiles = this.memoryService.getMemoryFiles();
@@ -650,7 +680,7 @@ class BrainBridgeServer {
             next();
         });
         // Use route handlers
-        const mcpRoutes = new index_js_4.McpRoutes(this.memoryService);
+        const mcpRoutes = new index_js_4.McpRoutes(this);
         const healthRoutes = new index_js_4.HealthRoutes();
         app.use(mcpRoutes.getRouter());
         app.use(healthRoutes.getRouter());

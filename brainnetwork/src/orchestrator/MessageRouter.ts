@@ -316,6 +316,7 @@ export class MessageRouter extends EventEmitter {
       let mcpQuery;
       if (intent === 'query') {
         // Use search_memories for questions (fallback when AI unavailable)
+        // Try AI query first, fallback to basic search if unavailable
         mcpQuery = {
           jsonrpc: "2.0",
           id: 1,
@@ -323,7 +324,8 @@ export class MessageRouter extends EventEmitter {
           params: {
             name: "ai_query_memories",
             arguments: {
-              question: query.replace(/^magi,?\s*/i, '').trim()
+              question: query.replace(/^magi,?\s*/i, '').trim(),
+              synthesis_mode: "raw" // Fast mode, let Claude handle synthesis
             }
           }
         };
@@ -387,9 +389,9 @@ export class MessageRouter extends EventEmitter {
       if (mcpResponse.error) {
         const errorMsg = mcpResponse.error.message || mcpResponse.error;
         
-        // FATAL ERROR: AI tools not available - do NOT fallback to inferior search
+        // FATAL ERROR: AI tools not available - NO FALLBACKS!
         if (errorMsg.includes('Unknown tool: ai_query_memories') || errorMsg.includes('ai_query_memories')) {
-          throw new Error(`🚨 FATAL: AI-powered search is not available! This is a system failure - Ollama/AI services must be working for proper semantic search. Raw error: ${errorMsg}`);
+          throw new Error(`🚨 FATAL: AI-powered search is not available! This is unacceptable - semantic search requires AI tools. Fix the system! Raw error: ${errorMsg}`);
         }
         
         throw new Error(`MCP Error: ${errorMsg}`);

@@ -40,7 +40,12 @@ export class EmbeddingService {
   private embeddingsPath: string;
   
   constructor(loggerService: LoggerService) {
-    this.ollama = new Ollama({ host: 'http://127.0.0.1:11434' });
+    // Use Docker environment variables or fallback to localhost
+    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
+    const ollamaPort = process.env.OLLAMA_PORT || '11434';
+    const ollamaUrl = `http://${ollamaHost}:${ollamaPort}`;
+    
+    this.ollama = new Ollama({ host: ollamaUrl });
     this.loggerService = loggerService;
     this.indexPath = path.join(process.cwd(), '..', 'memories', 'embeddings');
     this.embeddingsPath = path.join(this.indexPath, 'embeddings.txt');
@@ -75,7 +80,7 @@ export class EmbeddingService {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         contentLength: content.length,
-        ollamaHost: 'http://127.0.0.1:11434',
+        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
         model: 'nomic-embed-text',
         cause: error instanceof Error && error.cause ? error.cause : 'Unknown - likely Ollama server not running or model not available'
       });
@@ -366,7 +371,7 @@ export class EmbeddingService {
         threshold: threshold,
         searchQuery: query,
         indexExists: require('fs').existsSync(this.embeddingsPath),
-        ollamaHost: 'http://127.0.0.1:11434',
+        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
         cause: 'Likely embedding generation failed or vector index corrupted'
       });
       throw error;
