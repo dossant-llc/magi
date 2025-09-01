@@ -32,8 +32,8 @@ function startStreamingLogs() {
   console.log(`${colors.hint}Press Ctrl+C to exit${colors.reset}\n`);
   
   // Try to find the most recent log file
-  const logsDir = path.join(process.cwd(), 'brainbridge', 'logs');
-  let logFile = path.join(logsDir, 'brainbridge-mcp.log');
+  const logsDir = path.join(process.cwd(), 'services', 'brainbridge', 'logs');
+  let logFile = path.join(logsDir, 'brainbridge-default.log');
   
   try {
     const logFiles = fs.readdirSync(logsDir)
