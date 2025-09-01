@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="rocketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="flameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff4757;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rocket body -->
+  <ellipse cx="50" cy="45" rx="12" ry="25" fill="url(#rocketGradient)"/>
+  
+  <!-- Rocket nose -->
+  <path d="M50 20 L38 45 L62 45 Z" fill="url(#rocketGradient)"/>
+  
+  <!-- Window -->
+  <circle cx="50" cy="35" r="6" fill="#fff"/>
+  <circle cx="50" cy="35" r="4" fill="#6366f1" opacity="0.3"/>
+  
+  <!-- Fins -->
+  <path d="M38 60 L30 75 L38 70 Z" fill="url(#rocketGradient)"/>
+  <path d="M62 60 L70 75 L62 70 Z" fill="url(#rocketGradient)"/>
+  
+  <!-- Flames -->
+  <path d="M42 70 Q45 80 42 90 Q47 85 50 90 Q53 85 58 90 Q55 80 58 70 Q50 75 42 70" 
+        fill="url(#flameGradient)" opacity="0.8"/>
+  
+  <!-- Exhaust particles -->
+  <g fill="#ffd700" opacity="0.6">
+    <circle cx="45" cy="85" r="1.5"/>
+    <circle cx="55" cy="88" r="1"/>
+    <circle cx="48" cy="92" r="1"/>
+    <circle cx="52" cy="95" r="0.8"/>
+  </g>
+  
+  <!-- Stars -->
+  <g fill="#ffd700" opacity="0.7">
+    <path d="M25 25 L26 28 L29 28 L27 30 L27.5 33 L25 31.5 L22.5 33 L23 30 L21 28 L24 28 Z"/>
+    <path d="M75 35 L76 38 L79 38 L77 40 L77.5 43 L75 41.5 L72.5 43 L73 40 L71 38 L74 38 Z"/>
+  </g>
+</svg>

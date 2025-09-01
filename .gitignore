@@ -1,6 +1,24 @@
-memories/
+# Personal data and configuration
+# Only ignore the default profile (real user data), not sample profiles
+data/memories/profiles/default/**
+!data/memories/profiles/default/.placeholder
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.template
+!**/.env.template
+!.env.example
+!**/.env.example
+
+# Development and runtime files
 .claude/
 logs/
 *.log
 /.vscode
 /brainbridge/logs
+
+# Node modules and build artifacts
+node_modules/
+dist/
+build/

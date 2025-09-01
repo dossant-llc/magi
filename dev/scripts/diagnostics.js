@@ -1,0 +1,245 @@
+#!/usr/bin/env node
+
+/**
+ * System Diagnostics - Comprehensive health checks for BrainBridge
+ * Usage: npm run diag
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const colors = {
+  success: '\x1b[32m',
+  error: '\x1b[31m',
+  warning: '\x1b[33m',
+  info: '\x1b[36m',
+  dim: '\x1b[90m',
+  reset: '\x1b[0m'
+};
+
+class Diagnostics {
+  constructor() {
+    this.issues = [];
+    this.warnings = [];
+    this.passed = [];
+  }
+
+  log(message, type = 'info') {
+    const prefix = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+    console.log(`${colors[type]}${prefix} ${message}${colors.reset}`);
+  }
+
+  addIssue(message, fix = null) {
+    this.issues.push({ message, fix });
+    this.log(message, 'error');
+    if (fix) {
+      this.log(`   Fix: ${fix}`, 'dim');
+    }
+  }
+
+  addWarning(message, suggestion = null) {
+    this.warnings.push({ message, suggestion });
+    this.log(message, 'warning');
+    if (suggestion) {
+      this.log(`   Suggestion: ${suggestion}`, 'dim');
+    }
+  }
+
+  addPassed(message) {
+    this.passed.push(message);
+    this.log(message, 'success');
+  }
+
+  async checkOllama() {
+    this.log('\n🤖 Checking Ollama AI Service...', 'info');
+    
+    try {
+      const response = execSync('curl -s http://localhost:11434/api/tags', { encoding: 'utf8' });
+      const data = JSON.parse(response);
+      
+      if (data.models && data.models.length > 0) {
+        this.addPassed(`Ollama running with ${data.models.length} models`);
+        
+        const hasChat = data.models.some(m => m.name.includes('llama3.1:8b'));
+        const hasEmbed = data.models.some(m => m.name.includes('mxbai-embed-large'));
+        
+        if (hasChat) {
+          this.addPassed('Chat model (llama3.1:8b) available');
+        } else {
+          this.addIssue('Chat model missing', 'ollama pull llama3.1:8b');
+        }
+        
+        if (hasEmbed) {
+          this.addPassed('Embedding model (mxbai-embed-large) available');
+        } else {
+          this.addIssue('Embedding model missing', 'ollama pull mxbai-embed-large');
+        }
+      } else {
+        this.addIssue('No Ollama models found', 'ollama pull llama3.1:8b && ollama pull mxbai-embed-large');
+      }
+    } catch (error) {
+      this.addIssue('Ollama not running or unreachable', 'ollama serve');
+    }
+  }
+
+  async checkMemoryPaths() {
+    this.log('\n📁 Checking Memory Storage Paths...', 'info');
+    
+    const baseMemoriesDir = process.env.MEMORIES_DIR || path.join(require('os').homedir(), 'Documents', 'memories');
+    const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
+    
+    // Check base memories directory
+    if (fs.existsSync(baseMemoriesDir)) {
+      this.addPassed(`Base memories directory exists: ${baseMemoriesDir}`);
+      
+      // Count total memories
+      let totalMemories = 0;
+      for (const level of privacyLevels) {
+        const levelDir = path.join(baseMemoriesDir, level);
+        if (fs.existsSync(levelDir)) {
+          const files = fs.readdirSync(levelDir).filter(f => f.endsWith('.md'));
+          totalMemories += files.length;
+          if (files.length > 0) {
+            this.addPassed(`${level}: ${files.length} memories`);
+          }
+        }
+      }
+      
+      if (totalMemories === 0) {
+        this.addWarning('No memories found', 'Add some memories using: npm run magic save "your content"');
+      } else {
+        this.addPassed(`Total memories: ${totalMemories}`);
+      }
+    } else {
+      this.addIssue(`Memories directory missing: ${baseMemoriesDir}`, 'mkdir -p ../memories/{public,team,personal,private,sensitive}');
+    }
+  }
+
+  async checkVectorIndex() {
+    this.log('\n🧠 Checking Vector Index...', 'info');
+    
+    const baseMemoriesDir = process.env.MEMORIES_DIR || path.join(require('os').homedir(), 'Documents', 'memories');
+    const embeddingsDir = path.join(baseMemoriesDir, 'embeddings');
+    const embeddingsFile = path.join(embeddingsDir, 'embeddings.txt');
+    const oldIndexDir = path.join(process.cwd(), '.index');
+    
+    // Check for old index location
+    if (fs.existsSync(oldIndexDir)) {
+      this.addIssue('Old vector index found in wrong location', 'npm run fix-paths');
+    }
+    
+    // Check for correct index location
+    if (fs.existsSync(embeddingsFile)) {
+      const stats = fs.statSync(embeddingsFile);
+      const sizeKB = Math.round(stats.size / 1024);
+      this.addPassed(`Vector index exists: ${sizeKB}KB`);
+      
+      // Check if index is recent
+      const ageHours = Math.round((Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60));
+      if (ageHours > 24) {
+        this.addWarning(`Vector index is ${ageHours}h old`, 'npm run magic index');
+      }
+    } else {
+      this.addIssue('Vector index missing', 'npm run magic index');
+    }
+  }
+
+  async checkBrainBridgeProcesses() {
+    this.log('\n🔗 Checking BrainBridge Processes...', 'info');
+    
+    try {
+      const processes = execSync('ps aux | grep "brainbridge.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+      if (processes) {
+        const lines = processes.split('\n').filter(line => line.trim());
+        if (lines.length > 3) {
+          this.addWarning(`${lines.length} BrainBridge processes running`, 'pkill -f "brainbridge.*stdio" && npm run dev');
+        } else {
+          this.addPassed(`${lines.length} BrainBridge processes running`);
+        }
+      } else {
+        this.addWarning('No BrainBridge processes found', 'npm run dev');
+      }
+    } catch (error) {
+      this.addWarning('No BrainBridge processes found', 'npm run dev');
+    }
+  }
+
+  async checkEnvironmentConfig() {
+    this.log('\n⚙️ Checking Environment Configuration...', 'info');
+    
+    const memoriesDir = process.env.MEMORIES_DIR || path.join(require('os').homedir(), 'Documents', 'memories');
+    this.addPassed(`MEMORIES_DIR: ${memoriesDir}`);
+    
+    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
+    const ollamaPort = process.env.OLLAMA_PORT || '11434';
+    this.addPassed(`Ollama: http://${ollamaHost}:${ollamaPort}`);
+  }
+
+  async checkDiskSpace() {
+    this.log('\n💾 Checking Disk Space...', 'info');
+    
+    try {
+      const df = execSync('df -h .', { encoding: 'utf8' });
+      const lines = df.split('\n');
+      if (lines.length > 1) {
+        const usage = lines[1].split(/\s+/);
+        const available = usage[3];
+        const usedPercent = usage[4];
+        
+        this.addPassed(`Available space: ${available} (${usedPercent} used)`);
+        
+        if (parseInt(usedPercent) > 90) {
+          this.addWarning('Disk space running low', 'Clean up old logs or unused files');
+        }
+      }
+    } catch (error) {
+      this.addWarning('Could not check disk space');
+    }
+  }
+
+  async runAll() {
+    console.log(`${colors.info}🔍 BrainBridge System Diagnostics${colors.reset}\n`);
+    
+    await this.checkOllama();
+    await this.checkMemoryPaths();
+    await this.checkVectorIndex();
+    await this.checkBrainBridgeProcesses();
+    await this.checkEnvironmentConfig();
+    await this.checkDiskSpace();
+    
+    // Summary
+    console.log(`\n${colors.info}📊 Diagnostic Summary${colors.reset}`);
+    console.log(`${colors.success}✅ Passed: ${this.passed.length}${colors.reset}`);
+    console.log(`${colors.warning}⚠️  Warnings: ${this.warnings.length}${colors.reset}`);
+    console.log(`${colors.error}❌ Issues: ${this.issues.length}${colors.reset}`);
+    
+    if (this.issues.length > 0) {
+      console.log(`\n${colors.error}🔧 Quick fixes:${colors.reset}`);
+      this.issues.forEach(issue => {
+        if (issue.fix) {
+          console.log(`   ${colors.dim}${issue.fix}${colors.reset}`);
+        }
+      });
+      process.exit(1);
+    }
+    
+    if (this.warnings.length > 0) {
+      console.log(`\n${colors.warning}💡 Recommendations:${colors.reset}`);
+      this.warnings.forEach(warning => {
+        if (warning.suggestion) {
+          console.log(`   ${colors.dim}${warning.suggestion}${colors.reset}`);
+        }
+      });
+    }
+    
+    console.log(`\n${colors.success}🎉 System looks healthy!${colors.reset}`);
+  }
+}
+
+// Run diagnostics
+const diag = new Diagnostics();
+diag.runAll().catch(error => {
+  console.error(`${colors.error}❌ Diagnostic error: ${error.message}${colors.reset}`);
+  process.exit(1);
+});

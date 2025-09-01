@@ -4,7 +4,7 @@ const BrainXchangeClient = require('../client/brainxchange-client');
  * COMPLETE END-TO-END TEST
  * 
  * This test verifies the entire BrainXchange ecosystem:
- * 1. BrainXchange server running at ws://m3u.dossant.com:8082
+ * 1. BrainXchange server running at wss://m3u.dossant.com/bx
  * 2. Two independent clients (Igor and Alice)  
  * 3. User discovery (@username syntax)
  * 4. Connection establishment via invitation codes
@@ -18,14 +18,14 @@ async function testCompleteE2E() {
   console.log('🌐 COMPLETE END-TO-END BRAINXCHANGE TEST');
   console.log('═'.repeat(70));
   console.log('');
-  console.log('📍 Server: ws://m3u.dossant.com:8082');
+  console.log('📍 Server: wss://m3u.dossant.com/bx');
   console.log('👥 Clients: Igor (seeker) + Alice (expert)');
   console.log('🎯 Goal: "magi ask @alice about her shrinking expertise"');
   console.log('');
   
   // Create clients
-  const igor = new BrainXchangeClient('ws://m3u.dossant.com:8082');
-  const alice = new BrainXchangeClient('ws://m3u.dossant.com:8082');
+  const igor = new BrainXchangeClient();
+  const alice = new BrainXchangeClient();
   
   let testStep = 1;
   

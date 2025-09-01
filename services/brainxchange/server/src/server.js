@@ -15,12 +15,17 @@ if (majorVersion < 18) {
 const WebSocket = require('ws');
 const http = require('http');
 const url = require('url');
+const crypto = require('crypto');
 
 // Simple in-memory storage
 const invitations = new Map();
 const connections = new Map();
 const clients = new Map(); // clientId -> websocket
 const users = new Map();   // clientId -> {username, nickname, clientId}
+
+// Brain Proxy storage
+const brainProxyConnectors = new Map(); // route -> {ws, lastSeen, metadata}
+const pendingRequests = new Map(); // requestId -> {resolve, reject, timeout}
 
 // Statistics tracking
 const stats = {
@@ -85,12 +90,18 @@ server.on('request', (req, res) => {
   
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
+    return;
+  }
+
+  // Brain Proxy routes
+  if (parsedUrl.pathname.startsWith('/bp/')) {
+    handleBrainProxyRequest(req, res, parsedUrl);
     return;
   }
 
@@ -352,6 +363,17 @@ function getCurrentStats() {
 }
 
 wss.on('connection', (ws, req) => {
+  const parsedUrl = url.parse(req.url, true);
+  
+  // Check if this is a Brain Proxy connector connection
+  if (parsedUrl.pathname === '/bp/connect') {
+    handleBrainProxyConnection(ws, req, parsedUrl);
+    return;
+  }
+  
+  // Check if this is a BrainXchange connection
+  if (parsedUrl.pathname === '/bx' || parsedUrl.pathname === '/') {
+    // Regular BrainXchange connection
   const clientId = Math.random().toString(36).substring(7);
   const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
   const location = clientIp.includes('127.0.0.1') || clientIp.includes('::1') ? 'localhost' : 
@@ -836,7 +858,8 @@ function handleDisconnect(clientId) {
   setTimeout(() => {
     users.delete(clientId);
   }, 5000); // Keep user data for 5 seconds in case of quick reconnect
-}
+  }
+});  // Close BrainXchange connection handler
 
 // Clean up expired invitations periodically
 setInterval(() => {
@@ -853,3 +876,416 @@ logMessage('info', `✅ Server ready for magi connections`, {
   HTTPEndpoints: '/api/stats',
   Status: 'Operational'
 });
+
+// ============================================================================
+// BRAIN PROXY FUNCTIONALITY
+// ============================================================================
+
+// Brain Proxy HTTP request handler
+function handleBrainProxyRequest(req, res, parsedUrl) {
+  const path = parsedUrl.pathname.substring(4); // Remove /bp prefix
+  
+  if (req.method === 'GET' && path === 'health') {
+    handleBrainProxyHealth(req, res);
+  } else if (req.method === 'GET' && path === 'openapi.json') {
+    handleOpenAPISchema(req, res);
+  } else if (req.method === 'GET' && path === 'privacy') {
+    handlePrivacyPolicy(req, res);
+  } else if (req.method === 'POST' && path.startsWith('rpc/')) {
+    const route = path.substring(4); // Remove 'rpc/' prefix
+    handleRPCRequest(req, res, route);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Brain Proxy endpoint not found');
+  }
+}
+
+// Brain Proxy health check
+function handleBrainProxyHealth(req, res) {
+  const connectedRoutes = Array.from(brainProxyConnectors.keys());
+  const healthData = {
+    status: 'online',
+    service: 'AGIfor.me Brain Proxy',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    connectedBrains: connectedRoutes.length,
+    routes: connectedRoutes
+  };
+  
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(healthData, null, 2));
+}
+
+// OpenAPI schema for Custom GPT integration
+function handleOpenAPISchema(req, res) {
+  const schema = {
+    openapi: '3.0.0',
+    info: {
+      title: 'AGIfor.me Brain Proxy',
+      description: 'Access your personal AI memory bank through AGIfor.me',
+      version: '1.0.0'
+    },
+    servers: [
+      {
+        url: `https://m3u.dossant.com:${PORT}/bp`,
+        description: 'AGIfor.me Brain Proxy'
+      }
+    ],
+    paths: {
+      '/rpc/{route}': {
+        post: {
+          summary: 'Execute brain command',
+          operationId: 'executeBrainCommand',
+          parameters: [
+            {
+              name: 'route',
+              in: 'path',
+              required: true,
+              schema: {
+                type: 'string'
+              },
+              description: 'Your unique brain route identifier'
+            }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['id', 'method', 'params'],
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'Unique request identifier'
+                    },
+                    method: {
+                      type: 'string',
+                      enum: [
+                        'search_memories',
+                        'add_memory', 
+                        'ai_query_memories',
+                        'ai_save_memory',
+                        'ai_status'
+                      ],
+                      description: 'Brain operation to perform'
+                    },
+                    params: {
+                      type: 'object',
+                      description: 'Method-specific parameters'
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': {
+              description: 'Successful response',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      result: { type: 'object' },
+                      error: { type: 'string' }
+                    }
+                  }
+                }
+              }
+            },
+            '503': {
+              description: 'Brain offline - limited capacity mode',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      result: {
+                        type: 'object',
+                        properties: {
+                          content: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                type: { type: 'string' },
+                                text: { type: 'string' }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+  
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(schema, null, 2));
+}
+
+// Privacy policy page
+function handlePrivacyPolicy(req, res) {
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGIfor.me Brain Proxy - Privacy Policy</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            line-height: 1.6; 
+            color: #333;
+        }
+        h1 { color: #1d1d1f; margin-bottom: 30px; }
+        h2 { color: #007aff; margin-top: 40px; margin-bottom: 20px; }
+        .highlight { background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧠 AGIfor.me Brain Proxy - Privacy Policy</h1>
+    
+    <div class="highlight">
+        <strong>Last Updated:</strong> ${new Date().toLocaleDateString()}<br>
+        <strong>Service:</strong> AGIfor.me Brain Proxy<br>
+        <strong>Purpose:</strong> Bridge between Custom GPTs and local AGIfor.me instances
+    </div>
+
+    <h2>🔒 Data Collection & Storage</h2>
+    <p><strong>No Data Persistence:</strong> The Brain Proxy service acts as a real-time bridge only. We do not store, log, or persist any of your personal data, memories, or conversations.</p>
+    
+    <p><strong>Transit Only:</strong> Your data passes through our proxy server only during active requests and is immediately forwarded to your local AGIfor.me system. No copies are made or retained.</p>
+
+    <h2>🛡️ Security & Privacy</h2>
+    <ul>
+        <li><strong>Route Isolation:</strong> Each user gets a unique route identifier for secure access</li>
+        <li><strong>No Logging:</strong> Personal data and memory contents are never logged</li>
+        <li><strong>Temporary Processing:</strong> Requests are processed in memory and discarded immediately</li>
+        <li><strong>Local Control:</strong> Your memories remain on your local system - the proxy only facilitates access</li>
+    </ul>
+
+    <h2>📡 Technical Operation</h2>
+    <p>The Brain Proxy:</p>
+    <ul>
+        <li>Receives HTTPS requests from Custom GPTs</li>
+        <li>Forwards them to your local AGIfor.me system via WebSocket</li>
+        <li>Returns the response back to the GPT</li>
+        <li>Discards all data immediately after transmission</li>
+    </ul>
+
+    <h2>🎯 Limited Capacity Mode</h2>
+    <p>When your local AGIfor.me system is offline, the proxy returns helpful "limited capacity" responses without accessing any personal data.</p>
+
+    <h2>📞 Contact</h2>
+    <p>For questions about this privacy policy or the Brain Proxy service, please contact us through the AGIfor.me GitHub repository.</p>
+
+    <div class="highlight">
+        <strong>Key Principle:</strong> Your memories and personal data never leave your local system except to fulfill your direct requests through Custom GPTs. The Brain Proxy is a secure, temporary bridge that respects your privacy.
+    </div>
+</body>
+</html>`;
+  
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
+}
+
+// RPC request handler
+function handleRPCRequest(req, res, route) {
+  let body = '';
+  
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
+  
+  req.on('end', async () => {
+    try {
+      const request = JSON.parse(body);
+      
+      if (!request.id || !request.method) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing id or method' }));
+        return;
+      }
+      
+      logMessage('info', `🧠 Brain Proxy RPC request`, {
+        Route: route,
+        Method: request.method,
+        ID: request.id.substring(0, 8)
+      });
+      
+      const connector = brainProxyConnectors.get(route);
+      
+      if (!connector || connector.ws.readyState !== WebSocket.OPEN) {
+        // Brain offline - return limited capacity response
+        const limitedResponse = {
+          id: request.id,
+          result: {
+            content: [{
+              type: 'text',
+              text: `🧠 **AGIfor.me Brain Status: Limited Capacity**
+
+Your external brain is currently offline. I can help with:
+- General knowledge and reasoning  
+- Code assistance and problem solving
+- Writing and analysis tasks
+
+For access to your personal memories and knowledge base, please ensure your local AGIfor.me system is running and connected.
+
+**Status:** Brain route '${route}' is not connected
+**Time:** ${new Date().toLocaleString()}`
+            }]
+          }
+        };
+        
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(limitedResponse, null, 2));
+        return;
+      }
+      
+      // Forward to local brain connector
+      const response = await forwardToBrainConnector(connector, request);
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(response, null, 2));
+      
+    } catch (error) {
+      logMessage('error', `Brain Proxy RPC error: ${error.message}`, { Route: route });
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        id: 'unknown',
+        error: 'Internal server error' 
+      }));
+    }
+  });
+}
+
+// Forward request to brain connector and wait for response
+function forwardToBrainConnector(connector, request) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingRequests.delete(request.id);
+      reject(new Error('Request timeout'));
+    }, 30000); // 30 second timeout
+    
+    pendingRequests.set(request.id, { resolve, reject, timeout });
+    
+    // Send request to local brain connector
+    connector.ws.send(JSON.stringify(request));
+  });
+}
+
+// Brain Proxy WebSocket connection handler
+function handleBrainProxyConnection(ws, req, parsedUrl) {
+  const query = parsedUrl.query;
+  const token = query.token;
+  const route = query.route || 'default';
+  
+  // Simple token validation (in production, use proper authentication)
+  if (!token || token.length < 8) {
+    logMessage('warn', `🚨 Brain Proxy connection rejected - invalid token`, { Route: route });
+    ws.close(4001, 'Unauthorized: Invalid token');
+    return;
+  }
+  
+  const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  const location = clientIp.includes('127.0.0.1') || clientIp.includes('::1') ? 'localhost' : 'remote';
+  
+  logMessage('info', `🧠 Brain Proxy connector registered`, { 
+    Route: route, 
+    From: location,
+    Token: token.substring(0, 8) + '***'
+  });
+  
+  // Register connector
+  brainProxyConnectors.set(route, {
+    ws: ws,
+    lastSeen: Date.now(),
+    route: route,
+    token: token,
+    location: location
+  });
+  
+  // Handle messages from brain connector (responses to our RPC requests)
+  ws.on('message', (data) => {
+    try {
+      const response = JSON.parse(data.toString());
+      
+      if (response.id && pendingRequests.has(response.id)) {
+        const pending = pendingRequests.get(response.id);
+        clearTimeout(pending.timeout);
+        pending.resolve(response);
+        pendingRequests.delete(response.id);
+        
+        logMessage('info', `🧠 Brain Proxy response received`, {
+          Route: route,
+          ID: response.id.substring(0, 8),
+          HasResult: !!response.result,
+          HasError: !!response.error
+        });
+      }
+    } catch (error) {
+      logMessage('error', `Brain Proxy message parse error: ${error.message}`, { Route: route });
+    }
+  });
+  
+  // Handle disconnect
+  ws.on('close', () => {
+    brainProxyConnectors.delete(route);
+    logMessage('info', `🧠 Brain Proxy connector disconnected`, { Route: route });
+    
+    // Reject any pending requests for this connector
+    for (const [requestId, pending] of pendingRequests) {
+      clearTimeout(pending.timeout);
+      pending.reject(new Error('Connector disconnected'));
+      pendingRequests.delete(requestId);
+    }
+  });
+  
+  // Send welcome message
+  ws.send(JSON.stringify({ 
+    type: 'bp_connected',
+    route: route,
+    timestamp: new Date().toISOString()
+  }));
+  
+  // Update last seen periodically
+  const heartbeatInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      const connector = brainProxyConnectors.get(route);
+      if (connector) {
+        connector.lastSeen = Date.now();
+        ws.ping();
+      }
+    } else {
+      clearInterval(heartbeatInterval);
+    }
+  }, 30000); // 30 seconds
+}
+
+// Clean up stale brain proxy connections
+setInterval(() => {
+  const now = Date.now();
+  const staleTimeout = 5 * 60 * 1000; // 5 minutes
+  
+  for (const [route, connector] of brainProxyConnectors) {
+    if (now - connector.lastSeen > staleTimeout) {
+      logMessage('info', `🧹 Cleaning up stale Brain Proxy connector`, { Route: route });
+      connector.ws.terminate();
+      brainProxyConnectors.delete(route);
+    }
+  }
+}, 60 * 1000); // Check every minute

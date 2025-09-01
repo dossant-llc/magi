@@ -2,8 +2,10 @@
 
 A lightweight WebSocket server enabling magi-to-magi communication through usernames and invitation codes.
 
-## 🚀 Live Server
-- **URL**: `ws://m3u.dossant.com:8082`
+## 🚀 Live Production Server
+- **WebSocket URL**: `wss://m3u.dossant.com/bx` (use BRAINXCHANGE_SERVER env var)
+- **Web Dashboard**: `http://m3u.dossant.com:8082` (HTTP)
+- **Stats API**: `http://m3u.dossant.com:8082/api/stats` (JSON)
 - **Status**: ✅ Running
 
 ## 📋 Features
@@ -94,7 +96,7 @@ Deploy to server:
 const BrainXchangeClient = require('./client/brainxchange-client');
 
 // Create client
-const client = new BrainXchangeClient('ws://m3u.dossant.com:8082');
+const client = new BrainXchangeClient(process.env.BRAINXCHANGE_SERVER || 'wss://m3u.dossant.com/bx');
 
 // Connect and identify
 await client.connect();
@@ -128,6 +130,68 @@ client.onAnswer((content, from, fromNickname) => {
 
 // See who's connected
 console.log('Connected friends:', client.getConnectedFriends());
+```
+
+## 📡 API Reference
+
+### WebSocket Messages
+
+#### Connection & Authentication
+```javascript
+// Initial connection (sent by server)
+{ type: 'connected', clientId: 'abc123' }
+
+// Identify user
+{ type: 'identify', username: 'user@example.com', nickname: 'Display Name' }
+{ type: 'identified', username: '...', nickname: '...', clientId: '...' }
+```
+
+#### Invitation Management
+```javascript
+// Create invitation code
+{ type: 'create_invite' }
+{ type: 'invite_created', code: 'ABC123', from: 'Your Name', expiresIn: '30 minutes' }
+
+// Connect with invitation
+{ type: 'connect', code: 'ABC123', username: '...', nickname: '...' }
+{ type: 'connected_to_friend', connectionId: '...', friend: {...} }
+```
+
+#### Message Exchange
+```javascript
+// Send question
+{ type: 'ask', content: 'What is your favorite food?', to: 'friend@example.com' }
+{ type: 'question_sent', content: '...', to: 'Friend Name' }
+
+// Send answer
+{ type: 'answer', content: 'I love sushi!', to: 'friend@example.com' }
+{ type: 'answer_sent', content: '...', to: 'Friend Name' }
+
+// Receive messages
+{ type: 'question', content: '...', from: 'friend@example.com', fromNickname: '...' }
+{ type: 'answer', content: '...', from: 'friend@example.com', fromNickname: '...' }
+```
+
+### HTTP Endpoints
+
+#### Web Dashboard
+- `GET /` - Interactive dashboard with real-time statistics
+- Auto-refreshing UI showing live connections and metrics
+- **🔧 Admin Panel** - Password-protected logs viewer (password: `magi2024`)
+
+#### REST API
+- `GET /api/stats` - JSON statistics endpoint
+- `POST /api/admin/verify` - Admin password verification
+- `GET /api/admin/logs` - Live log streaming (requires Bearer auth)
+```json
+{
+  "liveClients": 3,
+  "activeConnections": 2,
+  "totalMessages": 45,
+  "uptime": "2h 15m",
+  "connectedUsers": [...],
+  "lastMessage": {...}
+}
 ```
 
 ### Brainbridge Integration
@@ -235,87 +299,133 @@ node test-complete-e2e.js
 **Client → Server:**
 - `identify` - Set username and nickname
 - `create_invite` - Generate invitation code
-- `connect` - Connect using invitation code (with optional identity)
-- `ask` - Send question to friend (with optional target username)
-- `answer` - Send answer to friend (with optional target username)
+- `connect` - Connect using invitation code
+- `ask` - Send question to friend
+- `answer` - Send answer to friend
 
 **Server → Client:**
-- `connected` - Initial connection with client ID
-- `identified` - Confirmation of identity set
-- `invite_created` - Invitation code generated (with creator info)
-- `connected_to_friend` - Successfully connected via code (with friend info)
-- `friend_connected` - Friend joined using your code (with friend info)
-- `question` - Incoming question from friend (with sender info)
-- `answer` - Incoming answer from friend (with sender info)
-- `friend_disconnected` - Friend left (with friend info)
-- `error` - Error message
+- `connected` - Connection established with clientId
+- `identified` - User identity confirmed
+- `invite_created` - Invitation code generated
+- `connected_to_friend` - Successfully connected to friend
+- `question_sent` - Question delivered to friend
+- `answer_sent` - Answer delivered to friend
+- `question` - Incoming question from friend
+- `answer` - Incoming answer from friend
+
+## 🔧 Admin Features
+
+### Password-Protected Live Logs
+Access real-time server logs through the web dashboard:
+
+1. **Access**: Click **🔧 Admin** button on dashboard
+2. **Login**: Enter password `magi2024` (stored in localStorage)
+3. **View**: Live streaming logs with 2-second refresh rate
+
+### Enhanced Log Format
+Rich, contextual logs with visual indicators:
+
+```
+🔌 [00:26:51.638] INFO: New WebSocket connection • ID:abc123 • From:remote
+👤 [00:27:59.460] INFO: User identified • ID:abc123 • User:john@example.com • Name:John
+🎫 [00:28:15.123] INFO: Invitation created • Code:ABC123 • User:john@example.com • Name:John
+🤝 [00:28:30.456] INFO: Users connected • Conn:def456 • User1:john • User2:jane
+❓ [00:28:45.789] INFO: Question forwarded • From:john • To:jane • Length:142chars
+💬 [00:29:01.234] INFO: Answer forwarded • From:jane • To:john • Length:89chars
+🔐 [00:29:15.567] INFO: Admin login SUCCESS from localhost
+```
+
+### Log Context Information
+Each log entry includes:
+- **Visual icons** for quick identification
+- **Timestamps** (HH:mm:ss format)
+- **Client IDs** (shortened for privacy)
+- **Usernames/nicknames** (sanitized)
+- **Message metadata** (type, length, preview)
+- **Connection details** (IDs, relationships)
+- **Geographic context** (localhost/remote/private)
+
+### Admin API Access
+```bash
+# Verify password
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"password":"magi2024"}' \
+  http://m3u.dossant.com:8082/api/admin/verify
+
+# Stream logs (requires Bearer token)
+curl -H "Authorization: Bearer magi2024" \
+  http://m3u.dossant.com:8082/api/admin/logs?since=1234567890
+```
 
 ## 🔒 Security & Privacy
-- No message persistence
-- 30-minute session timeout
-- Invitation codes expire after 30 minutes
-- Single-use connections
-- No authentication or user accounts
 
-## 🛠️ Development
+### PII Protection
+- **No message content logging**: Message payloads never stored in logs
+- **Sanitized displays**: Only first letter of nicknames shown in dashboard
+- **No persistent storage**: Messages not stored on server
+- **Connection isolation**: Users only see their own connections
 
-### Server Requirements
-- Node.js 12+ (18+ recommended)
-- Port 8082 available
-- WebSocket support
+### Authentication
+- **Invitation-based**: Connections require mutual consent via codes
+- **Username validation**: Prevent duplicate usernames per session  
+- **Connection limits**: Automatic timeout after 30 minutes inactivity
+- **Code expiration**: Invitation codes expire after 30 minutes
 
-### Local Testing
-```bash
-# Terminal 1: Start server
-cd server
-PORT=3003 npm start
+## 📊 Monitoring
 
-# Terminal 2: Run test
-cd test
-npm test
+### Live Statistics
+- View real-time statistics at `http://m3u.dossant.com:8082`
+- Monitor server health via `/api/stats` endpoint
+- Auto-refreshing dashboard for operational monitoring
+
+### Logging
+- Server logs available via SSH: `tail -f /path/to/logs/server.log`
+- Structured JSON logging with privacy protection
+- Error tracking and connection monitoring
+
+## 🏗️ Architecture
+
+### Communication Layers
+
+```
+Claude Code Client ──► BrainBridge (MCP) ──► BrainXchange ──► magi-exchange Server
+                                                               │
+                                              m3u.dossant.com:8082
+                                                               │
+                                                               ▼
+                                                    Other magi instances
 ```
 
-## 📊 Architecture
+**Two Communication Protocols:**
 
-```
-┌──────────┐     ┌──────────┐     ┌──────────┐
-│  Magi A  │────▶│  Server  │◀────│  Magi B  │
-│  (Igor)  │     │  :8082   │     │  (Zack)  │
-└──────────┘     └──────────┘     └──────────┘
-     │                 │                 │
-     └─────────────────┴─────────────────┘
-           WebSocket Connections
-```
+1. **MCP (Model Context Protocol)**: Client ↔ BrainBridge
+   - Local communication between Claude Code and BrainBridge
+   - Uses stdio or HTTP transport
+   - Structured tool calls and responses
 
-## 🚦 Server Management
+2. **WebSocket Network**: BrainBridge ↔ magi-exchange ↔ Other magi
+   - Internet-based peer-to-peer communication
+   - Real-time message routing between magi instances
+   - Invitation-based connection establishment
 
-```bash
-# SSH to server
-ssh igoram2@vps34824.dreamhostps.com
+## 🚧 Current Limitations
 
-# Navigate to app
-cd /home/igoram2/m3u.dossant.com/brainxchange
+- **No rate limiting**: Implemented for 30-minute timeouts only
+- **No message encryption**: Messages sent in plain JSON
+- **Single server**: No clustering or load balancing yet
+- **Memory storage**: All state kept in memory (resets on restart)
 
-# View logs
-tail -f logs/server.log
+## 🗺️ Roadmap
 
-# Start/stop server
-./start.sh
-./stop.sh
+- [ ] Message encryption for enhanced privacy
+- [ ] Rate limiting implementation (10 queries/minute)
+- [ ] Persistent connection storage
+- [ ] Multi-server clustering
+- [ ] User authentication beyond invitation codes
+- [ ] Message history and offline delivery
 
-# Check if running
-ps aux | grep node
-```
+---
 
-## 📈 Future Enhancements
-- [ ] Message encryption
-- [ ] Multi-user groups
-- [ ] Persistent connections
-- [ ] Payment integration for expert marketplace
-- [ ] Knowledge discovery features
-
-## 📄 License
-MIT
-
-## 🤝 Contributing
-This is a simple MVP. For production features, see the full design documents in the parent directory.
+**Communication Protocols:**
+- **MCP**: Local tool communication (Client ↔ BrainBridge)
+- **WebSocket**: Network communication (BrainBridge ↔ magi-exchange Server)

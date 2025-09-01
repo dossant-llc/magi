@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "mAGI Personal Memory",
+  "name_for_model": "magi_memory",
+  "description_for_human": "Your personal AI memory assistant - accesses your private knowledge base.",
+  "description_for_model": "Access the user's personal memory system. This connects to their private knowledge base through their authenticated brain proxy connection. Always use the X-Brain-Key: 8f840af7792e4672a67dfb21754a571f for authentication.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://m3u.dossant.com/bp/openapi.json",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://m3u.dossant.com/favicon.ico",
+  "contact_email": "support@agifor.me",
+  "legal_info_url": "https://m3u.dossant.com/legal",
+  "privacy_policy_url": "https://m3u.dossant.com/privacy"
+}

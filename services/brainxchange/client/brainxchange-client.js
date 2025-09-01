@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 
 class BrainXchangeClient {
-  constructor(serverUrl = 'ws://m3u.dossant.com:8082') {
+  constructor(serverUrl = process.env.BRAINXCHANGE_SERVER || `wss://${process.env.AGIFORME_SERVER_DOMAIN || 'localhost'}/bx`) {
     this.serverUrl = serverUrl;
     this.ws = null;
     this.clientId = null;

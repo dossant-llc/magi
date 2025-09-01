@@ -1,0 +1,25 @@
+{
+  "name": "brainhub-local",
+  "version": "1.0.0",
+  "description": "Local Node.js hub for multi-brain network development",
+  "main": "launcher.js",
+  "scripts": {
+    "start": "node launcher.js",
+    "dashboard": "node dashboard.js",
+    "dev": "concurrently \"npm run start\" \"sleep 5 && npm run dashboard\"",
+    "stop": "pkill -f 'node.*brainbridge'",
+    "logs": "tail -f logs/*.log",
+    "logs:viewer": "node logs-viewer.js",
+    "clean": "rm -rf logs/*.log"
+  },
+  "keywords": ["brainhub", "mcp", "ai", "local", "development", "hub-spoke"],
+  "author": "",
+  "license": "SEE LICENSE FILE",
+  "private": true,
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
