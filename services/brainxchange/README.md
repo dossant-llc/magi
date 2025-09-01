@@ -3,9 +3,9 @@
 A lightweight WebSocket server enabling magi-to-magi communication through usernames and invitation codes.
 
 ## 🚀 Live Production Server
-- **WebSocket URL**: `wss://m3u.dossant.com/bx` (use BRAINXCHANGE_SERVER env var)
-- **Web Dashboard**: `http://m3u.dossant.com:8082` (HTTP)
-- **Stats API**: `http://m3u.dossant.com:8082/api/stats` (JSON)
+- **WebSocket URL**: `wss://your-server.com/bx` (use BRAINXCHANGE_SERVER env var)
+- **Web Dashboard**: `http://your-server.com:8082` (HTTP)
+- **Stats API**: `http://your-server.com:8082/api/stats` (JSON)
 - **Status**: ✅ Running
 
 ## 📋 Features
@@ -96,7 +96,7 @@ Deploy to server:
 const BrainXchangeClient = require('./client/brainxchange-client');
 
 // Create client
-const client = new BrainXchangeClient(process.env.BRAINXCHANGE_SERVER || 'wss://m3u.dossant.com/bx');
+const client = new BrainXchangeClient(process.env.BRAINXCHANGE_SERVER || 'wss://your-server.com/bx');
 
 // Connect and identify
 await client.connect();
@@ -350,11 +350,11 @@ Each log entry includes:
 # Verify password
 curl -X POST -H "Content-Type: application/json" \
   -d '{"password":"magi2024"}' \
-  http://m3u.dossant.com:8082/api/admin/verify
+  http://your-server.com:8082/api/admin/verify
 
 # Stream logs (requires Bearer token)
 curl -H "Authorization: Bearer magi2024" \
-  http://m3u.dossant.com:8082/api/admin/logs?since=1234567890
+  http://your-server.com:8082/api/admin/logs?since=1234567890
 ```
 
 ## 🔒 Security & Privacy
@@ -374,7 +374,7 @@ curl -H "Authorization: Bearer magi2024" \
 ## 📊 Monitoring
 
 ### Live Statistics
-- View real-time statistics at `http://m3u.dossant.com:8082`
+- View real-time statistics at `http://your-server.com:8082`
 - Monitor server health via `/api/stats` endpoint
 - Auto-refreshing dashboard for operational monitoring
 
@@ -390,7 +390,7 @@ curl -H "Authorization: Bearer magi2024" \
 ```
 Claude Code Client ──► BrainBridge (MCP) ──► BrainXchange ──► magi-exchange Server
                                                                │
-                                              m3u.dossant.com:8082
+                                              your-server.com:8082
                                                                │
                                                                ▼
                                                     Other magi instances

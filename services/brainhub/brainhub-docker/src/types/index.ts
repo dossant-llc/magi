@@ -164,7 +164,7 @@ export interface MetricSnapshot {
 
 // Configuration Types
 export interface BrainNetworkConfig {
-  brainbridgePath: string;         // ../brainbridge
+  brainbridgePath: string;         // Current directory (contains Docker files)
   memoriesBasePath: string;        // ../
   defaultInstanceConfig: InstanceConfig;
   dashboard: DashboardConfig;

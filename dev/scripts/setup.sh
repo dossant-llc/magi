@@ -5,7 +5,7 @@ echo ""
 
 # Simple memory location logic
 if [ -f ".env" ] && grep -q "MEMORIES_LOCATION=documents" ".env"; then
-    MEMORIES_DIR="$HOME/Documents/memories"
+    MEMORIES_DIR="$HOME/Documents/memories/profiles/default"
     echo "📁 Using Documents location: $MEMORIES_DIR"
 elif [ -f ".env" ] && grep -q "MEMORIES_DIR=" ".env"; then
     MEMORIES_DIR=$(grep "MEMORIES_DIR=" .env | cut -d'=' -f2)

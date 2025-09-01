@@ -27,7 +27,7 @@ const magiConfigTemplate = {
     "custom_auth_type": "api_key",
     "authorization_type": "custom",
     "verification_tokens": {
-      "openai": "abc123def456"
+      "openai": "your-openai-verification-token"
     },
     "custom_headers": {
       "X-Brain-Key": "your-unique-brain-key-here"
@@ -42,7 +42,7 @@ const magiConfigTemplate = {
   "contact_email": "support@agiforme.ai",
   "legal_info_url": `${protocol}://${domain}${legalPath}`,
   "servers": {
-    "default": `${protocol}://${domain}${bpHttpPath}/rpc/igor`
+    "default": `${protocol}://${domain}${bpHttpPath}/rpc/default-user`
   }
 };
 
@@ -58,7 +58,7 @@ const magiConfigFixedTemplate = {
     "custom_auth_type": "api_key",
     "authorization_type": "custom",
     "verification_tokens": {
-      "openai": "abc123def456ghi789"
+      "openai": "your-openai-verification-token-v2"
     }
   },
   "api": {

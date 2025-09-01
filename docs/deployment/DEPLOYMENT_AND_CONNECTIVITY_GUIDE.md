@@ -6,7 +6,7 @@ This guide explains the **two distinct communication protocols** used in the mAG
 
 ```
 Claude Code Client ──MCP──► BrainBridge ──WebSocket──► magi-exchange Server ──WebSocket──► Other BrainBridge
-    (Local)              (Local Process)              (m3u.dossant.com:8082)              (Remote)
+    (Local)              (Local Process)              (your-server.com:8082)              (Remote)
 ```
 
 ### Protocol 1: MCP (Model Context Protocol)
@@ -20,7 +20,7 @@ Claude Code Client ──MCP──► BrainBridge ──WebSocket──► magi-
 ### Protocol 2: WebSocket Network 
 **Purpose**: Internet-based peer-to-peer communication between magi instances
 - **Transport**: WebSocket over TCP/IP
-- **Server**: m3u.dossant.com:8082
+- **Server**: your-server.com:8082
 - **Format**: Real-time JSON messages
 - **Scope**: Global network, multiple users
 - **Security**: Invitation-based authentication
@@ -117,9 +117,9 @@ Add to your Claude Code MCP configuration:
 ### Production Server (Already Running)
 
 **Live Production Instance:**
-- **WebSocket URL**: `wss://m3u.dossant.com/bx` (use BRAINXCHANGE_SERVER env var)
-- **Web Dashboard**: `http://m3u.dossant.com:8082`
-- **API Endpoint**: `http://m3u.dossant.com:8082/api/stats`
+- **WebSocket URL**: `wss://your-server.com/bx` (use BRAINXCHANGE_SERVER env var)
+- **Web Dashboard**: `http://your-server.com:8082`
+- **API Endpoint**: `http://your-server.com:8082/api/stats`
 
 ### Deploy Updates to Production
 
@@ -130,7 +130,7 @@ cd services/magi-exchange
 ./deploy.sh
 
 # Verify deployment
-curl http://m3u.dossant.com:8082/api/stats
+curl http://your-server.com:8082/api/stats
 ```
 
 ### Local Development Server
@@ -149,7 +149,7 @@ Environment variables in `services/magi-exchange/.env`:
 ```bash
 REMOTE_USER=igoram2
 REMOTE_HOST=vps34824.dreamhostps.com
-REMOTE_DIR=/home/igoram2/m3u.dossant.com/magi-exchange
+REMOTE_DIR=/home/igoram2/your-server.com/magi-exchange
 PORT=8082
 SERVICE_NAME=magi-exchange
 ```
@@ -164,7 +164,7 @@ SERVICE_NAME=magi-exchange
 3. **Test MCP tools**: Try `ai_status` or `search_memories`
 
 ### 2. P2P Network Setup (WebSocket Protocol)
-1. **Auto-connection**: BrainBridge automatically connects to m3u.dossant.com:8082
+1. **Auto-connection**: BrainBridge automatically connects to your-server.com:8082
 2. **Check status**: Use `ai_status` tool to verify BrainXchange connection
 3. **Generate invite**: Use `brainxchange_command` with `"magi create invite"`
 4. **Share code**: Give 6-character code to friend
@@ -209,17 +209,17 @@ brainxchange_command: "magi ask friend about React patterns"
 **"BrainXchange integration failed"**
 ```bash
 # Test network connectivity
-curl -i http://m3u.dossant.com:8082/
+curl -i http://your-server.com:8082/
 
 # Should return HTML dashboard, not error
 # If timeout/refused, check:
-# - DNS resolution: nslookup m3u.dossant.com
+# - DNS resolution: nslookup your-server.com
 # - Firewall settings
 # - VPN/proxy configuration
 ```
 
 **"Connection timeout"**
-- Check server status: `http://m3u.dossant.com:8082/api/stats`
+- Check server status: `http://your-server.com:8082/api/stats`
 - Verify WebSocket support: Most corporate firewalls allow WebSocket
 - Test with different network (mobile hotspot)
 
@@ -249,8 +249,8 @@ export BRAINXCHANGE_NAME="Your Display Name"
 ## 📊 Monitoring and Status
 
 ### Real-time Monitoring
-- **Live Dashboard**: `http://m3u.dossant.com:8082`
-- **Statistics API**: `http://m3u.dossant.com:8082/api/stats`
+- **Live Dashboard**: `http://your-server.com:8082`
+- **Statistics API**: `http://your-server.com:8082/api/stats`
 - **Admin Logs Panel**: Password-protected live log streaming (password: `magi2024`)
 - **BrainBridge Status**: Use `ai_status` MCP tool
 
@@ -260,11 +260,11 @@ export BRAINXCHANGE_NAME="Your Display Name"
 tail -f brainbridge/logs/brainbridge.log
 
 # magi-exchange server logs (via web admin panel)
-# Visit http://m3u.dossant.com:8082 -> Click "🔧 Admin" -> Enter password "magi2024"
+# Visit http://your-server.com:8082 -> Click "🔧 Admin" -> Enter password "magi2024"
 
 # magi-exchange server logs (via API)
 curl -H "Authorization: Bearer magi2024" \
-  http://m3u.dossant.com:8082/api/admin/logs
+  http://your-server.com:8082/api/admin/logs
 
 # Docker logs
 docker-compose logs -f brainbridge
@@ -276,7 +276,7 @@ docker-compose logs -f brainbridge
 echo '{"method":"list_tools"}' | node brainbridge/dist/server.js stdio
 
 # Test WebSocket connectivity  
-curl http://m3u.dossant.com:8082/api/stats
+curl http://your-server.com:8082/api/stats
 
 # Test P2P functionality
 # Use brainxchange_command tool with "magi create invite"
@@ -290,7 +290,7 @@ curl http://m3u.dossant.com:8082/api/stats
 - [ ] BrainBridge builds successfully (`npm run build`)
 - [ ] Environment variables configured
 - [ ] Memory directory exists and accessible
-- [ ] Network connectivity to m3u.dossant.com:8082 verified
+- [ ] Network connectivity to your-server.com:8082 verified
 
 ### Post-deployment  
 - [ ] MCP tools available in Claude Code
@@ -301,7 +301,7 @@ curl http://m3u.dossant.com:8082/api/stats
 - [ ] Logs show successful initialization with enhanced formatting
 
 ### Production Verification
-- [ ] Server responds at m3u.dossant.com:8082
+- [ ] Server responds at your-server.com:8082
 - [ ] WebSocket connections accepted
 - [ ] Invitation system working
 - [ ] Message routing functional

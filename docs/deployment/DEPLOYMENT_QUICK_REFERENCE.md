@@ -3,11 +3,11 @@
 ## Current Production Setup
 
 **Server**: `igoram2@vps34824.dreamhostps.com`  
-**Directory**: `/home/igoram2/m3u.dossant.com/braincloud`  
+**Directory**: `/home/igoram2/your-server.com/braincloud`  
 **Public URLs**: 
-- 🌥️ **Dashboard**: https://m3u.dossant.com/
-- 🧠 **Brain Proxy**: https://m3u.dossant.com/bp/
-- 🤝 **BrainXchange**: wss://m3u.dossant.com/bx
+- 🌥️ **Dashboard**: https://your-server.com/
+- 🧠 **Brain Proxy**: https://your-server.com/bp/
+- 🤝 **BrainXchange**: wss://your-server.com/bx
 
 ## Quick Deployment Commands
 
@@ -32,21 +32,21 @@ ssh igoram2@vps34824.dreamhostps.com "
   
   # Start BrainCloud
   source ~/.nvm/nvm.sh && 
-  cd /home/igoram2/m3u.dossant.com/braincloud && 
+  cd /home/igoram2/your-server.com/braincloud && 
   nohup node server.js > braincloud.log 2>&1 &
 "
 ```
 
 **View Logs:**
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "tail -f /home/igoram2/m3u.dossant.com/braincloud/braincloud.log"
+ssh igoram2@vps34824.dreamhostps.com "tail -f /home/igoram2/your-server.com/braincloud/braincloud.log"
 ```
 
 **Install Dependencies (if needed):**
 ```bash
 ssh igoram2@vps34824.dreamhostps.com "
   source ~/.nvm/nvm.sh && 
-  cd /home/igoram2/m3u.dossant.com/braincloud && 
+  cd /home/igoram2/your-server.com/braincloud && 
   npm install
 "
 ```
@@ -66,7 +66,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 # Start with PM2
 ssh igoram2@vps34824.dreamhostps.com "
   source ~/.nvm/nvm.sh && 
-  cd /home/igoram2/m3u.dossant.com/braincloud && 
+  cd /home/igoram2/your-server.com/braincloud && 
   pm2 start server.js --name braincloud
 "
 
@@ -94,8 +94,8 @@ ssh igoram2@vps34824.dreamhostps.com "
 
 **Quick Test:**
 ```bash
-curl -s https://m3u.dossant.com/bp/health | jq '.status'
-curl -s https://m3u.dossant.com/api/status | jq '.platform'
+curl -s https://your-server.com/bp/health | jq '.status'
+curl -s https://your-server.com/api/status | jq '.platform'
 ```
 
 **Full Integration Test:**
@@ -105,16 +105,16 @@ node scripts/test-brain-proxy.js
 
 **Dashboard Check:**
 ```bash
-curl -s https://m3u.dossant.com/ | grep -i "braincloud"
+curl -s https://your-server.com/ | grep -i "braincloud"
 ```
 
 ## Custom GPT Setup URLs
 
 **For ChatGPT Custom GPT configuration:**
 
-- **OpenAPI Schema**: `https://m3u.dossant.com/bp/openapi.json`
-- **Privacy Policy**: `https://m3u.dossant.com/bp/privacy`
-- **Health Check**: `https://m3u.dossant.com/bp/health`
+- **OpenAPI Schema**: `https://your-server.com/bp/openapi.json`
+- **Privacy Policy**: `https://your-server.com/bp/privacy`
+- **Health Check**: `https://your-server.com/bp/health`
 
 ### ChatGPT Compatibility Fix (Aug 30, 2025)
 **Issue**: ChatGPT Custom GPT rejected OpenAPI schema with error: `('openapi',): Input should be '3.1.1' or '3.1.0'`
@@ -130,7 +130,7 @@ openapi: '3.1.0',
 
 **Deployment**: File was updated and deployed automatically. Verification:
 ```bash
-curl -s https://m3u.dossant.com/bp/openapi.json | jq '.openapi'
+curl -s https://your-server.com/bp/openapi.json | jq '.openapi'
 # Returns: "3.1.0"
 ```
 
@@ -156,7 +156,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 ```bash
 ssh igoram2@vps34824.dreamhostps.com "
   source ~/.nvm/nvm.sh && 
-  cd /home/igoram2/m3u.dossant.com/braincloud && 
+  cd /home/igoram2/your-server.com/braincloud && 
   npm install
 "
 ```
@@ -174,7 +174,7 @@ ssh igoram2@vps34824.dreamhostps.com "source ~/.nvm/nvm.sh && node --version"
 - **Port Mapping**: Internal port 8082 is proxied to standard HTTP/HTTPS ports
 - **Node.js**: Accessed via NVM (`source ~/.nvm/nvm.sh`)
 - **Process Management**: Currently using `nohup`, PM2 recommended for production
-- **Logs**: Located at `/home/igoram2/m3u.dossant.com/braincloud/braincloud.log`
+- **Logs**: Located at `/home/igoram2/your-server.com/braincloud/braincloud.log`
 - **Auto-deployment**: `./deploy.sh` handles file upload and basic restart
 
 ## 🎯 Current Status

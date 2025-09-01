@@ -56,7 +56,7 @@ Add to your `.env` file:
 # BrainXchange Configuration
 BRAINXCHANGE_EMAIL=your@email.com
 BRAINXCHANGE_NAME=Your Name
-BRAINXCHANGE_SERVER=wss://m3u.dossant.com/bx
+BRAINXCHANGE_SERVER=wss://your-server.com/bx
 ```
 
 ## Supported Commands
@@ -123,7 +123,7 @@ Test the @alice command functionality directly:
 
 ```bash
 # Test the integration without MCP server
-node test-alice-simple.js
+node tests/test-alice-simple.js
 
 # Demo the complete user discovery flow  
 node demo-alice-discovery.js
@@ -147,8 +147,8 @@ BRAINXCHANGE_EMAIL=test@example.com BRAINXCHANGE_NAME="Test User" npm run dev:st
 
 ### Test Files Available
 
-- `test-alice-simple.js` - Direct integration test without server  
+- `tests/test-alice-simple.js` - Direct integration test without server  
 - `demo-alice-discovery.js` - Complete user discovery demo
-- `test-alice-command.js` - MCP JSON-RPC command test
+- `tests/test-alice-command.js` - MCP JSON-RPC command test
 
-The integration automatically connects to the BrainXchange server at `wss://m3u.dossant.com/bx` (configured via BRAINXCHANGE_SERVER environment variable) during startup.
+The integration automatically connects to the BrainXchange server at `wss://your-server.com/bx` (configured via BRAINXCHANGE_SERVER environment variable) during startup.

@@ -11,14 +11,15 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from brainbridge
+COPY ../../services/brainbridge/package*.json ./
 
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy source code
-COPY . .
+# Copy source code from brainbridge
+COPY ../../services/brainbridge/src ./src
+COPY ../../services/brainbridge/tsconfig.json ./
 
 # Build the project
 RUN npm run build

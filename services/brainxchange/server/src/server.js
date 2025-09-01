@@ -927,7 +927,7 @@ function handleOpenAPISchema(req, res) {
     },
     servers: [
       {
-        url: `https://m3u.dossant.com:${PORT}/bp`,
+        url: `https://${process.env.AGIFORME_SERVER_DOMAIN || 'your-server.com'}:${PORT}/bp`,
         description: 'AGIfor.me Brain Proxy'
       }
     ],

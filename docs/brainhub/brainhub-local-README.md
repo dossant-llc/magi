@@ -100,9 +100,9 @@ brainbridge-local/
 ## Memory Storage
 
 Memories are stored in sibling directories:
-- `../memories.alice/`
-- `../memories.bob/`
-- `../memories.carol/`
+- `../data/memories/profiles/alice/`
+- `../data/memories/profiles/bob/`
+- `../data/memories/profiles/carol/`
 
 ## Dashboard Features
 

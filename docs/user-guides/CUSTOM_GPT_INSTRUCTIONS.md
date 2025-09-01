@@ -127,7 +127,7 @@ To use mAGI's full capabilities:
 ### Custom GPT Configuration
 In ChatGPT Custom GPT settings:
 
-**OpenAPI Schema URL**: `https://m3u.dossant.com/bp/openapi.json`
+**OpenAPI Schema URL**: `https://your-server.com/bp/openapi.json`
 
 **Authentication Header**: 
 ```
@@ -135,13 +135,13 @@ X-Brain-Key: your-32-character-secure-brain-key-here
 ```
 
 **API Endpoint**: The schema uses `/rpc/{route}` where `{route}` is your username
-- Example: `https://m3u.dossant.com/bp/rpc/igor` (for user "igor")
-- Example: `https://m3u.dossant.com/bp/rpc/alice` (for user "alice")
+- Example: `https://your-server.com/bp/rpc/igor` (for user "igor")
+- Example: `https://your-server.com/bp/rpc/alice` (for user "alice")
 
 **Local BrainBridge Configuration** (`.env` file):
 ```env
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com/bp/connect
 BRAIN_PROXY_SECRET=your-32-character-secure-brain-key-here
 BRAIN_PROXY_ROUTE=igor  # Your username/route identifier
 BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
@@ -151,7 +151,7 @@ BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
 **Igor's Actual Setup:**
 ```env
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com/bp/connect
 BRAIN_PROXY_SECRET=8f840af7792e4672a67dfb21754a571f
 BRAIN_PROXY_ROUTE=igor
 BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
@@ -162,7 +162,7 @@ BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
 X-Brain-Key: 8f840af7792e4672a67dfb21754a571f
 ```
 
-**API Endpoint:** `https://m3u.dossant.com/bp/rpc/igor`
+**API Endpoint:** `https://your-server.com/bp/rpc/igor`
 
 ## Commands Reference
 

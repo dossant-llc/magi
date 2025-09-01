@@ -639,15 +639,15 @@
                 if (response.ok) {
                     const data = await response.json();
                     logToBX('🌐 BrainXchange Network Status:');
-                    logToBX(`📡 Connected to: ${data.endpoint || 'wss://m3u.dossant.com'}`);
+                    logToBX(`📡 Connected to: ${data.endpoint || 'wss://your-server.com'}`);
                     logToBX(`👥 Active nodes: ${data.activeNodes || 'checking...'}`);
                     logToBX(`💾 Shared memories: ${data.sharedMemories || 'syncing...'}`);
                 } else {
-                    logToBX('🌐 BrainXchange endpoint: wss://m3u.dossant.com');
+                    logToBX('🌐 BrainXchange endpoint: wss://your-server.com');
                     logToBX('⚡ Waiting for network connection...');
                 }
             } catch (error) {
-                logToBX('🌐 BrainXchange Network: wss://m3u.dossant.com');
+                logToBX('🌐 BrainXchange Network: wss://your-server.com');
                 logToBX('📡 Network discovery in progress...');
             }
             

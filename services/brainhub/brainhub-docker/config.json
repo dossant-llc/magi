@@ -1,5 +1,5 @@
 {
-  "brainbridgePath": "/Users/igor/Documents/code/agiforme/brainbridge",
+  "brainbridgePath": ".",
   "memoriesBasePath": "/Users/igor/Documents/code/agiforme",
   "defaultInstanceConfig": {
     "personality": "helpful assistant",

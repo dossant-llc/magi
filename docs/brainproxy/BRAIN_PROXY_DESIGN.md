@@ -1,19 +1,19 @@
 # Brain Proxy (BP) Integration Design
 
 ## Overview
-Extend the existing magi-exchange server on m3u.dossant.com:8082 to support Brain Proxy functionality, enabling Custom GPTs to access local BrainBridge MCP servers via standardized HTTPS API.
+Extend the existing magi-exchange server on your-server.com:8082 to support Brain Proxy functionality, enabling Custom GPTs to access local BrainBridge MCP servers via standardized HTTPS API.
 
 ## Architecture Integration
-**Current**: `wss://m3u.dossant.com/bx` (BrainXchange P2P)  
-**New**: `https://m3u.dossant.com:8082/bp/` (Brain Proxy GPT bridge)
+**Current**: `wss://your-server.com/bx` (BrainXchange P2P)  
+**New**: `https://your-server.com:8082/bp/` (Brain Proxy GPT bridge)
 
 ### URL Structure
-- `wss://m3u.dossant.com/bx` - Existing BrainXchange WebSocket (use BRAINXCHANGE_SERVER env var)
-- `https://m3u.dossant.com:8082/bp/rpc/:route` - GPT RPC endpoint  
-- `wss://m3u.dossant.com:8082/bp/connect` - Local connector WebSocket
-- `https://m3u.dossant.com:8082/bp/health` - Health check for GPT
-- `https://m3u.dossant.com:8082/bp/openapi.json` - OpenAPI schema
-- `https://m3u.dossant.com:8082/bp/privacy` - Privacy policy page
+- `wss://your-server.com/bx` - Existing BrainXchange WebSocket (use BRAINXCHANGE_SERVER env var)
+- `https://your-server.com:8082/bp/rpc/:route` - GPT RPC endpoint  
+- `wss://your-server.com:8082/bp/connect` - Local connector WebSocket
+- `https://your-server.com:8082/bp/health` - Health check for GPT
+- `https://your-server.com:8082/bp/openapi.json` - OpenAPI schema
+- `https://your-server.com:8082/bp/privacy` - Privacy policy page
 
 ## Implementation Plan
 
@@ -25,7 +25,7 @@ Extend the existing magi-exchange server on m3u.dossant.com:8082 to support Brai
 
 ### Phase 2: Local BrainBridge integration  
 1. **Add BrainProxyConnector service** to BrainBridge server
-2. **WebSocket client** connecting to `wss://m3u.dossant.com:8082/bp/connect`
+2. **WebSocket client** connecting to `wss://your-server.com:8082/bp/connect`
 3. **HTTP relay** - forward RPC calls to local MCP HTTP endpoint (port 8147)
 4. **Environment config** - `BRAIN_PROXY_*` variables
 
@@ -68,7 +68,7 @@ Extend the existing magi-exchange server on m3u.dossant.com:8082 to support Brai
 ## Custom GPT Setup Guide
 
 ### 1. OpenAPI Schema
-Complete schema at `https://m3u.dossant.com:8082/bp/openapi.json`:
+Complete schema at `https://your-server.com:8082/bp/openapi.json`:
 
 ```json
 {
@@ -80,7 +80,7 @@ Complete schema at `https://m3u.dossant.com:8082/bp/openapi.json`:
   },
   "servers": [
     {
-      "url": "https://m3u.dossant.com:8082/bp",
+      "url": "https://your-server.com:8082/bp",
       "description": "AGIfor.me Brain Proxy"
     }
   ],
@@ -182,7 +182,7 @@ Available methods:
 - ai_status: Check system status
 ```
 
-**Privacy Policy URL**: `https://m3u.dossant.com:8082/bp/privacy`
+**Privacy Policy URL**: `https://your-server.com:8082/bp/privacy`
 
 ### 3. Environment Configuration
 
@@ -190,7 +190,7 @@ Available methods:
 ```bash
 # Brain Proxy Configuration
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com:8082/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com:8082/bp/connect
 BRAIN_PROXY_SECRET=your-unique-secret-key
 BRAIN_PROXY_ROUTE=your-unique-route-id
 ```

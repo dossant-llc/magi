@@ -203,10 +203,10 @@ curl http://localhost:3001/api/instances
 
 ### Files Modified
 
-1. **brainbridge/Dockerfile** - Updated to HTTP mode with health checks
-2. **brainbridge/docker-compose.alice.yml** - Added port 8147 exposure
-3. **brainbridge/docker-compose.bob.yml** - Added port 8148 exposure  
-4. **brainbridge/docker-compose.carol.yml** - Added port 8149 exposure
+1. **services/brainhub/brainhub-docker/Dockerfile** - Updated to HTTP mode with health checks
+2. **services/brainhub/brainhub-docker/docker-compose.alice.yml** - Added port 8147 exposure
+3. **services/brainhub/brainhub-docker/docker-compose.bob.yml** - Added port 8148 exposure  
+4. **services/brainhub/brainhub-docker/docker-compose.carol.yml** - Added port 8149 exposure
 5. **brainnetwork/src/orchestrator/MessageRouter.ts** - HTTP requests replace shell commands
 6. **brainnetwork/src/orchestrator/InstanceManager.ts** - HTTP endpoint configuration
 7. **brainbridge/src/services/ai-service.ts** - Disabled fallback search to expose real issues

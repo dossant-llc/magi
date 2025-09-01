@@ -210,16 +210,16 @@ You: "magi ask friend about React best practices"
 
 2. **WebSocket Network Protocol**:
    - **Purpose**: Internet-based peer-to-peer communication between magi instances
-   - **Transport**: WebSocket over TCP/IP to m3u.dossant.com:8082
+   - **Transport**: WebSocket over TCP/IP to your-server.com:8082
    - **Format**: Real-time JSON messages
    - **Scope**: Global network, multiple users
 
 ### Server Status
 
 The BrainXchange network runs on:
-- **Production Server**: `wss://m3u.dossant.com/bx` (use BRAINXCHANGE_SERVER env var)
-- **Web Dashboard**: `http://m3u.dossant.com:8082` (live statistics)
-- **Status API**: `http://m3u.dossant.com:8082/api/stats`
+- **Production Server**: `wss://your-server.com/bx` (use BRAINXCHANGE_SERVER env var)
+- **Web Dashboard**: `http://your-server.com:8082` (live statistics)
+- **Status API**: `http://your-server.com:8082/api/stats`
 
 ## Troubleshooting
 
@@ -238,7 +238,7 @@ The BrainXchange network runs on:
 - For Docker: set in docker-compose.yml
 
 **"BrainXchange integration failed"**
-- Check network connectivity to m3u.dossant.com:8082
+- Check network connectivity to your-server.com:8082
 - Verify BRAINXCHANGE_EMAIL and BRAINXCHANGE_NAME are set
 - Check server logs for WebSocket connection errors
 
@@ -317,7 +317,7 @@ node test-complete-e2e.js
 ```
 
 This tests:
-- magi-exchange server connectivity (`wss://m3u.dossant.com/bx`)
+- magi-exchange server connectivity (`wss://your-server.com/bx`)
 - Two-client communication via WebSocket protocol
 - Invitation-based connection establishment
 - Real-time message routing between magi instances

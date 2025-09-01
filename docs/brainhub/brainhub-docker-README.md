@@ -184,7 +184,7 @@ BrainNetwork automatically:
 - Manages container lifecycles (start/stop/restart)
 - Monitors health and performance
 - Handles port allocation (Ollama: 11434, 11435, 11436...)
-- Maps memory directories (`../memories.alice`, `../memories.bob`)
+- Maps memory directories (`../data/memories/profiles/alice`, `../data/memories/profiles/bob`)
 
 ### Instance Creation Flow
 1. Create memory directory: `../memories.{name}`

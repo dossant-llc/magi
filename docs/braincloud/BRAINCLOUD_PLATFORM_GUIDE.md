@@ -5,7 +5,7 @@
 ## 🏗️ Architecture Overview
 
 ```
-BrainCloud Platform (m3u.dossant.com)
+BrainCloud Platform (your-server.com)
 ├── 🌥️ /          → BrainCloud Dashboard & Management
 ├── 🤝 /bx/        → BrainXchange Service (P2P memory sharing)
 ├── 🧠 /bp/        → Brain Proxy Service (GPT integration bridge)
@@ -18,8 +18,8 @@ BrainCloud Platform (m3u.dossant.com)
 **Purpose:** Peer-to-peer memory sharing between AI assistants
 
 **Live Production Instance:**
-- **WebSocket**: `wss://m3u.dossant.com/bx`
-- **Dashboard**: `http://m3u.dossant.com:8082`
+- **WebSocket**: `wss://your-server.com/bx`
+- **Dashboard**: `http://your-server.com:8082`
 - **Status**: ✅ Running
 
 **Features:**
@@ -31,9 +31,9 @@ BrainCloud Platform (m3u.dossant.com)
 - No message persistence (privacy-focused)
 
 **Endpoints:**
-- `wss://m3u.dossant.com/bx` - WebSocket connection
-- `https://m3u.dossant.com/bx/` - BrainXchange dashboard  
-- `https://m3u.dossant.com/bx/stats` - Statistics API
+- `wss://your-server.com/bx` - WebSocket connection
+- `https://your-server.com/bx/` - BrainXchange dashboard  
+- `https://your-server.com/bx/stats` - Statistics API
 
 **Features:**
 - Invitation-based connections
@@ -45,11 +45,11 @@ BrainCloud Platform (m3u.dossant.com)
 **Purpose:** Bridge between Custom GPTs and local AGIfor.me instances
 
 **Endpoints:**
-- `https://m3u.dossant.com/bp/rpc/{route}` - RPC endpoint for GPTs
-- `wss://m3u.dossant.com/bp/connect` - WebSocket for local connectors
-- `https://m3u.dossant.com/bp/health` - Health check
-- `https://m3u.dossant.com/bp/openapi.json` - OpenAPI schema
-- `https://m3u.dossant.com/bp/privacy` - Privacy policy
+- `https://your-server.com/bp/rpc/{route}` - RPC endpoint for GPTs
+- `wss://your-server.com/bp/connect` - WebSocket for local connectors
+- `https://your-server.com/bp/health` - Health check
+- `https://your-server.com/bp/openapi.json` - OpenAPI schema
+- `https://your-server.com/bp/privacy` - Privacy policy
 
 **Features:**
 - Route-based access control
@@ -100,7 +100,7 @@ export PORT="8082"
 ## 📊 Platform Monitoring
 
 ### Live Statistics Dashboard
-- **URL**: `http://m3u.dossant.com:8082`
+- **URL**: `http://your-server.com:8082`
 - **Auto-refresh**: Updates every 5 seconds
 - **Metrics Displayed**:
   - Connected clients across all services
@@ -121,16 +121,16 @@ export PORT="8082"
 ### API Endpoints for Monitoring
 ```bash
 # Get platform statistics
-curl http://m3u.dossant.com:8082/api/stats
+curl http://your-server.com:8082/api/stats
 
 # Admin password verification
 curl -X POST -H "Content-Type: application/json" \
   -d '{"password":"magi2024"}' \
-  http://m3u.dossant.com:8082/api/admin/verify
+  http://your-server.com:8082/api/admin/verify
 
 # Stream admin logs (requires Bearer auth)
 curl -H "Authorization: Bearer magi2024" \
-  http://m3u.dossant.com:8082/api/admin/logs?since=1234567890
+  http://your-server.com:8082/api/admin/logs?since=1234567890
 ```
 
 ### Sample Statistics Response
@@ -172,9 +172,9 @@ Rich, contextual logs with privacy protection:
 ```
 
 ### Health Checks
-- **BrainXchange**: `ws://m3u.dossant.com:8082/bx` - WebSocket connection test
-- **Brain Proxy**: `http://m3u.dossant.com:8082/bp/health` - HTTP health endpoint
-- **Platform**: `http://m3u.dossant.com:8082/api/stats` - Overall platform status
+- **BrainXchange**: `ws://your-server.com:8082/bx` - WebSocket connection test
+- **Brain Proxy**: `http://your-server.com:8082/bp/health` - HTTP health endpoint
+- **Platform**: `http://your-server.com:8082/api/stats` - Overall platform status
 
 ### Privacy & Security
 - **PII Protection**: Message content never logged or stored
@@ -191,16 +191,16 @@ Update your local BrainBridge `.env` file:
 
 ```env
 # BrainCloud Configuration
-BRAINCLOUD_URL=wss://m3u.dossant.com
+BRAINCLOUD_URL=wss://your-server.com
 
 # BrainXchange Configuration (P2P Memory Sharing)
 BRAINXCHANGE_EMAIL=your@email.com
 BRAINXCHANGE_NAME=Your Name
-BRAINXCHANGE_SERVER=wss://m3u.dossant.com/bx
+BRAINXCHANGE_SERVER=wss://your-server.com/bx
 
 # Brain Proxy Configuration (Custom GPT Integration)
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com:8082/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com:8082/bp/connect
 BRAIN_PROXY_SECRET=your-unique-secret-key-min-8-chars
 BRAIN_PROXY_ROUTE=your-unique-route-name
 BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
@@ -210,17 +210,17 @@ BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
 
 **OpenAPI Schema URL:**
 ```
-https://m3u.dossant.com:8082/bp/openapi.json
+https://your-server.com:8082/bp/openapi.json
 ```
 
 **Privacy Policy URL:**
 ```
-https://m3u.dossant.com:8082/bp/privacy
+https://your-server.com:8082/bp/privacy
 ```
 
 **RPC Endpoint:**
 ```
-https://m3u.dossant.com:8082/bp/rpc/{your-route}
+https://your-server.com:8082/bp/rpc/{your-route}
 ```
 
 ## 🧪 Testing
@@ -233,7 +233,7 @@ BRAINCLOUD_URL=http://localhost:8082 \
 node scripts/test-brain-proxy.js
 
 # Test against production
-BRAINCLOUD_URL=https://m3u.dossant.com:8082 \
+BRAINCLOUD_URL=https://your-server.com:8082 \
 node scripts/test-brain-proxy.js
 ```
 
@@ -241,45 +241,45 @@ node scripts/test-brain-proxy.js
 
 **Test BrainCloud Dashboard:**
 ```bash
-curl -s https://m3u.dossant.com:8082/ | grep -i braincloud
+curl -s https://your-server.com:8082/ | grep -i braincloud
 ```
 
 **Test System Status:**
 ```bash
-curl -s https://m3u.dossant.com:8082/api/status | jq
+curl -s https://your-server.com:8082/api/status | jq
 ```
 
 **Test Brain Proxy Health:**
 ```bash
-curl -s https://m3u.dossant.com:8082/bp/health | jq
+curl -s https://your-server.com:8082/bp/health | jq
 ```
 
 **Test OpenAPI Schema:**
 ```bash
-curl -s https://m3u.dossant.com:8082/bp/openapi.json | jq '.info'
+curl -s https://your-server.com:8082/bp/openapi.json | jq '.info'
 ```
 
 ## 📊 Monitoring
 
 ### Real-time Dashboard
-Visit https://m3u.dossant.com:8082/ for live statistics and service overview.
+Visit https://your-server.com:8082/ for live statistics and service overview.
 
 ### API Monitoring
 ```bash
 # Overall system status
-curl -s https://m3u.dossant.com:8082/api/status | jq '.services'
+curl -s https://your-server.com:8082/api/status | jq '.services'
 
 # BrainXchange statistics
-curl -s https://m3u.dossant.com:8082/bx/stats | jq
+curl -s https://your-server.com:8082/bx/stats | jq
 
 # Brain Proxy health
-curl -s https://m3u.dossant.com:8082/bp/health | jq '.stats'
+curl -s https://your-server.com:8082/bp/health | jq '.stats'
 ```
 
 ### Log Monitoring
 ```bash
 # SSH into server and monitor logs
-ssh user@m3u.dossant.com
+ssh user@your-server.com
 tail -f /path/to/deployment/braincloud.log
 ```
 
@@ -314,7 +314,7 @@ ssh user@server 'pgrep -f "node server.js" && echo "Running" || echo "Stopped"'
 ### Process Monitoring
 ```bash
 # Check process health
-curl -s https://m3u.dossant.com:8082/api/status | jq '.status'
+curl -s https://your-server.com:8082/api/status | jq '.status'
 
 # Monitor resource usage
 ssh user@server 'top -p $(pgrep -f "node server.js")'
@@ -344,10 +344,10 @@ Each service follows the same pattern:
 ### From Old BrainXchange Server
 
 **Old URLs:**
-- `ws://m3u.dossant.com:8082/` (root WebSocket)
+- `ws://your-server.com:8082/` (root WebSocket)
 
 **New URLs:**
-- `wss://m3u.dossant.com/bx` (namespaced with SSL)
+- `wss://your-server.com/bx` (namespaced with SSL)
 
 **Migration Steps:**
 1. Deploy new BrainCloud platform

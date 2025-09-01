@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Deploy Magi Exchange Server to m3u.dossant.com
+# Deploy Magi Exchange Server to configured server
 set -e
 
 # Load environment variables
@@ -98,8 +98,8 @@ echo ""
 echo "✨ Magi Exchange Server deployed!"
 echo ""
 echo "📍 Server Info:"
-echo "   URL: ws://m3u.dossant.com:$PORT"
+echo "   URL: ws://${AGIFORME_SERVER_DOMAIN:-$REMOTE_HOST}:$PORT"
 echo "   Logs: tail -f $REMOTE_DIR/logs/server.log (via SSH)"
 echo ""
 echo "🔗 Test connection:"
-echo "   wscat -c ws://m3u.dossant.com:$PORT"
+echo "   wscat -c ws://${AGIFORME_SERVER_DOMAIN:-$REMOTE_HOST}:$PORT"

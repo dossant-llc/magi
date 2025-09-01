@@ -52,7 +52,7 @@ class BrainNetworkServer {
     } else {
       console.log('⚙️  Using default configuration');
       config = {
-        brainbridgePath: path.resolve('../brainbridge'),
+        brainbridgePath: path.resolve('.'),
         memoriesBasePath: path.resolve('../'),
         defaultInstanceConfig: {
           personality: 'helpful assistant',
@@ -331,7 +331,7 @@ class BrainNetworkServer {
         const runningInstance = instances.find(i => i.status === 'running');
         
         const status = {
-          endpoint: 'wss://m3u.dossant.com',
+          endpoint: `wss://${process.env.AGIFORME_SERVER_DOMAIN || 'your-server.com'}`,
           connected: runningInstance ? true : false,
           activeNodes: instances.filter(i => i.status === 'running').length,
           sharedMemories: instances.reduce((sum, i) => sum + (i.stats?.memoryFiles || 0), 0),
@@ -406,7 +406,7 @@ class BrainNetworkServer {
         socket.join('bx_network');
         // Send initial BX status
         socket.emit('bx_network_log', '🌐 Connected to BrainXchange Network');
-        socket.emit('bx_network_log', '📡 Endpoint: wss://m3u.dossant.com');
+        socket.emit('bx_network_log', `📡 Endpoint: wss://${process.env.AGIFORME_SERVER_DOMAIN || 'your-server.com'}`);
       });
     });
   }
@@ -434,7 +434,7 @@ class BrainNetworkServer {
           if (flowInfo) {
             if (flowInfo.to === 'brainxchange' || flowInfo.from === 'brainxchange') {
               this.io.to('bx_network').emit('bx_network_log', 
-                `🌐 ${event.type}: ${flowInfo.from} → ${flowInfo.to} via wss://m3u.dossant.com`);
+                `🌐 ${event.type}: ${flowInfo.from} → ${flowInfo.to} via wss://${process.env.AGIFORME_SERVER_DOMAIN || 'your-server.com'}`);
             } else if (flowInfo.to !== flowInfo.from) {
               this.io.to('bx_network').emit('bx_network_log', 
                 `🧠 Cross-brain: ${flowInfo.from} → ${flowInfo.to}`);

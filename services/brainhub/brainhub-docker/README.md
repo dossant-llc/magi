@@ -160,7 +160,7 @@ Access the web dashboard at `http://localhost:3001`
 Create `config.json`:
 ```json
 {
-  "brainbridgePath": "../brainbridge",
+  "brainbridgePath": ".",
   "memoriesBasePath": "../",
   "defaultInstanceConfig": {
     "personality": "helpful assistant",

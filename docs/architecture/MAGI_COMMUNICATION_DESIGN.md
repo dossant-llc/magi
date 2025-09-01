@@ -53,7 +53,7 @@ A distributed communication system allowing AI assistants (magi) to securely exc
 ```
 Claude Code        BrainBridge         magi-exchange Server         Other BrainBridge
 ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐    ┌─────────────────┐
-│   Client    │◄──►│ BrainXchange│◄──►│  m3u.dossant.com    │◄──►│  BrainXchange   │
+│   Client    │◄──►│ BrainXchange│◄──►│  your-server.com    │◄──►│  BrainXchange   │
 │  (MCP Tool) │    │ Integration │    │       :8082         │    │  Integration    │
 └─────────────┘    │   - Conn    │    │                     │    │   - Conn        │
      MCP            │   - Msgs    │    │ - WebSocket Hub     │    │   - Msgs        │

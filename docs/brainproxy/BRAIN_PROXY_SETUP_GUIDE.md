@@ -14,7 +14,7 @@ The Brain Proxy system enables Custom GPTs to access your local AGIfor.me memory
 
 ```
 Custom GPT → HTTPS → Cloud Proxy → WebSocket → Local BrainBridge → MCP Server
-   (GPT)      (m3u.dossant.com:8082/bp)     (Your Computer)      (Port 8147)
+   (GPT)      (your-server.com:8082/bp)     (Your Computer)      (Port 8147)
 ```
 
 ## Setup Steps
@@ -31,7 +31,7 @@ cd services/brainxchange
 
 **Verify deployment:**
 ```bash
-curl https://m3u.dossant.com:8082/bp/health
+curl https://your-server.com:8082/bp/health
 ```
 
 Expected response:
@@ -60,7 +60,7 @@ nano brainbridge/.env
 ```env
 # Brain Proxy Configuration
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com:8082/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com:8082/bp/connect
 BRAIN_PROXY_SECRET=your-unique-secret-key-at-least-8-chars
 BRAIN_PROXY_ROUTE=your-unique-route-name
 BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
@@ -78,7 +78,7 @@ echo "ig-$(openssl rand -hex 4)"
 **Example configuration:**
 ```env
 BRAIN_PROXY_ENABLED=true
-BRAIN_PROXY_URL=wss://m3u.dossant.com:8082/bp/connect
+BRAIN_PROXY_URL=wss://your-server.com:8082/bp/connect
 BRAIN_PROXY_SECRET=a1b2c3d4e5f6789012345678901234567
 BRAIN_PROXY_ROUTE=ig-4f2a8b9d
 BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
@@ -97,7 +97,7 @@ Check the logs for:
 ```
 🧠 Brain Proxy connector initialized
    Route: ig-4f2a8b9d
-   Proxy: wss://m3u.dossant.com:8082/bp/connect
+   Proxy: wss://your-server.com:8082/bp/connect
 🧠 Brain Proxy connected successfully
 ```
 
@@ -154,8 +154,8 @@ Be conversational and personal - this is their external brain, so treat their me
 
 **Actions:**
 1. Click "Create new action"
-2. **Import from URL:** `https://m3u.dossant.com:8082/bp/openapi.json`
-3. **Privacy Policy:** `https://m3u.dossant.com:8082/bp/privacy`
+2. **Import from URL:** `https://your-server.com:8082/bp/openapi.json`
+3. **Privacy Policy:** `https://your-server.com:8082/bp/privacy`
 
 **CRITICAL: Configure Authentication**
 After importing the OpenAPI schema, you MUST add authentication:
@@ -241,7 +241,7 @@ This is the most common issue - ChatGPT is not sending the correct authenticatio
 1. **Verify authentication header:**
    ```bash
    # Test with your secret as X-Brain-Key header
-   curl -X POST https://m3u.dossant.com/bp/rpc/your-route-name \
+   curl -X POST https://your-server.com/bp/rpc/your-route-name \
      -H "Content-Type: application/json" \
      -H "X-Brain-Key: your-brain-proxy-secret" \
      -d '{"id": "test", "method": "ai_status", "params": {}}'
@@ -261,8 +261,8 @@ This is the most common issue - ChatGPT is not sending the correct authenticatio
 ### GPT Not Responding
 1. **Test endpoints manually:**
    ```bash
-   curl https://m3u.dossant.com:8082/bp/health
-   curl https://m3u.dossant.com:8082/bp/openapi.json
+   curl https://your-server.com:8082/bp/health
+   curl https://your-server.com:8082/bp/openapi.json
    ```
 2. **Check GPT action configuration:** Verify OpenAPI import was successful
 3. **Test with valid route:** Use your exact route name in requests
@@ -288,7 +288,7 @@ This is the most common issue - ChatGPT is not sending the correct authenticatio
 
 **Check proxy status:**
 ```bash
-curl https://m3u.dossant.com:8082/bp/health
+curl https://your-server.com:8082/bp/health
 ```
 
 **Monitor logs:**

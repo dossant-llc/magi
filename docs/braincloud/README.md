@@ -42,24 +42,24 @@ The deployment script:
 After deployment, verify all services are working:
 ```bash
 # Check system status
-curl -s https://m3u.dossant.com/api/status | jq '.status'
+curl -s https://your-server.com/api/status | jq '.status'
 
 # Check Brain Proxy health
-curl -s https://m3u.dossant.com/bp/health | jq '.status'
+curl -s https://your-server.com/bp/health | jq '.status'
 
 # Verify dashboard is accessible
-curl -s https://m3u.dossant.com/ | head -n 3
+curl -s https://your-server.com/ | head -n 3
 
 # Confirm service is running
 ssh igoram2@vps34824.dreamhostps.com 'pgrep -f "node server.js" && echo "✅ Running" || echo "❌ Stopped"'
 ```
 
 ### Service URLs (Production)
-- **Dashboard**: `https://m3u.dossant.com/`
-- **BrainXchange WebSocket**: `wss://m3u.dossant.com/bx`
-- **Brain Proxy WebSocket**: `wss://m3u.dossant.com/bp/connect`
-- **System Status**: `https://m3u.dossant.com/api/status`
-- **Brain Proxy Health**: `https://m3u.dossant.com/bp/health`
+- **Dashboard**: `https://your-server.com/`
+- **BrainXchange WebSocket**: `wss://your-server.com/bx`
+- **Brain Proxy WebSocket**: `wss://your-server.com/bp/connect`
+- **System Status**: `https://your-server.com/api/status`
+- **Brain Proxy Health**: `https://your-server.com/bp/health`
 
 ### DreamHost Proxy Configuration
 The service runs internally on port 8082 but is automatically proxied by DreamHost:
@@ -68,16 +68,16 @@ The service runs internally on port 8082 but is automatically proxied by DreamHo
 - **SSL Termination**: Handled by DreamHost proxy layer
 
 **Working Services:**
-- `https://m3u.dossant.com/` ✅ (Dashboard)
-- `https://m3u.dossant.com/api/status` ✅ (System Status API)
-- `https://m3u.dossant.com/bp/health` ✅ (Brain Proxy Health API)
+- `https://your-server.com/` ✅ (Dashboard)
+- `https://your-server.com/api/status` ✅ (System Status API)
+- `https://your-server.com/bp/health` ✅ (Brain Proxy Health API)
 
 **⚠️ DreamHost WebSocket Proxy Limitation:**
 Per DreamHost's official policy: *"WebSockets can be used on a VPS or Dedicated Server using a non-privileged port as a local app. However, running websockets using a Proxy Server that is available to the public is not supported."*
 
 This means public WebSocket URLs are not supported:
-- `wss://m3u.dossant.com/bx` ❌ (DreamHost doesn't proxy WebSockets)
-- `wss://m3u.dossant.com/bp/connect` ❌ (DreamHost doesn't proxy WebSockets)
+- `wss://your-server.com/bx` ❌ (DreamHost doesn't proxy WebSockets)
+- `wss://your-server.com/bp/connect` ❌ (DreamHost doesn't proxy WebSockets)
 
 **Workaround for Development:**
 For WebSocket connections, use direct port access (if available) or configure local development:
@@ -95,22 +95,22 @@ BRAIN_PROXY_URL=ws://localhost:8082/bp/connect  # Local BrainCloud instance
 ssh igoram2@vps34824.dreamhostps.com 'pgrep -f "node server.js" && echo "Running" || echo "Stopped"'
 
 # View logs
-ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/m3u.dossant.com/braincloud/braincloud.log'
+ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/your-server.com/braincloud/braincloud.log'
 
 # Check service health
-curl -s https://m3u.dossant.com/api/status | jq
+curl -s https://your-server.com/api/status | jq
 ```
 
 ### Manual Service Control
 ```bash
 # Start service
-ssh igoram2@vps34824.dreamhostps.com 'cd /home/igoram2/m3u.dossant.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
+ssh igoram2@vps34824.dreamhostps.com 'cd /home/igoram2/your-server.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
 
 # Stop service
 ssh igoram2@vps34824.dreamhostps.com 'pkill -f "node server.js"'
 
 # Restart service
-ssh igoram2@vps34824.dreamhostps.com 'pkill -f "node server.js"; sleep 2; cd /home/igoram2/m3u.dossant.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
+ssh igoram2@vps34824.dreamhostps.com 'pkill -f "node server.js"; sleep 2; cd /home/igoram2/your-server.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
 ```
 
 ## 🔄 Migration from Legacy Services
@@ -124,23 +124,23 @@ All functionality is now consolidated in **BrainCloud Platform**:
 
 | Legacy Service | New Location | URL |
 |---|---|---|
-| BrainXchange Server | BrainCloud `/bx` | `wss://m3u.dossant.com/bx` |
-| Brain Proxy | BrainCloud `/bp/connect` | `wss://m3u.dossant.com/bp/connect` |
-| Dashboard | BrainCloud `/` | `https://m3u.dossant.com/` |
+| BrainXchange Server | BrainCloud `/bx` | `wss://your-server.com/bx` |
+| Brain Proxy | BrainCloud `/bp/connect` | `wss://your-server.com/bp/connect` |
+| Dashboard | BrainCloud `/` | `https://your-server.com/` |
 
 ### Configuration Updates
 Update your client configurations:
 
 **Before (Deprecated)**:
 ```bash
-BRAINXCHANGE_SERVER=ws://m3u.dossant.com:8082
-BRAIN_PROXY_URL=ws://m3u.dossant.com:8082/bp/connect
+BRAINXCHANGE_SERVER=ws://your-server.com:8082
+BRAIN_PROXY_URL=ws://your-server.com:8082/bp/connect
 ```
 
 **After (BrainCloud)**:
 ```bash
-BRAINXCHANGE_SERVER=wss://m3u.dossant.com/bx
-BRAIN_PROXY_URL=wss://m3u.dossant.com/bp/connect
+BRAINXCHANGE_SERVER=wss://your-server.com/bx
+BRAIN_PROXY_URL=wss://your-server.com/bp/connect
 ```
 
 ## 🧠 Services Overview
@@ -186,8 +186,8 @@ cd services/braincloud && node server.js
 ### Environment Configuration
 ```bash
 # BrainCloud Production
-BRAINXCHANGE_SERVER=wss://m3u.dossant.com/bx
-BRAIN_PROXY_URL=wss://m3u.dossant.com/bp/connect
+BRAINXCHANGE_SERVER=wss://your-server.com/bx
+BRAIN_PROXY_URL=wss://your-server.com/bp/connect
 
 # Local Development (if needed)
 BRAINXCHANGE_SERVER=ws://localhost:8082/bx
@@ -199,7 +199,7 @@ BRAIN_PROXY_URL=ws://localhost:8082/bp/connect
 ## 🎯 Quick Start
 
 1. **Deploy**: `./deploy.sh`
-2. **Verify**: `curl https://m3u.dossant.com/api/status`
-3. **Monitor**: `ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/m3u.dossant.com/braincloud/braincloud.log'`
+2. **Verify**: `curl https://your-server.com/api/status`
+3. **Monitor**: `ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/your-server.com/braincloud/braincloud.log'`
 
 **Welcome to BrainCloud - The unified brain-sharing platform! 🌥️🧠**

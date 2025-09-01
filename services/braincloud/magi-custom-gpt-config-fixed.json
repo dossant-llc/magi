@@ -1,19 +1,24 @@
 {
   "schema_version": "v1",
-  "name_for_human": "mAGI Personal Memory",
-  "name_for_model": "magi_memory",
-  "description_for_human": "Your personal AI memory assistant - accesses your private knowledge base.",
-  "description_for_model": "Access the user's personal memory system. This connects to their private knowledge base through their authenticated brain proxy connection. Always use the X-Brain-Key: 8f840af7792e4672a67dfb21754a571f for authentication.",
+  "name_for_model": "agiforme_brain_v2",
+  "name_for_human": "AGIfor.me Brain v2",
+  "description_for_model": "FIXED VERSION - Access user's personal AI memory bank through AGIfor.me Brain Proxy. Store and retrieve personal memories, insights, and knowledge using proper Custom GPT authentication headers.",
+  "description_for_human": "Your personal AI memory bank v2 - store and access your memories, insights, and knowledge through AGIfor.me (Fixed Authentication).",
   "auth": {
-    "type": "none"
+    "type": "custom_auth",
+    "custom_auth_type": "api_key",
+    "authorization_type": "custom",
+    "verification_tokens": {
+      "openai": "your-openai-verification-token-v2"
+    }
   },
   "api": {
     "type": "openapi",
-    "url": "https://m3u.dossant.com/bp/openapi.json",
-    "is_user_authenticated": false
+    "url": "https://your-server.com/bp/openapi.json",
+    "has_user_authentication": true
   },
-  "logo_url": "https://m3u.dossant.com/favicon.ico",
-  "contact_email": "support@agifor.me",
-  "legal_info_url": "https://m3u.dossant.com/legal",
-  "privacy_policy_url": "https://m3u.dossant.com/privacy"
+  "logo_url": "https://your-server.com/favicon.ico",
+  "contact_email": "support@agiforme.ai",
+  "legal_info_url": "https://your-server.com/legal",
+  "privacy_policy_url": "https://your-server.com/privacy"
 }

@@ -3,7 +3,7 @@
 A lightweight WebSocket server enabling magi-to-magi communication through usernames and invitation codes.
 
 ## 🚀 Live Server
-- **URL**: `wss://m3u.dossant.com/bx`
+- **URL**: `wss://your-server.com/bx`
 - **Status**: ✅ Running
 
 ## 📋 Features
@@ -94,7 +94,7 @@ Deploy to server:
 const BrainXchangeClient = require('./client/brainxchange-client');
 
 // Create client
-const client = new BrainXchangeClient(process.env.BRAINXCHANGE_SERVER || 'wss://m3u.dossant.com/bx');
+const client = new BrainXchangeClient(process.env.BRAINXCHANGE_SERVER || 'wss://your-server.com/bx');
 
 // Connect and identify
 await client.connect();
@@ -294,7 +294,7 @@ npm test
 ssh igoram2@vps34824.dreamhostps.com
 
 # Navigate to app
-cd /home/igoram2/m3u.dossant.com/brainxchange
+cd /home/igoram2/your-server.com/brainxchange
 
 # View logs
 tail -f logs/server.log
