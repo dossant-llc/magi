@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ If It's Magic — A Manifesto</title>
+    <meta name="description" content="A manifesto for owning our memories, sharing with consent, and building intelligence in the open.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --accent-gold: #ffd700;
+            --accent-indigo: #6366f1;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-title {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 600;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-gold));
+            color: white;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            border: 2px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* Manifesto Section */
+        .manifesto {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .manifesto-block {
+            margin-bottom: 4rem;
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .manifesto-block:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .manifesto-title {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .manifesto-text {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(1.3rem, 2.5vw, 1.6rem);
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        /* Principles Section */
+        .principles {
+            padding: 6rem 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            text-align: center;
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 4rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-indigo) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .principle-card {
+            padding: 2.5rem;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .principle-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .principle-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .principle-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent-gold);
+        }
+
+        .principle-desc {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Invitation Section */
+        .invitation {
+            padding: 6rem 0;
+            text-align: center;
+        }
+
+        .invitation-title {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-indigo) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .invitation-text {
+            font-size: clamp(1.2rem, 2.5vw, 1.4rem);
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 3rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .footer-content {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-gold);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">If it's magic, it belongs to us.</h1>
+            <p class="hero-subtitle">A manifesto for owning our memories, sharing with consent, and building intelligence in the open.</p>
+            <div class="hero-buttons">
+                <a href="#manifesto" class="btn btn-primary">✨ Read the Manifesto</a>
+                <a href="https://github.com/agiforme" class="btn btn-secondary">🔗 View the Code</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Manifesto Section -->
+    <section id="manifesto" class="manifesto">
+        <div class="container">
+            <div class="manifesto-block fade-in-up">
+                <h2 class="manifesto-title">✨ If it's magic, it belongs to us.</h2>
+                <p class="manifesto-text">Our memories are not commodities. They are the threads of our lives — fragile, timeless, and deeply human.</p>
+            </div>
+
+            <div class="manifesto-block fade-in-up">
+                <h2 class="manifesto-title">⏳ If it's magic, it should last.</h2>
+                <p class="manifesto-text">Knowledge should accumulate with us, not vanish into servers we don't control. What we remember, we keep. What we share, we share by choice.</p>
+            </div>
+
+            <div class="manifesto-block fade-in-up">
+                <h2 class="manifesto-title">🔓 If it's magic, it should be free.</h2>
+                <p class="manifesto-text">Not free as in cost, but free as in freedom — source-available, transparent, and open to exploration.</p>
+            </div>
+
+            <div class="manifesto-block fade-in-up">
+                <h2 class="manifesto-title">🛡️ If it's magic, it should respect us.</h2>
+                <p class="manifesto-text">Privacy is not a feature. It is the foundation. Consent is not optional. It is the rule.</p>
+            </div>
+
+            <div class="manifesto-block fade-in-up">
+                <h2 class="manifesto-title">🌟 If it's magic, it should inspire.</h2>
+                <p class="manifesto-text">This project is not about selling. It is about building in the open, showing what is possible, and reminding ourselves that intelligence can serve humanity without taking from it.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Principles Section -->
+    <section class="principles">
+        <div class="container">
+            <h2 class="section-title">Our Principles</h2>
+            <div class="principles-grid">
+                <div class="principle-card fade-in-up">
+                    <span class="principle-icon">🔒</span>
+                    <h3 class="principle-title">Ownership</h3>
+                    <p class="principle-desc">Your memories are yours. They belong to you, not to platforms or corporations.</p>
+                </div>
+                
+                <div class="principle-card fade-in-up">
+                    <span class="principle-icon">📜</span>
+                    <h3 class="principle-title">Consent</h3>
+                    <p class="principle-desc">Share only with permission. Every interaction respects your choice.</p>
+                </div>
+                
+                <div class="principle-card fade-in-up">
+                    <span class="principle-icon">🔎</span>
+                    <h3 class="principle-title">Transparency</h3>
+                    <p class="principle-desc">Open code, open trust. See how it works, contribute to its growth.</p>
+                </div>
+                
+                <div class="principle-card fade-in-up">
+                    <span class="principle-icon">⏳</span>
+                    <h3 class="principle-title">Longevity</h3>
+                    <p class="principle-desc">Knowledge should grow with you, accumulating and lasting through time.</p>
+                </div>
+                
+                <div class="principle-card fade-in-up">
+                    <span class="principle-icon">🌟</span>
+                    <h3 class="principle-title">Inspiration</h3>
+                    <p class="principle-desc">Build to elevate humanity, showing what's possible when we work together.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Invitation Section -->
+    <section class="invitation">
+        <div class="container">
+            <h2 class="invitation-title">If it's magic, it lasts when it's shared.</h2>
+            <p class="invitation-text">Join the journey. Explore the code. Contribute your ideas.</p>
+            <div class="hero-buttons">
+                <a href="https://github.com/agiforme" class="btn btn-primary">🚀 GitHub</a>
+                <a href="#contact" class="btn btn-secondary">📧 Subscribe</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                © If It's Magic — Source-available project
+            </div>
+            <div class="footer-links">
+                <a href="#manifesto">Manifesto</a>
+                <a href="#principles">Principles</a>
+                <a href="https://github.com/agiforme">GitHub</a>
+                <a href="#contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling and fade-in animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Intersection Observer for fade-in animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all fade-in elements
+            document.querySelectorAll('.fade-in-up').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
