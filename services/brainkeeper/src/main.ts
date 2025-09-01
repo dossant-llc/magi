@@ -1,4 +1,4 @@
-import type { ConsentRequest, ConsentResponse } from '../../shared/types';
+import type { ConsentRequest, ConsentResponse } from '../../../shared/types';
 
 interface AppState {
   requests: ConsentRequest[];

@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "agiforme_brain",
+  "name_for_human": "AGIfor.me Brain",
+  "description_for_model": "Access user's personal AI memory bank through AGIfor.me Brain Proxy. Store and retrieve personal memories, insights, and knowledge. Requires user's unique brain key for authentication.",
+  "description_for_human": "Your personal AI memory bank - store and access your memories, insights, and knowledge through AGIfor.me.",
+  "auth": {
+    "type": "custom_auth",
+    "custom_auth_type": "api_key",
+    "authorization_type": "custom",
+    "verification_tokens": {
+      "openai": "your-openai-verification-token"
+    },
+    "custom_headers": {
+      "X-Brain-Key": "your-unique-brain-key-here"
+    }
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://your-server.com/bp/openapi.json",
+    "has_user_authentication": true
+  },
+  "logo_url": "https://your-server.com/logo.png",
+  "contact_email": "support@agiforme.ai",
+  "legal_info_url": "https://your-server.com/legal",
+  "servers": {
+    "default": "https://your-server.com/bp/rpc/default-user"
+  }
+}

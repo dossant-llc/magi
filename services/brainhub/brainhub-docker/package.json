@@ -1,0 +1,56 @@
+{
+  "name": "brainhub-docker",
+  "version": "1.0.0",
+  "description": "Docker-based hub for orchestrating multi-brain networks with visualization",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dashboard": "npm run dev --workspace=dashboard",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "network:up": "node dist/orchestrator/network-manager.js up",
+    "network:down": "node dist/orchestrator/network-manager.js down",
+    "network:status": "node dist/orchestrator/network-manager.js status"
+  },
+  "keywords": [
+    "ai",
+    "orchestration", 
+    "p2p",
+    "visualization",
+    "brainhub",
+    "hub-spoke",
+    "docker",
+    "mcp"
+  ],
+  "author": "",
+  "license": "SEE LICENSE FILE",
+  "type": "module",
+  "dependencies": {
+    "@types/node": "^24.3.0",
+    "dockerode": "^4.0.2",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.5",
+    "ws": "^8.18.3",
+    "redis": "^4.6.11",
+    "uuid": "^9.0.1",
+    "axios": "^1.11.0",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.23",
+    "@types/express": "^4.17.17",
+    "@types/uuid": "^9.0.7",
+    "@types/ws": "^8.18.1",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "ts-jest": "^29.1.2"
+  },
+  "workspaces": [
+    "dashboard"
+  ]
+}

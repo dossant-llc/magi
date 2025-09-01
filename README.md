@@ -17,11 +17,27 @@
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/dossant-llc/agiforme
+# 1. Clone and install
+git clone [repository-url] agiforme  # Will be public soon
 cd agiforme
 npm install
-./start.sh
+
+# 2. Set up local AI (Ollama)
+brew install ollama          # macOS
+ollama serve                 # Keep running
+npm run ai:pull             # Downloads models (~5GB)
+
+# 3. Create your memory structure  
+./setup.sh
+
+# 4. Start BrainBridge
+npm run dev
+
+# 5. Test everything works
+npm run diag                # Should show ✅ status
 ```
+
+**👉 For complete setup instructions, see [GETTING_STARTED.md](docs/setup/GETTING_STARTED.md)**
 
 ## 🎯 Real-World Use Cases
 
@@ -166,8 +182,8 @@ Claude: [adds to your troubleshooting knowledge with smart privacy categorizatio
 
 ### Privacy Protection Like `.env` Files
 Just like you'd never commit `.env` to git, your personal memories are automatically protected:
-- ✅ `memories.sample/` - Template structure (ships with project)
-- 🚫 `memories/` - Your actual memories (git-ignored, stays local)
+- ✅ `data/memories/sample/` - Template structure (ships with project)
+- 🚫 `data/memories/` - Your actual memories (git-ignored, stays local)
 - 🔧 `./setup.sh` - Creates your private memories from template
 
 ### YOU Control Your Data - Completely
@@ -205,12 +221,22 @@ For cloud AI integration:
 
 ## 📖 Documentation
 
-- **[docs/ARCHITECTURE_SUMMARY.md](docs/ARCHITECTURE_SUMMARY.md)** - Visual architecture guide with interactive diagrams
-- **[docs/architecture-viewer.html](docs/architecture-viewer.html)** - Enhanced HTML viewer with better Mermaid rendering
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and technical details
-- **[docs/MULTI_PROFILE_DESIGN.md](docs/MULTI_PROFILE_DESIGN.md)** - Wake word system and context switching design
-- **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development phases and future features  
-- **[docs/PRIVACY_DESIGN.md](docs/PRIVACY_DESIGN.md)** - Detailed privacy and consent system design
+### 🚀 **Getting Started** (Start here!)
+- **[GETTING_STARTED.md](docs/setup/GETTING_STARTED.md)** - Complete setup guide (zero to working in ~15 min)
+- **[COMMANDS.md](docs/user-guides/COMMANDS.md)** - Complete command reference
+- **[CLAUDE_CODE_SETUP.md](docs/setup/CLAUDE_CODE_SETUP.md)** - Claude Code MCP integration
+- **[DIAGNOSTICS.md](docs/user-guides/DIAGNOSTICS.md)** - Troubleshooting & health monitoring
+
+### 🏗️ **Architecture & Design**  
+- **[docs/ARCHITECTURE_SUMMARY.md](docs/ARCHITECTURE_SUMMARY.md)** - Visual architecture guide
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Detailed technical design
+- **[docs/MULTI_PROFILE_DESIGN.md](docs/MULTI_PROFILE_DESIGN.md)** - Wake word & context system
+- **[docs/PRIVACY_DESIGN.md](docs/PRIVACY_DESIGN.md)** - Privacy & consent system
+
+### 📋 **Project Info**
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development roadmap
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute  
+- **[LICENSE](LICENSE)** - Licensing information
 
 ## 🤝 Contributing & Community
 
