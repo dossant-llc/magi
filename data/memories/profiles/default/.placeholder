@@ -1,0 +1,30 @@
+# Default Profile Placeholder
+
+This is the **default profile** for your AGIfor.me memory system.
+
+## Profile Structure
+```
+default/
+├── public/           # Shareable knowledge
+├── team/             # Work/collaboration context  
+├── personal/         # Personal life, family
+├── private/          # Private thoughts, goals
+├── sensitive/        # High-security information
+└── examples/         # Templates and samples
+```
+
+## Usage
+- **Default behavior**: When you use `magi` commands, they access this profile
+- **Privacy-first**: Memories are automatically categorized by sensitivity level
+- **Always private**: This entire `profiles/` folder is gitignored to protect your data
+
+## Future Expansion
+You can create additional profiles like:
+- `work/` - Business context with professional tone
+- `development/` - Technical context with experimental features
+- `family/` - Family-focused context with casual tone
+
+Each profile maintains complete isolation - your work profile can't access personal memories and vice versa.
+
+---
+*This file serves as documentation and ensures the profile structure is preserved in git while keeping your actual memories private.*

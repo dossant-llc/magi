@@ -1,0 +1,19 @@
+{
+  "name": "braincloud-server",
+  "version": "1.0.0",
+  "description": "BrainCloud - Unified cloud platform for AI brain services",
+  "main": "server.js",
+  "scripts": {
+    "start": "node generate-config.js && node server.js",
+    "dev": "node generate-config.js && PORT=8082 node server.js",
+    "config": "node generate-config.js",
+    "test": "echo \"No tests specified\""
+  },
+  "dependencies": {
+    "ws": "^8.14.2",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["braincloud", "ai", "websocket", "brainxchange", "brainproxy", "gpt", "mcp"],
+  "author": "AGIfor.me Team",
+  "license": "SEE LICENSE FILE"
+}

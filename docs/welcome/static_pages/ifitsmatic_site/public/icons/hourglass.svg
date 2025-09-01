@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="hourglassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Hourglass frame -->
+  <rect x="25" y="15" width="50" height="8" rx="4" fill="url(#hourglassGradient)"/>
+  <rect x="25" y="77" width="50" height="8" rx="4" fill="url(#hourglassGradient)"/>
+  
+  <!-- Hourglass body -->
+  <path d="M30 23 L30 40 L50 50 L70 40 L70 23" stroke="url(#hourglassGradient)" stroke-width="3" fill="none"/>
+  <path d="M30 77 L30 60 L50 50 L70 60 L70 77" stroke="url(#hourglassGradient)" stroke-width="3" fill="none"/>
+  
+  <!-- Sand -->
+  <path d="M32 25 L32 38 L48 48 L32 25" fill="#ffd700" opacity="0.7"/>
+  <path d="M52 52 L68 62 L68 75 L52 75 Z" fill="#ffd700" opacity="0.7"/>
+  
+  <!-- Falling sand -->
+  <circle cx="50" cy="50" r="1" fill="#ffd700"/>
+</svg>

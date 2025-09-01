@@ -1,0 +1,22 @@
+# Protect User Memory Data in Default Profile Only
+# The 'default' profile contains real user data and should never be committed
+# Sample profiles (alice, bob, carol) are for testing and can be committed
+
+# Ignore all actual user data in the default profile
+default/*.md
+default/*.json
+default/*.txt
+default/**/*.md
+default/**/*.json
+default/**/*.txt
+
+# Ignore embedding indexes and caches in default profile
+default/.index*/
+default/embeddings/
+default/cache/
+
+# Keep the default profile structure with placeholder
+!default/.placeholder
+
+# Sample profiles (alice, bob, carol) are NOT ignored
+# They contain test data that should be preserved in git

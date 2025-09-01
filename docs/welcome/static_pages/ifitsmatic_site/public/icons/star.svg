@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+    <filter id="starGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main star -->
+  <path d="M50 15 L57 35 L78 35 L62 47 L68 68 L50 56 L32 68 L38 47 L22 35 L43 35 Z" 
+        fill="url(#starGradient)" filter="url(#starGlow)"/>
+  
+  <!-- Inner highlight -->
+  <path d="M50 22 L54 35 L67 35 L57 43 L60 56 L50 50 L40 56 L43 43 L33 35 L46 35 Z" 
+        fill="#fff" opacity="0.3"/>
+  
+  <!-- Radiating lines -->
+  <g stroke="#ffd700" stroke-width="1" opacity="0.6">
+    <line x1="50" y1="5" x2="50" y2="12"/>
+    <line x1="50" y1="88" x2="50" y2="95"/>
+    <line x1="15" y1="50" x2="8" y2="50"/>
+    <line x1="85" y1="50" x2="92" y2="50"/>
+    <line x1="25" y1="25" x2="20" y2="20"/>
+    <line x1="75" y1="75" x2="80" y2="80"/>
+    <line x1="75" y1="25" x2="80" y2="20"/>
+    <line x1="25" y1="75" x2="20" y2="80"/>
+  </g>
+</svg>

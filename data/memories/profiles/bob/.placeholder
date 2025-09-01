@@ -1,0 +1,7 @@
+# Bob's Profile
+
+This is Bob's personal memory profile - completely isolated from other users.
+
+**Privacy**: This profile can only access Bob's memories, never Alice's or Carol's.
+
+*Example profile for multi-user scenarios or testing.*

@@ -1,0 +1,21 @@
+# Override template for custom instances
+# Copy this file and modify for your specific instance
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.myinstance.yml up -d
+
+version: '3.8'
+
+services:
+  brainbridge:
+    environment:
+      # Override these for your instance
+      - INSTANCE_NAME=default
+      - LOG_FILE=/app/logs/brainbridge-default.log
+    volumes:
+      # Override memories folder - change '../memories' to your folder (one level up)
+      - ../memories:/app/memories
+      - ./logs:/app/logs
+
+  ollama:
+    ports:
+      # Override port if needed
+      - "11434:11434"

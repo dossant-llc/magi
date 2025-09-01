@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  brainbridge-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: brainbridge-mcp-dev
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      - /app/node_modules
+      # Mount memories directory
+      - ./memories:/app/memories
+      # Mount logs directory
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=development
+      - MEMORIES_DIR=/app/memories
+      - LOG_FILE=/app/logs/brainbridge-mcp.log
+      - TRACE_MODE=true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - brainbridge-net
+    command: npm run dev:stdio
+
+  ollama-dev:
+    extends:
+      file: docker-compose.yml
+      service: ollama
+    container_name: brainbridge-ollama-dev
+
+networks:
+  brainbridge-net:
+    driver: bridge

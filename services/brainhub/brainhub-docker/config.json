@@ -1,0 +1,25 @@
+{
+  "brainbridgePath": ".",
+  "memoriesBasePath": "/Users/igor/Documents/code/agiforme",
+  "defaultInstanceConfig": {
+    "personality": "helpful assistant",
+    "ollamaPort": 11434,
+    "environment": {
+      "TRACE_MODE": "true"
+    }
+  },
+  "dashboard": {
+    "port": 3001,
+    "enableRealtimeUpdates": true,
+    "refreshInterval": 1000
+  },
+  "monitoring": {
+    "logLevel": "info",
+    "metricsRetention": 7,
+    "alertThresholds": {
+      "responseTime": 5000,
+      "errorRate": 10,
+      "memoryUsage": 80
+    }
+  }
+}
