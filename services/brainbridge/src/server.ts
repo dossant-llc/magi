@@ -489,114 +489,164 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
 
   // AI-powered tool handlers
   private async handleAISaveMemory(args: any) {
-    const { content, privacy_level = 'personal', category_hint } = args;
-    
-    if (!content || typeof content !== 'string') {
-      throw new Error('Content is required and must be a string');
-    }
-
-    this.loggerService.winston.info('AI Save Memory request', {
-      component: 'BrainBridgeServer',
-      action: 'ai_save_memory',
-      contentLength: content.length,
-      contentPreview: content.slice(0, 100),
-      privacy_level,
-      category_hint
-    });
-    
-    // Start async save process in background
-    this.aiService.saveMemoryWithAI(content, privacy_level, category_hint)
-      .then(result => {
-        if (result.success) {
-          this.loggerService.winston.info('Background save completed', {
-            component: 'BrainBridgeServer',
-            action: 'ai_save_memory_complete',
-            filePath: result.filePath,
-            category: result.aiAnalysis?.category,
-            tags: result.aiAnalysis?.tags,
-            title: result.aiAnalysis?.title
-          });
-        } else {
-          this.loggerService.winston.error('Background save failed', {
-            component: 'BrainBridgeServer',
-            action: 'ai_save_memory_failed',
-            error: result.error
-          });
-        }
-      })
-      .catch(error => {
-        this.loggerService.winston.error('Background save error', {
-          component: 'BrainBridgeServer',
-          action: 'ai_save_memory_error',
-          error: error.message || error
-        });
-      });
-    
-    // Return immediately with acknowledgment
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `✅ **Memory queued for saving!**\n\n📝 Processing with AI categorization...\n🔒 Privacy level: ${privacy_level}\n\nThe memory is being analyzed and will be saved shortly. You can continue working while this processes in the background.${category_hint ? `\n💡 Category hint: ${category_hint}` : ''}`
-        }
-      ]
-    };
-  }
-
-  private async handleAIQueryMemories(args: any) {
-    const { question, max_privacy = 'personal', limit = 5, synthesis_mode = 'local' } = args;
-    
-    if (!question || typeof question !== 'string') {
-      throw new Error('Question is required and must be a string');
-    }
-
-    this.loggerService.winston.info('AI Query Memories request', {
-      component: 'BrainBridgeServer',
-      action: 'ai_query_memories',
-      question,
-      synthesis_mode,
-      max_privacy,
-      limit
-    });
-    
-    if (synthesis_mode === 'raw') {
-      // Fast mode: Just return the raw memories, let Claude do synthesis
-      const rawResult = await this.aiService.searchMemoriesOnly(question, max_privacy, limit);
+    try {
+      const { content, privacy_level = 'personal', category_hint } = args;
       
-      if (rawResult.memories.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `**No relevant memories found for:** "${question}"\n\nSearched privacy levels up to: ${max_privacy}`
-            }
-          ]
-        };
+      if (!content || typeof content !== 'string') {
+        throw new Error('Content is required and must be a string');
       }
-      
-      // Format raw memories for Claude to synthesize
-      let response = `**Found ${rawResult.memories.length} relevant memories:**\n\n`;
-      
-      rawResult.memories.forEach((memory, index) => {
-        response += `**[${index + 1}] ${memory.filename}**\n`;
-        response += `Category: ${memory.category || 'unknown'} | Tags: ${memory.tags || 'none'}\n`;
-        response += `Content: ${memory.content.slice(0, 500)}${memory.content.length > 500 ? '...' : ''}\n`;
-        response += `---\n\n`;
+
+      // Safe content preview with error handling
+      let contentPreview = '';
+      let contentLength = 0;
+      try {
+        const safeContent = String(content);
+        contentLength = safeContent.length;
+        contentPreview = safeContent.slice(0, 100);
+      } catch (previewError) {
+        this.loggerService.error('Error creating content preview for save', { error: previewError });
+        contentPreview = 'Content preview unavailable';
+      }
+
+      this.loggerService.winston.info('AI Save Memory request', {
+        component: 'BrainBridgeServer',
+        action: 'ai_save_memory',
+        contentLength,
+        contentPreview,
+        privacy_level,
+        category_hint
       });
       
-      response += `*Question: "${question}"*\n\n`;
-      response += `**IMPORTANT:** Please provide a direct, clean answer to the question by synthesizing the information from the memories above. Don't just list the raw content - give me a clear, conversational response.`;
+      // Start async save process in background
+      this.aiService.saveMemoryWithAI(content, privacy_level, category_hint)
+        .then(result => {
+          if (result.success) {
+            this.loggerService.winston.info('Background save completed', {
+              component: 'BrainBridgeServer',
+              action: 'ai_save_memory_complete',
+              filePath: result.filePath,
+              category: result.aiAnalysis?.category,
+              tags: result.aiAnalysis?.tags,
+              title: result.aiAnalysis?.title
+            });
+          } else {
+            this.loggerService.winston.error('Background save failed', {
+              component: 'BrainBridgeServer',
+              action: 'ai_save_memory_failed',
+              error: result.error
+            });
+          }
+        })
+        .catch(error => {
+          this.loggerService.winston.error('Background save error', {
+            component: 'BrainBridgeServer',
+            action: 'ai_save_memory_error',
+            error: error.message || error
+          });
+        });
+      
+      // Return immediately with acknowledgment
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `✅ **Memory queued for saving!**\n\n📝 Processing with AI categorization...\n🔒 Privacy level: ${privacy_level}\n\nThe memory is being analyzed and will be saved shortly. You can continue working while this processes in the background.${category_hint ? `\n💡 Category hint: ${category_hint}` : ''}`
+          }
+        ]
+      };
+    } catch (error) {
+      this.loggerService.error('AI Save Memory failed with error', { 
+        error: error.message || error,
+        content: args.content ? 'content provided' : 'no content',
+        stack: error.stack
+      });
       
       return {
         content: [
           {
             type: 'text',
-            text: response
+            text: `❌ **Error saving memory**\n\n**Details:** ${error.message || 'Unknown error occurred'}\n\nPlease check your content and try again.`
           }
         ]
       };
+    }
+  }
+
+  private async handleAIQueryMemories(args: any) {
+    try {
+      const { question, max_privacy = 'personal', limit = 5, synthesis_mode = 'local' } = args;
       
-    } else {
+      if (!question || typeof question !== 'string') {
+        throw new Error('Question is required and must be a string');
+      }
+
+      this.loggerService.winston.info('AI Query Memories request', {
+        component: 'BrainBridgeServer',
+        action: 'ai_query_memories',
+        question,
+        synthesis_mode,
+        max_privacy,
+        limit
+      });
+      
+      if (synthesis_mode === 'raw') {
+        // Fast mode: Just return the raw memories, let Claude do synthesis
+        const rawResult = await this.aiService.searchMemoriesOnly(question, max_privacy, limit);
+        
+        if (rawResult.memories.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `**No relevant memories found for:** "${question}"\n\nSearched privacy levels up to: ${max_privacy}`
+              }
+            ]
+          };
+        }
+        
+        // Format raw memories for Claude to synthesize
+        let response = `**Found ${rawResult.memories.length} relevant memories:**\n\n`;
+        
+        rawResult.memories.forEach((memory, index) => {
+          try {
+            response += `**[${index + 1}] ${memory.filename || 'Unknown file'}**\n`;
+            response += `Category: ${memory.category || 'unknown'} | Tags: ${memory.tags || 'none'}\n`;
+            
+            // Safe content handling with multiple fallbacks
+            let contentPreview = 'No content available';
+            try {
+              if (memory.content && typeof memory.content === 'string' && memory.content.length > 0) {
+                contentPreview = memory.content.slice(0, 500);
+                if (memory.content.length > 500) {
+                  contentPreview += '...';
+                }
+              }
+            } catch (contentError) {
+              this.loggerService.error('Error processing memory content', { memoryIndex: index, error: contentError });
+              contentPreview = 'Content processing error';
+            }
+            
+            response += `Content: ${contentPreview}\n`;
+            response += `---\n\n`;
+          } catch (memoryError) {
+            this.loggerService.error('Error formatting memory', { memoryIndex: index, error: memoryError });
+            response += `**[${index + 1}] Error processing memory**\n---\n\n`;
+          }
+        });
+        
+        response += `*Question: "${question}"*\n\n`;
+        response += `**IMPORTANT:** Please provide a direct, clean answer to the question by synthesizing the information from the memories above. Don't just list the raw content - give me a clear, conversational response.`;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: response
+            }
+          ]
+        };
+        
+      } else {
       // Full mode: Use local AI synthesis (slow but private)
       const result = await this.aiService.queryMemoriesWithAI(question, max_privacy, limit);
       
@@ -623,6 +673,22 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       } else {
         throw new Error(`Failed to query memories: ${result.error}`);
       }
+    }
+    } catch (error) {
+      this.loggerService.error('AI Query Memories failed with error', { 
+        error: error.message || error,
+        question: args.question,
+        stack: error.stack
+      });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Error processing your query**: "${args.question || 'unknown'}"\n\n**Details:** ${error.message || 'Unknown error occurred'}\n\nPlease try again or contact support if the issue persists.`
+          }
+        ]
+      };
     }
   }
 

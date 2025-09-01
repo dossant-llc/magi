@@ -88,7 +88,7 @@ function formatLogLine(line) {
 }
 
 function main() {
-  const logFile = path.join(process.cwd(), 'services/brainbridge/logs/brainbridge-mcp.log');
+  const logFile = path.join(process.cwd(), 'services/brainbridge/logs/brainbridge-default.log');
   
   // Use tail -f to follow the log file
   const tail = spawn('tail', ['-f', logFile], {

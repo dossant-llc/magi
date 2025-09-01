@@ -50,7 +50,7 @@ ${memories.map((memory, index) => `
 Category: ${memory.metadata.category || 'unknown'}
 Tags: ${memory.metadata.tags ? memory.metadata.tags.join(', ') : 'none'}
 Content:
-${memory.content.slice(0, 1000)}${memory.content.length > 1000 ? '...' : ''}
+${memory.content?.slice(0, 1000) || 'No content'}${(memory.content?.length || 0) > 1000 ? '...' : ''}
 `).join('\n')}
 
 Please provide a helpful answer based on this context. If you reference specific information, mention which memory file it comes from (e.g., "According to your notes in [1]...").

@@ -56,10 +56,10 @@ Respond in this exact JSON format:
     } catch (e) {
       console.log('⚠️  AI categorization failed, using defaults');
       aiAnalysis = {
-        title: content.slice(0, 50) + '...',
+        title: (content?.slice(0, 50) || 'Untitled') + '...',
         category: options.category || 'general',
         tags: ['uncategorized'],
-        summary: content.slice(0, 100) + '...'
+        summary: (content?.slice(0, 100) || 'No content') + '...'
       };
     }
 

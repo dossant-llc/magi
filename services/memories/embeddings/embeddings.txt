@@ -1,6 +1,0 @@
-# Embedding Index
-# Version: 1.0.0
-# Model: mxbai-embed-large
-# Created: 2025-09-01T21:29:35.020Z
-# Updated: 2025-09-01T21:29:35.023Z
-# Total Embeddings: 0

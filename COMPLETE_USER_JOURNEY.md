@@ -117,7 +117,7 @@ AGIFORME_SERVER_DOMAIN=your-server.com
 
 #### 3. Deploy Brain Proxy Server
 ```bash
-cd services/brainxchange
+cd services/braincloud
 ./deploy.sh
 ```
 

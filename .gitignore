@@ -8,8 +8,6 @@ data/memories/profiles/default/**
 **/.env.*
 !.env.template
 !**/.env.template
-!.env.example
-!**/.env.example
 
 # Development and runtime files
 .claude/

@@ -18,8 +18,8 @@ const url = require('url');
 const crypto = require('crypto');
 
 // Import service modules
-const BrainXchangeService = require('./services/brainxchange.js');
-const BrainProxyService = require('./services/brainproxy.js');
+const BrainXchangeService = require('./brainxchange/brainxchange.js');
+const BrainProxyService = require('./brainproxy/brainproxy.js');
 
 // Enhanced logging system
 const logHistory = [];

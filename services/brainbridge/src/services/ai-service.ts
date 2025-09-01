@@ -38,8 +38,35 @@ export class AIService {
     error?: string;
   }> {
     try {
-      this.loggerService.log(`AI Save request: content length=${content.length}, privacy=${privacyLevel}`);
-      this.loggerService.trace('Starting AI save memory operation', { contentPreview: content.slice(0, 100) });
+      // Defensive input validation
+      if (!content || typeof content !== 'string') {
+        this.loggerService.error('Invalid content provided to saveMemoryWithAI', { contentType: typeof content, contentLength: content?.length });
+        return {
+          success: false,
+          error: 'Invalid content: must be a non-empty string'
+        };
+      }
+
+      const safeContent = String(content).trim();
+      if (safeContent.length === 0) {
+        return {
+          success: false, 
+          error: 'Content cannot be empty'
+        };
+      }
+
+      this.loggerService.log(`AI Save request: content length=${safeContent.length}, privacy=${privacyLevel}`);
+      
+      // Safe content preview with multiple fallbacks
+      let contentPreview = '';
+      try {
+        contentPreview = safeContent.slice(0, 100);
+      } catch (sliceError) {
+        this.loggerService.error('Error creating content preview', { error: sliceError });
+        contentPreview = 'Content preview unavailable';
+      }
+      
+      this.loggerService.trace('Starting AI save memory operation', { contentPreview });
       
       // Performance tracking
       this.loggerService.startTimer('ai_categorization');
@@ -53,7 +80,7 @@ You are helping organize personal knowledge. Analyze this content and provide:
 3. 2-3 relevant tags
 4. A brief summary (1-2 sentences)
 
-Content: "${content}"
+Content: "${safeContent}"
 Category hint: ${categoryHint || 'none'}
 
 Respond in this exact JSON format:
@@ -87,11 +114,24 @@ Respond in this exact JSON format:
         }
       } catch (e) {
         this.loggerService.log('AI categorization failed, using defaults');
+        // Safe fallback with multiple layers of protection
+        let titleFallback = 'Untitled';
+        let summaryFallback = 'No content';
+        
+        try {
+          if (safeContent && safeContent.length > 0) {
+            titleFallback = safeContent.slice(0, 50);
+            summaryFallback = safeContent.slice(0, 100);
+          }
+        } catch (fallbackError) {
+          this.loggerService.error('Error creating fallback content', { error: fallbackError });
+        }
+        
         aiAnalysis = {
-          title: content.slice(0, 50) + '...',
+          title: titleFallback + '...',
           category: categoryHint || 'general',
           tags: ['uncategorized'],
-          summary: content.slice(0, 100) + '...'
+          summary: summaryFallback + '...'
         };
       }
 
@@ -302,7 +342,7 @@ ${memories.map((memory, index) => `
 [${index + 1}] ${memory.filename}
 Category: ${memory.category || 'unknown'}
 Tags: ${memory.tags || 'none'}
-Content: ${memory.content.slice(0, 800)}${memory.content.length > 800 ? '...' : ''}
+Content: ${memory.content?.slice(0, 800) || 'No content'}${(memory.content?.length || 0) > 800 ? '...' : ''}
 `).join('\n')}
 
 Please provide a helpful answer based on this context. If you reference specific information, mention which memory it comes from (e.g., "According to your notes in [1]...").
