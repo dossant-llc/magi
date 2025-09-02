@@ -1,7 +1,7 @@
 {
-  "name": "agiforme",
+  "name": "magi",
   "version": "1.0.0",
-  "description": "AGIfor.me - Your Personal AI Memory Bank. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
+  "description": "magi - Your Personal AI That Remembers What Matters to You. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
   "private": true,
   "workspaces": [
     "services/brainbridge",
@@ -64,14 +64,15 @@
     "test": "npm run test --workspaces --if-present"
   },
   "keywords": [
-    "agiforme",
+    "magi",
     "personal-ai",
     "memory-bank",
     "privacy",
     "mcp",
     "knowledge-base",
     "ai-assistant",
-    "claude"
+    "claude",
+    "wake-word"
   ],
   "author": "",
   "license": "SEE LICENSE FILE",

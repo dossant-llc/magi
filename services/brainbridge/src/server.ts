@@ -846,6 +846,7 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       transport: 'stdio'
     });
     console.error('BrainBridge MCP Server running on stdio');
+    console.error('🧠 AI Synthesis Mode: LOCAL (using Ollama LLM for conversational responses)');
   }
 
   async runHTTP(port: number = 8147) {

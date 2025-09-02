@@ -243,11 +243,13 @@ server.stdout.on('data', (data) => {
     if (line.startsWith('{')) {
       try {
         const response = JSON.parse(line);
+        let promptShown = false;
         
         if (response.result && response.result.protocolVersion) {
           console.log(`${colors.success}✅ Connected to BrainBridge!${colors.reset}\n`);
           isReady = true;
           showPrompt();
+          promptShown = true;
         } else if (response.result && response.result.memories) {
           console.log(`${colors.success}🔍 Found ${response.result.memories.length} memories:${colors.reset}`);
           response.result.memories.forEach((memory, i) => {
@@ -258,6 +260,7 @@ server.stdout.on('data', (data) => {
             }
           });
           showPrompt();
+          promptShown = true;
         } else if (response.result && response.result.content) {
           // Handle content array format from MCP
           if (Array.isArray(response.result.content)) {
@@ -270,15 +273,25 @@ server.stdout.on('data', (data) => {
             console.log(`${colors.success}📝 ${response.result.content}${colors.reset}`);
           }
           showPrompt();
+          promptShown = true;
         } else if (response.result) {
           console.log(`${colors.success}✅ ${JSON.stringify(response.result)}${colors.reset}`);
           showPrompt();
+          promptShown = true;
         }
         
         if (response.error) {
           console.log(`${colors.error}❌ ${response.error.message}${colors.reset}`);
           showPrompt();
+          promptShown = true;
         }
+        
+        // Fallback: if we processed a response but didn't show prompt, do it now
+        if (response.id && response.id > 1 && !promptShown) {
+          console.log(`${colors.warning}⚠️ Unexpected response format${colors.reset}`);
+          showPrompt();
+        }
+        
       } catch (e) {
         // Ignore non-JSON
       }
@@ -338,18 +351,27 @@ async function handleInput(input) {
     }
     
     // Tier 3: Send to BrainBridge memory system (existing behavior)
+    const currentMsgId = messageId++;
     sendMessage({
       jsonrpc: "2.0",
-      id: messageId++,
+      id: currentMsgId,
       method: "tools/call",
       params: {
         name: "ai_query_memories",
         arguments: {
           question: trimmed,
-          synthesis_mode: "raw"
+          synthesis_mode: "local"
         }
       }
     });
+    
+    // Timeout fallback to prevent hanging
+    setTimeout(() => {
+      console.log(`${colors.warning}⚠️ Response timeout - BrainBridge may be slow or stuck${colors.reset}`);
+      showPrompt();
+    }, 45000); // 45 second timeout
+    
+    // Note: showPrompt() will be called by the response handler (or timeout)
     
   } catch (error) {
     console.log(`${colors.error}❌ Error: ${error.message}${colors.reset}`);

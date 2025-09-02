@@ -124,7 +124,7 @@ export class MessageRouter extends EventEmitter {
         arguments: {
           question: query,
           limit: 5,
-          synthesis_mode: "raw"
+          synthesis_mode: "local"
         }
       }
     };
@@ -325,7 +325,7 @@ export class MessageRouter extends EventEmitter {
             name: "ai_query_memories",
             arguments: {
               question: query.replace(/^magi,?\s*/i, '').trim(),
-              synthesis_mode: "raw" // Fast mode, let Claude handle synthesis
+              synthesis_mode: "local" // Fast mode, let Claude handle synthesis
             }
           }
         };

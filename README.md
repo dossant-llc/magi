@@ -1,22 +1,22 @@
-# AGIfor.me
+# magi
 
-> **Your Personal AI Knowledge Base - Privacy-First, Source-Available**
+> **Your Personal AI That Remembers What Matters to You - Privacy-First, Source-Available**
 
 🔒 **PRIVATE DEVELOPMENT** - This repository is currently private for collaborative review before public launch.
 
 ⚠️ **EARLY STAGE NOTICE**: This is ground-floor development focused on core privacy and UX patterns. Performance optimization, scalability, and production hardening come in later phases. We're prioritizing "does it solve the right problem" over "does it scale to millions of users."
 
-## 🌟 Why AGIfor.me?
+## 🌟 Why magi?
 
 **The Problem**: We all accumulate valuable knowledge through work and life, but it gets scattered across notes, conversations, and memory. When we need it, we can't find it. When AI assistants help us, they lack our personal context.
 
 **The Vision**: What if you could just say `magi help me with this problem` and your AI would instantly know your past solutions, preferences, and learned lessons - but only when you explicitly allow it?
 
-**The Solution**: AGIfor.me creates a privacy-first personal knowledge base where **"magi"** becomes your personal wake word for AI that truly serves you, not surveillance capitalism.
+**The Solution**: **magi** is your privacy-first personal AI where you become the wake word for AI that truly serves you, not surveillance capitalism.
 
-## 🎮 How It Works (The "magi" Wake Word)
+## 🎮 How magi Works
 
-Just like "Hey Siri" or "Alexa", AGIfor.me uses a **wake word system**:
+Just like "Hey Siri" or "Alexa", **magi** uses a wake word system:
 
 ```bash
 # Without wake word = generic AI response
@@ -29,7 +29,7 @@ Just like "Hey Siri" or "Alexa", AGIfor.me uses a **wake word system**:
 → Personalized recommendations based on YOUR knowledge
 ```
 
-**The magi→AGI Connection**: "magi" activates your **AGI for me** - AI that serves you personally, not corporate interests.
+**The magi Connection**: "magi" activates your personal AI - AI that serves you, not corporate interests.
 
 ## 🚀 Quick Start
 

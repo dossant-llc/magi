@@ -92,14 +92,14 @@ Respond in this exact JSON format:
 }`;
 
       const response = await this.ollama.chat({
-        model: 'llama3.1:8b',
+        model: 'llama3.2:1b',
         messages: [{ role: 'user', content: categorizationPrompt }],
         stream: false,
       });
       
       // Log performance
       this.loggerService.endTimer('ai_categorization', {
-        model: 'llama3.1:8b',
+        model: 'llama3.2:1b',
         promptLength: categorizationPrompt.length,
         responseLength: response.message.content.length
       });
@@ -172,7 +172,51 @@ ${content}
       const filePath = path.join(memoriesDir, filename);
       await fs.writeFile(filePath, markdownContent, 'utf8');
 
-      this.loggerService.log(`AI Save successful: ${filePath}`);
+      this.loggerService.winston.info(`AI Save successful: ${filePath}`, {
+        saveStats: {
+          contentLength: content.length,
+          privacyLevel: privacyLevel,
+          category: category || 'uncategorized',
+          filePath: filePath
+        }
+      });
+      
+      // Generate embeddings for the saved memory
+      try {
+        this.loggerService.trace('Generating embeddings for saved memory', { filePath });
+        
+        // Process the memory file to create embedding
+        const embedding = await this.embeddingService.processMemoryFile(filePath);
+        
+        // Fix the filePath to be relative to the data directory (for consistency with content loading)
+        embedding.filePath = `memories/${privacyLevel}/${filename}`;
+        
+        // Load existing index
+        const index = await this.embeddingService.loadIndex();
+        
+        // Add the new embedding to the index
+        index.embeddings.push(embedding);
+        
+        // Save the updated index
+        await this.embeddingService.saveIndex(index);
+        
+        this.loggerService.trace('Embeddings generated and indexed successfully', { 
+          embeddingStats: {
+            embeddingId: embedding.id,
+            vectorLength: embedding.embedding.length,
+            totalEmbeddings: index.embeddings.length,
+            contentLength: embedding.content?.length || 0,
+            category: embedding.metadata.category || 'uncategorized',
+            filePath: embedding.filePath
+          }
+        });
+      } catch (embeddingError) {
+        this.loggerService.error('Failed to generate embeddings for saved memory', { 
+          filePath, 
+          error: embeddingError instanceof Error ? embeddingError.message : String(embeddingError)
+        });
+        // Don't fail the save operation if embeddings fail
+      }
       
       return {
         success: true,
@@ -269,7 +313,7 @@ ${content}
           .filter(result => allowedLevels.includes(result.privacy))
           .map(result => ({
             filename: result.filePath.split('/').pop() || 'unknown',
-            content: result.contentPreview, // Use preview instead of full content
+            content: result.content || result.contentPreview || 'No content available', // Use full content if available
             category: result.category,
             tags: 'none', // Could be enhanced later
             relevanceScore: Math.round(result.similarity * 100) // Convert to 0-100 scale
@@ -311,7 +355,12 @@ ${content}
       
       this.loggerService.endTimer('memory_search', {
         foundCount: memories.length,
-        searchQuery: question
+        searchQuery: question,
+        privacy: maxPrivacy,
+        limit: limit,
+        avgContentLength: memories.length > 0 ? Math.round(memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) / memories.length) : 0,
+        totalContentChars: memories.reduce((sum, m) => sum + (m.content?.length || 0), 0),
+        memoriesWithContent: memories.filter(m => m.content && m.content.length > 0).length
       });
       
       if (memories.length === 0) {
@@ -350,26 +399,43 @@ Please provide a helpful answer based on this context. If you reference specific
 If the memories don't contain enough information to fully answer the question, say so and suggest what additional information might be helpful.
 `;
 
+      this.loggerService.trace('Starting AI synthesis with Ollama', { 
+        model: 'llama3.2:1b', 
+        promptLength: contextPrompt.length 
+      });
+
       const response = await Promise.race([
         this.ollama.chat({
-          model: 'llama3.1:8b',
+          model: 'llama3.2:1b',
           messages: [{ role: 'user', content: contextPrompt }],
           stream: false,
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Ollama chat timeout after 15 seconds')), 15000)
+          setTimeout(() => reject(new Error('Ollama chat timeout after 30 seconds')), 30000)
         )
       ]) as any;
       
       // Log performance for synthesis
       this.loggerService.endTimer('ai_synthesis', {
-        model: 'llama3.1:8b',
+        model: 'llama3.2:1b',
         promptLength: contextPrompt.length,
         responseLength: response.message.content.length,
         memoryCount: memories.length
       });
 
-      this.loggerService.log(`AI Query successful: found ${memories.length} memories`);
+      this.loggerService.winston.info(`AI Query successful: found ${memories.length} memories`, {
+        searchStats: {
+          memoriesFound: memories.length,
+          totalContentChars: memories.reduce((sum, m) => sum + (m.content?.length || 0), 0),
+          avgContentLength: memories.length > 0 ? Math.round(memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) / memories.length) : 0
+        },
+        synthesisStats: {
+          model: 'llama3.2:1b',
+          promptLength: contextPrompt.length,
+          responseLength: response.message.content.length,
+          compressionRatio: contextPrompt.length > 0 ? Math.round((response.message.content.length / contextPrompt.length) * 100) : 0
+        }
+      });
       
       return {
         success: true,

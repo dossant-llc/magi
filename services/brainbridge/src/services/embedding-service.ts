@@ -247,7 +247,48 @@ export class EmbeddingService {
       } else if (trimmed.startsWith('Vector:')) {
         if (currentEmbedding) {
           currentEmbedding.embedding = trimmed.substring(7).trim().split(',').map(s => parseFloat(s.trim()));
-          currentEmbedding.content = ''; // We'll need to extract this from the file if needed
+          
+          // Load content from the original file
+          if (currentEmbedding.filePath) {
+            try {
+              const fs = require('fs');
+              const path = require('path');
+              const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+              // Convert memories/privacy/file.md to profiles/default/privacy/file.md  
+              const relativePath = currentEmbedding.filePath.replace(/^memories\//, '');
+              const fullPath = path.join(baseMemoriesDir, relativePath);
+              this.loggerService.trace('Loading content for embedding', { 
+                filePath: currentEmbedding.filePath, 
+                fullPath: fullPath 
+              });
+              
+              if (fs.existsSync(fullPath)) {
+                const fileContent = fs.readFileSync(fullPath, 'utf8');
+                // Extract main content without frontmatter
+                const mainContent = fileContent.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+                currentEmbedding.content = mainContent;
+                this.loggerService.trace('Successfully loaded content', { 
+                  contentLength: mainContent.length,
+                  contentPreview: mainContent.slice(0, 100) + '...'
+                });
+              } else {
+                this.loggerService.warn('File not found for embedding', { 
+                  filePath: currentEmbedding.filePath, 
+                  fullPath: fullPath 
+                });
+                currentEmbedding.content = 'Content not available - file not found';
+              }
+            } catch (error) {
+              this.loggerService.error('Failed to load content for embedding', { 
+                filePath: currentEmbedding.filePath, 
+                error: error instanceof Error ? error.message : String(error)
+              });
+              currentEmbedding.content = 'Content not available - error loading file';
+            }
+          } else {
+            currentEmbedding.content = 'Content not available - no file path';
+          }
+          
           currentEmbedding.metadata = currentMetadata;
         }
       } else if (trimmed === '---' && currentEmbedding && currentEmbedding.id) {
@@ -485,6 +526,7 @@ export class EmbeddingService {
     id: string;
     title: string;
     contentPreview: string;
+    content: string;
     category: string;
     privacy: string;
     similarity: number;
@@ -500,16 +542,46 @@ export class EmbeddingService {
       // Load existing index
       const index = await this.loadIndex();
       
-      // Calculate similarities and return lightweight results
-      const results = index.embeddings.map(memory => ({
-        id: memory.id,
-        title: memory.metadata.title || 'Untitled',
-        contentPreview: memory.contentPreview,
-        category: memory.metadata.category || 'general',
-        privacy: memory.metadata.privacy || 'personal',
-        similarity: this.cosineSimilarity(queryEmbedding, memory.embedding),
-        filePath: memory.filePath
-      }));
+      // Calculate similarities and return lightweight results with content
+      const results = index.embeddings.map(memory => {
+        let content = memory.contentPreview;
+        
+        // Load content from the original file if available
+        if (memory.filePath) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+            // Convert memories/privacy/file.md to profiles/default/privacy/file.md  
+            const relativePath = memory.filePath.replace(/^memories\//, '');
+            const fullPath = path.join(baseMemoriesDir, relativePath);
+            
+            if (fs.existsSync(fullPath)) {
+              const fileContent = fs.readFileSync(fullPath, 'utf8');
+              // Extract main content without frontmatter
+              const mainContent = fileContent.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+              content = mainContent || memory.contentPreview || 'Content not available - empty file';
+            }
+          } catch (error) {
+            this.loggerService.trace('Failed to load content for search result', { 
+              filePath: memory.filePath, 
+              error: error instanceof Error ? error.message : String(error) 
+            });
+            content = memory.contentPreview || 'Content not available - error loading file';
+          }
+        }
+
+        return {
+          id: memory.id,
+          title: memory.metadata.title || 'Untitled',
+          contentPreview: memory.contentPreview,
+          content: content, // Add full content for search results
+          category: memory.metadata.category || 'general',
+          privacy: memory.metadata.privacy || 'personal',
+          similarity: this.cosineSimilarity(queryEmbedding, memory.embedding),
+          filePath: memory.filePath
+        };
+      });
 
       const filteredResults = results.filter(result => result.similarity >= threshold);
       const finalResults = filteredResults
@@ -519,7 +591,14 @@ export class EmbeddingService {
       this.loggerService.endTimer('fast_vector_search', { 
         results: finalResults.length,
         threshold,
-        topSimilarity: finalResults[0]?.similarity || 0
+        topSimilarity: finalResults[0]?.similarity || 0,
+        avgSimilarity: finalResults.length > 0 ? Math.round((finalResults.reduce((sum, r) => sum + r.similarity, 0) / finalResults.length) * 1000) / 1000 : 0,
+        indexSize: index.embeddings.length,
+        totalCandidates: results.length,
+        filteredOut: results.length - finalResults.length,
+        similarityRange: finalResults.length > 1 ? 
+          `${Math.round((finalResults[finalResults.length - 1]?.similarity || 0) * 1000) / 1000} - ${Math.round((finalResults[0]?.similarity || 0) * 1000) / 1000}` : 
+          finalResults.length === 1 ? Math.round((finalResults[0]?.similarity || 0) * 1000) / 1000 : 'none'
       });
 
       return finalResults;

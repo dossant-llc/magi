@@ -23,7 +23,8 @@
     "perf:baseline": "tsx src/scripts/perf-search.ts --baseline",
     "perf:index-first": "tsx src/scripts/perf-search.ts --index-first",
     "perf:compare": "tsx src/scripts/perf-search.ts --compare",
-    "qc": "tsx src/scripts/quality-check.ts"
+    "qc": "tsx src/scripts/quality-check.ts",
+    "regression": "node ../../dev/scripts/regression-final.js"
   },
   "keywords": [
     "mcp",
