@@ -615,11 +615,27 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
             // Safe content handling with multiple fallbacks
             let contentPreview = 'No content available';
             try {
+              this.loggerService.trace('Processing memory content', { 
+                memoryIndex: index, 
+                hasContent: !!memory.content, 
+                contentType: typeof memory.content, 
+                contentLength: memory.content?.length || 0,
+                contentPreview: memory.content?.slice(0, 50) || 'no content'
+              });
+              
               if (memory.content && typeof memory.content === 'string' && memory.content.length > 0) {
                 contentPreview = memory.content.slice(0, 500);
                 if (memory.content.length > 500) {
                   contentPreview += '...';
                 }
+              } else {
+                this.loggerService.error('Memory content is invalid', { 
+                  memoryIndex: index, 
+                  filename: memory.filename,
+                  hasContent: !!memory.content, 
+                  contentType: typeof memory.content, 
+                  contentLength: memory.content?.length || 0 
+                });
               }
             } catch (contentError) {
               this.loggerService.error('Error processing memory content', { memoryIndex: index, error: contentError });

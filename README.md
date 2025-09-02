@@ -10,51 +10,58 @@
 
 **The Problem**: We all accumulate valuable knowledge through work and life, but it gets scattered across notes, conversations, and memory. When we need it, we can't find it. When AI assistants help us, they lack our personal context.
 
-**The Vision**: What if your AI assistant actually knew your preferences, your past lessons learned, and your personal context - but only when you explicitly allow it?
+**The Vision**: What if you could just say `magi help me with this problem` and your AI would instantly know your past solutions, preferences, and learned lessons - but only when you explicitly allow it?
 
-**The Solution**: AGIfor.me creates a privacy-first personal knowledge base that integrates with AI assistants through ethical, consent-driven access patterns.
+**The Solution**: AGIfor.me creates a privacy-first personal knowledge base where **"magi"** becomes your personal wake word for AI that truly serves you, not surveillance capitalism.
+
+## 🎮 How It Works (The "magi" Wake Word)
+
+Just like "Hey Siri" or "Alexa", AGIfor.me uses a **wake word system**:
+
+```bash
+# Without wake word = generic AI response
+"Help me plan a vacation to Italy"
+→ Generic travel advice
+
+# With wake word = your personal AI activated  
+"magi help me plan a vacation to Italy"
+→ Searches your travel memories, family preferences, past trips
+→ Personalized recommendations based on YOUR knowledge
+```
+
+**The magi→AGI Connection**: "magi" activates your **AGI for me** - AI that serves you personally, not corporate interests.
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Clone and install
+# 1. Clone the repo
 git clone [repository-url] agiforme  # Will be public soon
 cd agiforme
-npm install
 
-# 2. Set up local AI (Ollama)
-brew install ollama          # macOS
-ollama serve                 # Keep running
-npm run ai:pull             # Downloads models (~5GB)
-
-# 3. Create your memory structure  
-./setup.sh
-
-# 4. Start BrainBridge
-npm run dev
-
-# 5. Test everything works
-npm run diag                # Should show ✅ status
+# 2. One magical command does everything
+npm run magi
 ```
+
+**That's it!** `npm run magi` handles installation, AI setup, memory creation, and launches your personal knowledge base.
 
 **👉 For complete setup instructions, see [GETTING_STARTED.md](docs/setup/GETTING_STARTED.md)**
 
 ## 🎯 Real-World Use Cases
 
 ### For Professionals
-- **Consultants**: "Remember how we solved that client's inventory problem? What were the key lessons?"
-- **Developers**: "What were the debugging steps that worked for that network issue last month?"
-- **Managers**: "Based on past team challenges, what should I watch out for in this project?"
+- **Consultants**: `magi how did we solve that client's inventory problem? What were the key lessons?`
+- **Developers**: `magi what debugging steps worked for that network issue last month?`
+- **Managers**: `magi based on past team challenges, what should I watch out for in this project?`
 
 ### For Families  
-- **Trip Planning**: "What restaurants did Sarah love in Italy? What activities worked best with the kids?"
-- **Life Lessons**: "What approaches have worked when dealing with teenager conflicts?"
-- **Health Tracking**: "What triggers have I noticed for my migraines over the past year?"
+- **Trip Planning**: `magi what restaurants did Sarah love in Italy? What activities worked best with the kids?`
+- **Life Lessons**: `magi what approaches have worked when dealing with teenager conflicts?`
+- **Health Tracking**: `magi what triggers have I noticed for my migraines over the past year?`
 
 ### For Learners
-- **Research**: "Consolidate everything I've learned about sustainable investing"
-- **Skills**: "Track my progress learning Spanish - what methods work best for me?"
-- **Ideas**: "Connect my scattered thoughts about work-life balance into actionable insights"
+- **Research**: `magi consolidate everything I've learned about sustainable investing`
+- **Skills**: `magi track my progress learning Spanish - what methods work best for me?`
+- **Ideas**: `magi connect my scattered thoughts about work-life balance into actionable insights`
 
 ## ⚖️ Ethical AI Principles
 
@@ -91,21 +98,6 @@ memories/
 ```
 
 **Smart capture**: Just add memories naturally - AI suggests the right privacy level!
-
-## 🎮 How It Works (The "magi" Wake Word)
-
-AGIfor.me uses a familiar wake word system - just like "Hey Siri" or "Alexa":
-
-```bash
-# Without wake word = generic AI response
-"Help me plan a vacation to Italy"
-→ Generic travel advice
-
-# With wake word = your personal AI activated  
-"magi help me plan a vacation to Italy"
-→ Searches your travel memories, family preferences, past trips
-→ Personalized recommendations based on YOUR knowledge
-```
 
 **Context-Aware Wake Words:**
 - `magi` - Smart context detection with local processing
@@ -167,7 +159,7 @@ Claude: [searches your personal debugging memories]
 → "Based on your notes, you discovered it was DNS cache poisoning. 
    The steps that worked were: 1) flush DNS cache, 2) check upstream..."
 
-You: "magi add this lesson: Always verify DNS upstream before client-side fixes"  
+You: "magi save Always verify DNS upstream before client-side fixes"  
 Claude: [adds to your troubleshooting knowledge with smart privacy categorization]
 → "Added to your professional memories in the 'network-debugging' section"
 ```
