@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "magi - Your Personal AI That Remembers What Matters to You. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
   "private": true,
+  "bin": {
+    "magi": "./bin/magi"
+  },
   "workspaces": [
     "services/brainbridge",
     "brainkeeper",
@@ -81,6 +84,7 @@
   },
   "dependencies": {
     "dotenv": "^17.2.1",
+    "tsx": "^4.19.2",
     "ws": "^8.18.3"
   }
 }

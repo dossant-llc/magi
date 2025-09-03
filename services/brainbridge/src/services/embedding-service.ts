@@ -458,6 +458,20 @@ export class EmbeddingService {
       const memoriesDir = require('../utils/memory-path').getMemoriesPath();
       const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
       
+      // Count total files for progress tracking
+      let totalFiles = 0;
+      for (const level of privacyLevels) {
+        try {
+          const levelDir = path.join(memoriesDir, level);
+          const files = await fs.readdir(levelDir);
+          totalFiles += files.filter(f => f.endsWith('.md')).length;
+        } catch (error) {
+          // Directory might not exist, skip
+        }
+      }
+      
+      let processedCount = 0;
+      
       for (const level of privacyLevels) {
         try {
           const levelDir = path.join(memoriesDir, level);
@@ -493,6 +507,14 @@ export class EmbeddingService {
               
               index.embeddings.push(memoryEmbedding);
               stats.processed++;
+              processedCount++;
+              
+              // Show progress for force rebuilds
+              if (force && totalFiles > 0) {
+                const progress = Math.round((processedCount / totalFiles) * 100);
+                const bar = '█'.repeat(Math.floor(progress / 5)) + '░'.repeat(20 - Math.floor(progress / 5));
+                console.log(`\r🔄 [${bar}] ${progress}% (${processedCount}/${totalFiles}) Processing: ${file}`);
+              }
               
             } catch (error) {
               this.loggerService.log(`Error processing ${relativePath}: ${error}`, 'error');
@@ -511,6 +533,12 @@ export class EmbeddingService {
       stats.timeSpent = 'Complete';
       
       this.loggerService.log(`Index build complete: ${stats.processed} processed, ${stats.skipped} skipped, ${stats.errors} errors`);
+      
+      // Clear progress line and show completion for force rebuilds
+      if (force && totalFiles > 0 && stats.processed > 0) {
+        const bar = '█'.repeat(20);
+        console.log(`\r🎉 [${bar}] 100% Complete! Processed ${stats.processed} files\n`);
+      }
       
       return stats;
     } catch (error) {
