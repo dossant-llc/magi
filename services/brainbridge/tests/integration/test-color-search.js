@@ -2,6 +2,7 @@
 
 // Simple test to verify OpenAI-powered memory search works
 const { spawn } = require('child_process');
+const { getProjectRoot } = require('../../src/utils/magi-paths.js');
 const path = require('path');
 
 console.log('🧪 Testing OpenAI-powered memory search...\n');
@@ -22,7 +23,7 @@ const mcpRequest = {
 };
 
 // Start the MCP server with environment variables
-const projectRoot = path.resolve(__dirname, '../../../..');
+const projectRoot = getProjectRoot();
 const env = {
   ...process.env,
   AI_PROVIDER: 'openai',

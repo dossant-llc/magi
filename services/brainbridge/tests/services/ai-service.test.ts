@@ -4,6 +4,7 @@
 
 import { AIService } from '../../src/services/ai-service';
 import { LoggerService } from '../../src/services/logger-service';
+import { getLogsDir } from '../../src/utils/magi-paths';
 import * as path from 'path';
 
 describe('AIService', () => {
@@ -11,7 +12,7 @@ describe('AIService', () => {
   let loggerService: LoggerService;
 
   beforeEach(() => {
-    const logPath = path.join(__dirname, '..', '..', 'logs', 'test.log');
+    const logPath = path.join(getLogsDir(), 'test.log');
     loggerService = new LoggerService(logPath);
     aiService = new AIService(loggerService);
   });

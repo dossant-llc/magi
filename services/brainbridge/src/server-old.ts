@@ -11,11 +11,12 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import express from 'express';
+import { getMemoriesPath, getLogsDir } from './utils/magi-paths.js';
 
 class BrainBridgeServer {
   private server: Server;
-  private memoriesDir = path.join(__dirname, '..', '..', 'memories');
-  private logFile = path.join(__dirname, '..', 'logs', 'brainbridge-mcp.log');
+  private memoriesDir = getMemoriesPath();
+  private logFile = path.join(getLogsDir(), 'brainbridge-mcp.log');
 
   constructor() {
     this.server = new Server(

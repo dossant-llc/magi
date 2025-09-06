@@ -3,7 +3,8 @@
 // Load root .env configuration BEFORE any other imports
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
+import { getProjectRoot } from './utils/magi-paths.js';
+dotenv.config({ path: path.join(getProjectRoot(), '.env') });
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -20,6 +21,7 @@ import { McpRoutes, HealthRoutes } from './routes/index.js';
 import { brainXchangeIntegration } from './integrations/brainxchange-integration.js';
 import { BrainProxyConnector, BrainProxyConfig } from './services/brain-proxy-connector.js';
 import { ProviderDetectionService } from './services/provider-detection.js';
+import { getLogsDir } from './utils/magi-paths.js';
 
 class BrainBridgeServer {
   private server: Server;
@@ -36,7 +38,7 @@ class BrainBridgeServer {
     // Initialize services with environment configuration
     const instanceName = process.env.INSTANCE_NAME || 'default';
     const memoriesDir = require('./utils/memory-path').getMemoriesPath();
-    const logFile = process.env.LOG_FILE || path.join(__dirname, '..', 'logs', `brainbridge-${instanceName}.log`);
+    const logFile = process.env.LOG_FILE || path.join(getLogsDir(), `brainbridge-${instanceName}.log`);
     
     this.loggerService = new LoggerService(logFile);
     this.memoryService = new MemoryService(memoriesDir, this.loggerService);

@@ -1,6 +1,6 @@
 {
   "name": "magi",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "magi - Your Personal AI That Remembers What Matters to You. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
   "private": true,
   "bin": {

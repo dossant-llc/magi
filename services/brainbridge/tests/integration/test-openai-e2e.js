@@ -7,12 +7,13 @@
 
 const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
+const { getProjectRoot } = require('../../src/utils/magi-paths.js');
 const path = require('path');
 
 async function runFullE2ETest() {
   console.log('🧪 Starting Complete OpenAI End-to-End Test...\n');
   
-  const projectRoot = path.resolve(__dirname, '../../../..');
+  const projectRoot = getProjectRoot();
   
   // Create transport and client
   const transport = new StdioClientTransport({

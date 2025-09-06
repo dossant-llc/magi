@@ -519,7 +519,8 @@ If the memories don't contain enough information to fully answer the question, s
       // Check memories
       const fs = require('fs/promises');
       const path = require('path');
-      const memoriesDir = path.join(process.cwd(), '..', 'memories');
+      const { getMemoriesPath } = require('../utils/magi-paths');
+      const memoriesDir = getMemoriesPath();
       const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
       
       for (const level of privacyLevels) {
