@@ -24,6 +24,9 @@ function loadPersonas(profile = 'default') {
     process.exit(1);
   }
   
+  // Clear require cache to ensure fresh load
+  delete require.cache[require.resolve(personasPath)];
+  
   return require(personasPath);
 }
 
@@ -54,7 +57,7 @@ const colors = {
 
 class MagiREPL {
   constructor() {
-    this.currentPersona = 'personal'; // Default persona
+    this.currentPersona = 'root'; // Default persona
     this.sessionActive = true;
     this.commandHistory = [];
     
@@ -80,10 +83,16 @@ class MagiREPL {
    * Generate the current prompt based on active persona
    */
   getPrompt() {
-    const persona = personas[this.currentPersona] || personas.personal;
-    const personaColor = colors[this.currentPersona] || colors.personal;
+    const basePrompt = `${colors.prompt}🧙 magi${colors.reset}`;
+    if (this.currentPersona === 'root') {
+      return `${basePrompt} > `;
+    }
     
-    return `${colors.prompt}🧙 magi ${colors.reset}${colors.dim}>${colors.reset} ${personaColor}${persona.emoji}${persona.name.toLowerCase()} ${colors.reset}${colors.dim}>${colors.reset} `;
+    const persona = personas[this.currentPersona];
+    if (!persona) return `${basePrompt} > `;
+    
+    const personaColor = colors[this.currentPersona] || colors.reset;
+    return `${basePrompt} > ${personaColor}${persona.emoji} ${persona.name.toLowerCase()}${colors.reset} > `;
   }
   
   /**
@@ -110,7 +119,7 @@ class MagiREPL {
     
     // Add persona names for 'cd' command
     if (line.startsWith('cd ')) {
-      const personaNames = Object.keys(personas);
+      const personaNames = ['root', '..', ...Object.keys(personas)];
       const hits = personaNames.filter(name => name.startsWith(line.slice(3)));
       return [hits, line];
     }
@@ -226,7 +235,11 @@ class MagiREPL {
   showWelcome() {
     console.log(`${colors.prompt}🧙 ${colors.bold}Welcome to MAGI - Your Personal AI Memory Bank${colors.reset}`);
     console.log(`${colors.hint}💡 Type 'help' for commands, 'cd {persona}' to switch contexts, or just chat naturally!${colors.reset}`);
-    console.log(`${colors.hint}✨ Current persona: ${colors[this.currentPersona]}${personas[this.currentPersona].emoji} ${personas[this.currentPersona].name}${colors.reset}\n`);
+    if (this.currentPersona === 'root') {
+      console.log(`${colors.hint}✨ Current persona: 🌟 Root${colors.reset}\n`);
+    } else {
+      console.log(`${colors.hint}✨ Current persona: ${colors[this.currentPersona]}${personas[this.currentPersona].emoji} ${personas[this.currentPersona].name}${colors.reset}\n`);
+    }
   }
   
   /**
@@ -309,17 +322,32 @@ class MagiREPL {
    */
   changePersona(personaName) {
     if (!personaName) {
-      console.log(`${colors.error}❌ Please specify a persona. Available: ${Object.keys(personas).join(', ')}${colors.reset}`);
+      console.log(`${colors.error}❌ Please specify a persona. Available: root, ${Object.keys(personas).join(', ')}${colors.reset}`);
+      return;
+    }
+    
+    // Handle 'cd ..' to go back to root
+    if (personaName === '..' || personaName === 'root') {
+      const oldPersona = this.currentPersona === 'root' ? null : personas[this.currentPersona];
+      this.currentPersona = 'root';
+      this.updatePrompt();
+      
+      if (oldPersona) {
+        console.log(`${colors.success}✨ Switched from ${oldPersona.emoji} ${oldPersona.name} to 🌟 Root${colors.reset}`);
+      } else {
+        console.log(`${colors.info}📍 Already in Root context${colors.reset}`);
+      }
+      console.log(`${colors.hint}💡 System overview and cross-persona operations${colors.reset}`);
       return;
     }
     
     if (!personas[personaName]) {
       console.log(`${colors.error}❌ Unknown persona: ${personaName}${colors.reset}`);
-      console.log(`${colors.hint}💡 Available personas: ${Object.keys(personas).join(', ')}${colors.reset}`);
+      console.log(`${colors.hint}💡 Available personas: root, ${Object.keys(personas).join(', ')}${colors.reset}`);
       return;
     }
     
-    const oldPersona = personas[this.currentPersona];
+    const oldPersona = this.currentPersona === 'root' ? { emoji: '🌟', name: 'Root' } : personas[this.currentPersona];
     const newPersona = personas[personaName];
     
     this.currentPersona = personaName;
@@ -333,6 +361,13 @@ class MagiREPL {
    * Show current context
    */
   showCurrentContext() {
+    if (this.currentPersona === 'root') {
+      console.log(`${colors.info}📍 Current context: 🌟 Root${colors.reset}`);
+      console.log(`${colors.hint}   System overview and cross-persona operations${colors.reset}`);
+      console.log(`${colors.hint}   Memory scope: all levels${colors.reset}`);
+      return;
+    }
+    
     const persona = personas[this.currentPersona];
     console.log(`${colors.info}📍 Current context: ${colors[this.currentPersona]}${persona.emoji} ${persona.name}${colors.reset}`);
     console.log(`${colors.hint}   ${persona.description}${colors.reset}`);
@@ -346,6 +381,11 @@ class MagiREPL {
     console.log(`${colors.info}🎭 ${colors.bold}Available Personas:${colors.reset}`);
     console.log('');
     
+    // Show root first
+    const rootCurrent = this.currentPersona === 'root' ? `${colors.success}◄ current${colors.reset}` : '';
+    console.log(`  ${colors.info}🌟 ${colors.bold}Root${colors.reset} - System overview and cross-persona operations ${rootCurrent}`);
+    
+    // Show all other personas
     Object.entries(personas).forEach(([key, persona]) => {
       const current = key === this.currentPersona ? `${colors.success}◄ current${colors.reset}` : '';
       console.log(`  ${colors[key] || colors.info}${persona.emoji} ${colors.bold}${persona.name}${colors.reset} - ${persona.description} ${current}`);
@@ -363,7 +403,11 @@ class MagiREPL {
     
     try {
       // TODO: Integrate with MCP ai_save_memory tool
-      console.log(`${colors.success}💾 Saving to ${personas[this.currentPersona].emoji} ${this.currentPersona} context...${colors.reset}`);
+      if (this.currentPersona === 'root') {
+        console.log(`${colors.success}💾 Saving to 🌟 root context...${colors.reset}`);
+      } else {
+        console.log(`${colors.success}💾 Saving to ${personas[this.currentPersona].emoji} ${this.currentPersona} context...${colors.reset}`);
+      }
       console.log(`${colors.hint}📝 "${content}"${colors.reset}`);
       console.log(`${colors.success}✅ Memory saved successfully${colors.reset}`);
     } catch (error) {
@@ -382,7 +426,11 @@ class MagiREPL {
     
     try {
       // TODO: Integrate with MCP search with persona context filtering
-      console.log(`${colors.info}🔍 Searching ${personas[this.currentPersona].emoji} ${this.currentPersona} memories for: "${query}"${colors.reset}`);
+      if (this.currentPersona === 'root') {
+        console.log(`${colors.info}🔍 Searching 🌟 all memories for: "${query}"${colors.reset}`);
+      } else {
+        console.log(`${colors.info}🔍 Searching ${personas[this.currentPersona].emoji} ${this.currentPersona} memories for: "${query}"${colors.reset}`);
+      }
       console.log(`${colors.hint}📋 Found 0 results (integration pending)${colors.reset}`);
     } catch (error) {
       console.log(`${colors.error}❌ Search failed: ${error.message}${colors.reset}`);
@@ -393,14 +441,17 @@ class MagiREPL {
    * Query AI with current persona context
    */
   async queryAI(query) {
-    const persona = personas[this.currentPersona];
-    
     try {
-      console.log(`${colors.info}🧠 ${persona.emoji} Thinking as ${persona.name}...${colors.reset}`);
-      
-      // TODO: Integrate with MCP ai_query_memories with persona context
-      console.log(`${colors.hint}💭 (AI integration pending - would search ${persona.memory_scope.join(', ')} memories)${colors.reset}`);
-      console.log(`${colors.hint}🎭 Persona tone: ${persona.tone}${colors.reset}`);
+      if (this.currentPersona === 'root') {
+        console.log(`${colors.info}🧠 🌟 Thinking as Root system overview...${colors.reset}`);
+        console.log(`${colors.hint}💭 (AI integration pending - would search all memory levels)${colors.reset}`);
+        console.log(`${colors.hint}🎭 Persona tone: helpful, overview-focused, system-aware, guides between contexts${colors.reset}`);
+      } else {
+        const persona = personas[this.currentPersona];
+        console.log(`${colors.info}🧠 ${persona.emoji} Thinking as ${persona.name}...${colors.reset}`);
+        console.log(`${colors.hint}💭 (AI integration pending - would search ${persona.memory_scope.join(', ')} memories)${colors.reset}`);
+        console.log(`${colors.hint}🎭 Persona tone: ${persona.tone}${colors.reset}`);
+      }
       
     } catch (error) {
       console.log(`${colors.error}❌ AI query failed: ${error.message}${colors.reset}`);
