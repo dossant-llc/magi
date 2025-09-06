@@ -10,6 +10,10 @@
     "start": "node dist/server.js",
     "start:stdio": "node dist/server.js stdio",
     "test": "jest",
+    "test:unit": "jest src/providers/__tests__/ tests/server.test.ts",
+    "test:integration": "jest tests/integration/ tests/magic/",
+    "test:integration:local": "jest tests/magic/",
+    "test:integration:cloud": "jest tests/integration/",
     "test:watch": "jest --watch",
     "magic": "tsx src/magic/index.ts",
     "magic:test": "tsx tests/magic/integration.test.ts",
@@ -23,7 +27,8 @@
     "perf:baseline": "tsx src/scripts/perf-search.ts --baseline",
     "perf:index-first": "tsx src/scripts/perf-search.ts --index-first",
     "perf:compare": "tsx src/scripts/perf-search.ts --compare",
-    "qc": "tsx src/scripts/quality-check.ts"
+    "qc": "tsx src/scripts/quality-check.ts",
+    "regression": "node ../../dev/scripts/regression-final.js"
   },
   "keywords": [
     "mcp",
@@ -49,6 +54,7 @@
     "faiss-node": "^0.5.1",
     "glob": "^7.2.3",
     "ollama": "^0.5.17",
+    "openai": "^4.67.3",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2",
     "winston": "^3.17.0",
@@ -56,10 +62,10 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
     "supertest": "^7.0.0",
-    "ts-jest": "^29.1.2"
+    "ts-jest": "^29.4.1"
   }
 }

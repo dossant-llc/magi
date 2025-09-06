@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>If It's Magic - Personal AI That Actually Serves You</title>
+    <meta name="description" content="What if AI could remember your context without sacrificing your privacy? Meet magi - personal AI that feels like magic.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.8;
+            color: #2d3748;
+            background: #0f0f23;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-opacity='.1'%3E%3Cpolygon fill='%23fff' points='50 0 60 40 100 50 60 60 50 100 40 60 0 50 40 40'/%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.1;
+            animation: twinkle 20s ease-in-out infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 4rem 0 6rem;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.05em;
+        }
+        
+        .hero .subtitle {
+            font-size: 1.8rem;
+            color: #a0aec0;
+            margin-bottom: 3rem;
+            font-style: italic;
+            font-weight: 300;
+        }
+        
+        .story-section {
+            margin: 4rem 0;
+            padding: 3rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .story-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #e2e8f0;
+            text-align: center;
+        }
+        
+        .story-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #cbd5e0;
+            text-align: center;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .magic-demo {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 3rem 0;
+            text-align: left;
+        }
+        
+        .magic-demo h3 {
+            color: #e2e8f0;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        .dialogue {
+            margin: 2rem 0;
+        }
+        
+        .user-msg, .magi-msg {
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .user-msg {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+            color: #e2e8f0;
+        }
+        
+        .magi-msg {
+            background: rgba(139, 92, 246, 0.2);
+            border-left: 4px solid #8b5cf6;
+            color: #e2e8f0;
+        }
+        
+        .principles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+        
+        .principle {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .principle h3 {
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .principle p {
+            color: #cbd5e0;
+            font-size: 1rem;
+        }
+        
+        .cta-section {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 20px;
+            margin: 4rem 0;
+        }
+        
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #e2e8f0;
+        }
+        
+        .cta-section p {
+            font-size: 1.3rem;
+            color: #cbd5e0;
+            margin-bottom: 2rem;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.2rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #718096;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 3rem;
+            }
+            
+            .hero .subtitle {
+                font-size: 1.4rem;
+            }
+            
+            .magic-demo {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    
+    <div class="container">
+        <div class="hero">
+            <h1>If it's magic,<br>it should feel like magic</h1>
+            <div class="subtitle">Meet magi - personal AI that actually serves you</div>
+        </div>
+        
+        <div class="story-section">
+            <h2>✨ The Magic</h2>
+            <p>
+                Imagine AI that remembers your debugging solutions, your client preferences, 
+                your family's favorite restaurants. AI that knows your context without 
+                sacrificing your privacy. AI that feels like having a conversation with 
+                your future self.
+            </p>
+        </div>
+        
+        <div class="magic-demo">
+            <h3>Here's what magic looks like:</h3>
+            
+            <div class="dialogue">
+                <div class="user-msg">
+                    magi help me plan a vacation to Italy
+                </div>
+                <div class="magi-msg">
+                    Based on your past trips, I remember you loved that small trattoria in Rome (Via del Corso) and Sarah's favorite gelato place in Florence. You mentioned wanting to avoid touristy spots and prefer authentic local experiences. 
+                    
+                    For this trip, I'd suggest revisiting that neighborhood in Trastevere you bookmarked, and that cooking class you saved but never booked...
+                </div>
+            </div>
+            
+            <div class="dialogue">
+                <div class="user-msg">
+                    magi save this: Always check DNS upstream before client-side fixes
+                </div>
+                <div class="magi-msg">
+                    Added to your troubleshooting knowledge. I notice this is the third DNS-related insight you've saved this month - you're building quite the networking expertise! Filed under "debugging patterns" with high priority.
+                </div>
+            </div>
+        </div>
+        
+        <div class="story-section">
+            <h2>🔮 The Problem with "AI"</h2>
+            <p>
+                Current AI assistants are like having conversations with a brilliant stranger. 
+                They know everything about everyone but nothing about YOU. 
+                They can write code, plan trips, and solve problems - but they can't remember 
+                that debugging approach that worked last month, or that your team responds 
+                better to collaborative meetings than directive ones.
+            </p>
+        </div>
+        
+        <div class="principles">
+            <div class="principle">
+                <h3>🏠 Your Magic, Your Rules</h3>
+                <p>Your memories stay on your machine. magi only knows what you teach it, when you allow it.</p>
+            </div>
+            
+            <div class="principle">
+                <h3>🧙‍♂️ Wake Word Wonder</h3>
+                <p>Just say "magi" and your personal context activates. Like summoning your own digital wizard.</p>
+            </div>
+            
+            <div class="principle">
+                <h3>📚 Learning That Lasts</h3>
+                <p>Every interaction builds your personal knowledge base. Your AI gets smarter about YOU over time.</p>
+            </div>
+        </div>
+        
+        <div class="story-section">
+            <h2>🌟 Why This Matters</h2>
+            <p>
+                We all accumulate valuable knowledge through work and life. The debugging trick that saved hours. 
+                The management approach that actually worked with your team. The restaurant your family loved 
+                on that vacation three years ago.
+            </p>
+            <p>
+                But this knowledge gets scattered across notes, conversations, and memory. 
+                When you need it most, you can't find it. When AI helps, it lacks YOUR context.
+            </p>
+            <p>
+                <strong>magi changes that.</strong> It's AI that serves you, not surveillance capitalism. 
+                Personal intelligence that remembers what matters to you.
+            </p>
+        </div>
+        
+        <div class="cta-section">
+            <h2>Ready for your own magic?</h2>
+            <p>Experience personal AI that actually knows you</p>
+            <a href="https://m.agifor.me" class="cta-button">Meet Your magi</a>
+        </div>
+        
+        <div class="footer">
+            <p>
+                magi - Personal AI that feels like magic<br>
+                <small>Privacy-first • Source-available • Community-driven</small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

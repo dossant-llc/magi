@@ -508,6 +508,7 @@ async function main() {
     await server.start();
     
     console.log('\n🎉 BrainNetwork is ready!');
+    console.log('🧠 AI Synthesis Mode: LOCAL (using Ollama LLM for conversational responses)');
     console.log('🔍 Try: curl http://localhost:3001/api/discover');
     console.log('🧠 Try: curl -X POST http://localhost:3001/api/instances -d \'{"name":"alice"}\' -H "Content-Type: application/json"');
     
