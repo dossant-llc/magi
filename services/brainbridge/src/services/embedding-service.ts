@@ -2,11 +2,13 @@
  * Embedding Service - Generates and manages vector embeddings using local models
  */
 
-import { Ollama } from 'ollama';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { LoggerService } from './logger-service';
+import { IEmbeddingProvider } from '../providers/ai-interfaces';
+import { aiProviderFactory } from '../providers/ai-provider-factory';
+import { aiConfig } from '../config/ai-config';
 
 interface MemoryEmbedding {
   id: string;
@@ -35,24 +37,55 @@ interface EmbeddingIndex {
 }
 
 export class EmbeddingService {
-  private ollama: Ollama;
+  private embeddingProvider: IEmbeddingProvider;
   private loggerService: LoggerService;
   private indexPath: string;
   private embeddingsPath: string;
+  private lockPath: string;
   
   constructor(loggerService: LoggerService) {
-    // Use Docker environment variables or fallback to localhost
-    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
-    const ollamaPort = process.env.OLLAMA_PORT || '11434';
-    const ollamaUrl = `http://${ollamaHost}:${ollamaPort}`;
-    
-    this.ollama = new Ollama({ host: ollamaUrl });
+    this.embeddingProvider = aiProviderFactory.createEmbeddingProvider();
     this.loggerService = loggerService;
     
-    // Simple memory path resolution
-    const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
-    this.indexPath = path.join(baseMemoriesDir, 'embeddings');
+    // Use provider-specific index path
+    const { getMemoriesPath } = require('../utils/magi-paths');
+    const baseMemoriesDir = getMemoriesPath();
+    this.indexPath = aiConfig.getIndexPath(path.join(baseMemoriesDir, 'embeddings'));
     this.embeddingsPath = path.join(this.indexPath, 'embeddings.txt');
+    this.lockPath = path.join(this.indexPath, 'lock.txt');
+    
+    this.loggerService.log(`EmbeddingService initialized with ${aiConfig.getProvider()} provider, index path: ${this.indexPath}`);
+  }
+
+  /**
+   * Simple file locking mechanism to prevent concurrent access
+   */
+  private async acquireLock(timeoutMs: number = 5000): Promise<boolean> {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        // Try to create lock file (fails if exists)
+        await fs.writeFile(this.lockPath, `${process.pid}-${Date.now()}`, { flag: 'wx' });
+        return true;
+      } catch (error) {
+        // Lock exists, wait and retry
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Release the file lock
+   */
+  private async releaseLock(): Promise<void> {
+    try {
+      await fs.unlink(this.lockPath);
+    } catch (error) {
+      // Lock file may not exist, that's ok
+    }
   }
 
   /**
@@ -63,20 +96,16 @@ export class EmbeddingService {
     this.loggerService.startTimer('embedding_generation');
 
     try {
-      const response = await this.ollama.embeddings({
-        model: 'mxbai-embed-large',
-        prompt: content,
+      const response = await this.embeddingProvider.generateEmbedding({
+        model: this.embeddingProvider.getModelName(),
+        input: content,
       });
 
       this.loggerService.endTimer('embedding_generation', {
-        model: 'mxbai-embed-large',
+        model: response.model,
         contentLength: content.length,
-        embeddingDimensions: response.embedding?.length || 0
+        embeddingDimensions: response.embedding.length
       });
-
-      if (!response.embedding) {
-        throw new Error('No embedding returned from model');
-      }
 
       return response.embedding;
     } catch (error) {
@@ -84,9 +113,9 @@ export class EmbeddingService {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         contentLength: content.length,
-        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
-        model: 'nomic-embed-text',
-        cause: error instanceof Error && error.cause ? error.cause : 'Unknown - likely Ollama server not running or model not available'
+        provider: aiConfig.getProvider(),
+        model: this.embeddingProvider.getModelName(),
+        cause: error instanceof Error && error.cause ? error.cause : 'Unknown - AI provider unavailable or model not accessible'
       });
       throw error;
     }
@@ -164,6 +193,11 @@ export class EmbeddingService {
    * Load existing embedding index from structured text format
    */
   async loadIndex(): Promise<EmbeddingIndex> {
+    // Acquire lock before reading
+    if (!(await this.acquireLock())) {
+      this.loggerService.trace('Failed to acquire lock for loadIndex, proceeding without lock');
+    }
+    
     try {
       await fs.mkdir(this.indexPath, { recursive: true });
       
@@ -180,12 +214,14 @@ export class EmbeddingService {
       }
     } catch (error) {
       this.loggerService.trace('Failed to load existing index', { error });
+    } finally {
+      await this.releaseLock();
     }
 
     // Return empty index
     return {
       version: '1.0.0',
-      model: 'mxbai-embed-large',
+      model: this.embeddingProvider.getModelName(),
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       totalEmbeddings: 0,
@@ -200,7 +236,7 @@ export class EmbeddingService {
     const lines = data.split('\n');
     const index: EmbeddingIndex = {
       version: '1.0.0',
-      model: 'mxbai-embed-large',
+      model: this.embeddingProvider.getModelName(),
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       totalEmbeddings: 0,
@@ -311,10 +347,16 @@ export class EmbeddingService {
    * Save embedding index to disk in structured text format
    */
   async saveIndex(index: EmbeddingIndex): Promise<void> {
-    index.updated = new Date().toISOString();
-    index.totalEmbeddings = index.embeddings.length;
+    // Acquire lock before writing
+    if (!(await this.acquireLock())) {
+      throw new Error('Failed to acquire lock for saveIndex - another process may be writing');
+    }
     
-    const lines: string[] = [
+    try {
+      index.updated = new Date().toISOString();
+      index.totalEmbeddings = index.embeddings.length;
+      
+      const lines: string[] = [
       '# Embedding Index',
       `# Version: ${index.version}`,
       `# Model: ${index.model}`,
@@ -337,11 +379,14 @@ export class EmbeddingService {
       lines.push('---');
     }
     
-    await fs.writeFile(this.embeddingsPath, lines.join('\n'));
-    this.loggerService.trace('Saved embedding index', { 
-      totalEmbeddings: index.totalEmbeddings,
-      path: this.embeddingsPath 
-    });
+      await fs.writeFile(this.embeddingsPath, lines.join('\n'));
+      this.loggerService.trace('Saved embedding index', { 
+        totalEmbeddings: index.totalEmbeddings,
+        path: this.embeddingsPath 
+      });
+    } finally {
+      await this.releaseLock();
+    }
   }
 
   /**
@@ -417,7 +462,7 @@ export class EmbeddingService {
         threshold: threshold,
         searchQuery: query,
         indexExists: require('fs').existsSync(this.embeddingsPath),
-        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
+        provider: aiConfig.getProvider(),
         cause: 'Likely embedding generation failed or vector index corrupted'
       });
       throw error;
@@ -441,7 +486,7 @@ export class EmbeddingService {
     try {
       const index = force ? {
         version: '1.0.0',
-        model: 'mxbai-embed-large',
+        model: this.embeddingProvider.getModelName(),
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         totalEmbeddings: 0,

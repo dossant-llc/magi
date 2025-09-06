@@ -2,30 +2,27 @@
  * AI Service - Integrates mAGIc local AI functionality with MCP
  */
 
-import { Ollama } from 'ollama';
 import { saveCommand } from '../magic/commands/save';
 import { queryCommand } from '../magic/commands/query';
 import { statusCommand } from '../magic/commands/status';
 import { LoggerService } from './logger-service';
 import { EmbeddingService } from './embedding-service';
+import { IChatProvider } from '../providers/ai-interfaces';
+import { aiProviderFactory } from '../providers/ai-provider-factory';
+import { aiConfig } from '../config/ai-config';
 
 export class AIService {
-  private ollama: Ollama;
+  private chatProvider: IChatProvider;
   private loggerService: LoggerService;
   private embeddingService: EmbeddingService;
 
   constructor(loggerService: LoggerService) {
-    // Use Docker environment variables or fallback to localhost
-    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
-    const ollamaPort = process.env.OLLAMA_PORT || '11434';
-    const ollamaUrl = `http://${ollamaHost}:${ollamaPort}`;
-    
-    this.ollama = new Ollama({ host: ollamaUrl });
+    this.chatProvider = aiProviderFactory.createChatProvider();
     this.loggerService = loggerService;
     this.embeddingService = new EmbeddingService(loggerService);
     
-    // Log the Ollama connection info for debugging
-    this.loggerService.log(`AI Service connecting to Ollama at: ${ollamaUrl}`);
+    const providerInfo = aiProviderFactory.getProviderInfo();
+    this.loggerService.log(`AI Service initialized with ${providerInfo.provider} provider (Chat: ${providerInfo.chatModel}, Embedding: ${providerInfo.embeddingModel})`);
   }
 
   /**
@@ -91,22 +88,22 @@ Respond in this exact JSON format:
   "summary": "Brief summary here"
 }`;
 
-      const response = await this.ollama.chat({
-        model: 'llama3.2:1b',
+      const response = await this.chatProvider.chat({
+        model: this.chatProvider.getModelName(),
         messages: [{ role: 'user', content: categorizationPrompt }],
         stream: false,
       });
       
       // Log performance
       this.loggerService.endTimer('ai_categorization', {
-        model: 'llama3.2:1b',
+        model: response.model,
         promptLength: categorizationPrompt.length,
-        responseLength: response.message.content.length
+        responseLength: response.content.length
       });
 
       let aiAnalysis;
       try {
-        const jsonMatch = response.message.content.match(/\{[\s\S]*\}/);
+        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           aiAnalysis = JSON.parse(jsonMatch[0]);
         } else {
@@ -165,7 +162,8 @@ ${content}
       const path = require('path');
       
       // Simple memory path resolution
-      const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+      const { getMemoriesPath } = require('../utils/magi-paths');
+      const baseMemoriesDir = getMemoriesPath();
       const memoriesDir = path.join(baseMemoriesDir, privacyLevel);
       await fs.mkdir(memoriesDir, { recursive: true });
       
@@ -176,7 +174,7 @@ ${content}
         saveStats: {
           contentLength: content.length,
           privacyLevel: privacyLevel,
-          category: category || 'uncategorized',
+          category: aiAnalysis.category || 'uncategorized',
           filePath: filePath
         }
       });
@@ -399,27 +397,29 @@ Please provide a helpful answer based on this context. If you reference specific
 If the memories don't contain enough information to fully answer the question, say so and suggest what additional information might be helpful.
 `;
 
-      this.loggerService.trace('Starting AI synthesis with Ollama', { 
-        model: 'llama3.2:1b', 
+      this.loggerService.trace('Starting AI synthesis', { 
+        provider: aiConfig.getProvider(),
+        model: this.chatProvider.getModelName(), 
         promptLength: contextPrompt.length 
       });
 
       const response = await Promise.race([
-        this.ollama.chat({
-          model: 'llama3.2:1b',
+        this.chatProvider.chat({
+          model: this.chatProvider.getModelName(),
           messages: [{ role: 'user', content: contextPrompt }],
           stream: false,
         }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Ollama chat timeout after 30 seconds')), 30000)
-        )
+        new Promise((_, reject) => {
+          const timeoutMs = parseInt(process.env.AI_TIMEOUT || '60000'); // Default 60 seconds
+          setTimeout(() => reject(new Error(`AI chat timeout after ${timeoutMs/1000} seconds`)), timeoutMs);
+        })
       ]) as any;
       
       // Log performance for synthesis
       this.loggerService.endTimer('ai_synthesis', {
-        model: 'llama3.2:1b',
+        model: response.model,
         promptLength: contextPrompt.length,
-        responseLength: response.message.content.length,
+        responseLength: response.content.length,
         memoryCount: memories.length
       });
 
@@ -430,16 +430,16 @@ If the memories don't contain enough information to fully answer the question, s
           avgContentLength: memories.length > 0 ? Math.round(memories.reduce((sum, m) => sum + (m.content?.length || 0), 0) / memories.length) : 0
         },
         synthesisStats: {
-          model: 'llama3.2:1b',
+          model: response.model,
           promptLength: contextPrompt.length,
-          responseLength: response.message.content.length,
-          compressionRatio: contextPrompt.length > 0 ? Math.round((response.message.content.length / contextPrompt.length) * 100) : 0
+          responseLength: response.content.length,
+          compressionRatio: contextPrompt.length > 0 ? Math.round((response.content.length / contextPrompt.length) * 100) : 0
         }
       });
       
       return {
         success: true,
-        answer: response.message.content,
+        answer: response.content,
         sources: memories.map(m => m.filename),
         memoryCount: memories.length
       };
@@ -457,9 +457,10 @@ If the memories don't contain enough information to fully answer the question, s
    * Get AI system status
    */
   async getAIStatus(): Promise<{
-    ollama: {
+    provider: {
+      name: string;
       connected: boolean;
-      models: any[];
+      models?: any[];
     };
     memories: {
       [key: string]: number;
@@ -468,25 +469,50 @@ If the memories don't contain enough information to fully answer the question, s
     index: {
       exists: boolean;
       files: string[];
+      provider?: string;
     };
   }> {
+    const providerInfo = aiProviderFactory.getProviderInfo();
     const status = {
-      ollama: { connected: false, models: [] as any[] },
+      provider: { name: providerInfo.provider, connected: false, models: [] as any[] },
       memories: { total: 0 } as { [key: string]: number; total: number },
-      index: { exists: false, files: [] as string[] }
+      index: { exists: false, files: [] as string[], provider: undefined as string | undefined }
     };
 
     try {
-      // Check Ollama
-      const models = await this.ollama.list();
-      status.ollama.connected = true;
-      status.ollama.models = models.models.map(m => ({
-        name: m.name,
-        size: m.size,
-        modified: m.modified_at
-      }));
+      // Check provider connectivity using provider-specific methods
+      if (providerInfo.provider === 'ollama') {
+        // Test Ollama connectivity via direct provider check
+        try {
+          const { Ollama } = require('ollama');
+          const ollama = new Ollama({ host: aiConfig.getOllamaUrl() });
+          const models = await ollama.list();
+          status.provider.connected = true;
+          status.provider.models = models.models.map((m: any) => ({
+            name: m.name,
+            size: m.size,
+            modified: m.modified_at
+          }));
+        } catch (ollamaError) {
+          status.provider.connected = false;
+          this.loggerService.log(`Ollama connectivity check failed: ${ollamaError}`);
+        }
+      } else if (providerInfo.provider === 'openai') {
+        // For OpenAI, verify API key and optionally test connectivity
+        const apiKey = aiConfig.getOpenAIApiKey();
+        if (apiKey) {
+          status.provider.connected = true;
+          status.provider.models = [
+            { name: providerInfo.chatModel, type: 'chat' },
+            { name: providerInfo.embeddingModel, type: 'embedding' }
+          ];
+        } else {
+          status.provider.connected = false;
+        }
+      }
     } catch (error) {
-      this.loggerService.log(`Ollama check failed: ${error}`);
+      this.loggerService.log(`${providerInfo.provider} status check failed: ${error}`);
+      status.provider.connected = false;
     }
 
     try {
@@ -512,15 +538,22 @@ If the memories don't contain enough information to fully answer the question, s
     }
 
     try {
-      // Check index
+      // Check provider-specific index
       const fs = require('fs/promises');
       const path = require('path');
-      const indexDir = path.join(process.cwd(), '.index');
-      const indexFiles = await fs.readdir(indexDir);
+      const { getMemoriesPath } = require('../utils/magi-paths');
+      const baseMemoriesDir = getMemoriesPath();
+      const indexPath = aiConfig.getIndexPath(path.join(baseMemoriesDir, 'embeddings'));
+      const embeddingsFile = path.join(indexPath, 'embeddings.txt');
+      
+      const stats = await fs.stat(embeddingsFile);
       status.index.exists = true;
-      status.index.files = indexFiles;
+      status.index.files = [`embeddings.txt (${(stats.size/1024).toFixed(1)}KB)`];
+      status.index.provider = aiConfig.getProvider();
     } catch (error) {
       this.loggerService.log(`Index check failed: ${error}`);
+      status.index.exists = false;
+      status.index.provider = aiConfig.getProvider();
     }
 
     return status;
@@ -587,7 +620,8 @@ If the memories don't contain enough information to fully answer the question, s
     const glob = require('glob');
     
     // Simple memory path resolution
-    const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+    const { getMemoriesPath } = require('../utils/magi-paths');
+    const baseMemoriesDir = getMemoriesPath();
     const memoriesDir = baseMemoriesDir;
     const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
     const maxLevel = privacyLevels.indexOf(maxPrivacy);

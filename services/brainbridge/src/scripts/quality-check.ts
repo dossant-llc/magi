@@ -11,6 +11,8 @@ import { performance } from 'perf_hooks';
 import { LoggerService } from '../services/logger-service';
 import { EmbeddingService } from '../services/embedding-service';
 import { AIService } from '../services/ai-service';
+import { aiConfig } from '../config/ai-config';
+import { getMemoriesPath } from '../utils/magi-paths';
 
 interface QCResult {
   component: string;
@@ -46,8 +48,8 @@ class QualityChecker {
   async checkSystemHealth(): Promise<void> {
     console.log('🔍 BrainBridge Quality Control Check\n');
     
-    // 1. Check Ollama connectivity
-    await this.checkOllamaHealth();
+    // 1. Check AI Provider connectivity
+    await this.checkAIProviderHealth();
     
     // 2. Check embedding index
     await this.checkEmbeddingIndex();
@@ -68,46 +70,57 @@ class QualityChecker {
     this.generateReport();
   }
 
-  async checkOllamaHealth(): Promise<void> {
-    console.log('⚡ Testing Ollama connectivity...');
+  async checkAIProviderHealth(): Promise<void> {
+    const provider = aiConfig.getProvider();
+    console.log(`⚡ Testing ${provider.toUpperCase()} connectivity...`);
     
     try {
       const startTime = performance.now();
       const status = await this.aiService.getAIStatus();
       const duration = performance.now() - startTime;
       
-      if (status.ollama.connected) {
+      if (status.provider.connected) {
         this.addResult({
-          component: 'Ollama',
+          component: provider.toUpperCase(),
           status: 'PASS',
           metric: 'Connection',
           value: `✅ Connected (${this.formatDuration(duration)})`,
-          notes: `${status.ollama.models.length} models available`
+          notes: `${status.provider.models?.length || 0} models available`
         });
         
-        // Check if required models are available
-        const hasLlama = status.ollama.models.some(m => m.name.includes('llama3.1:8b'));
-        const hasEmbedding = status.ollama.models.some(m => m.name.includes('mxbai-embed-large'));
-        
-        this.addResult({
-          component: 'Models',
-          status: hasLlama && hasEmbedding ? 'PASS' : 'FAIL',
-          metric: 'Required Models',
-          value: `llama3.1:8b: ${hasLlama ? '✅' : '❌'}, mxbai-embed-large: ${hasEmbedding ? '✅' : '❌'}`,
-        });
+        if (provider === 'ollama' && status.provider.models) {
+          // Check if required models are available for Ollama
+          const hasLlama = status.provider.models.some(m => m.name.includes('llama3.1:8b'));
+          const hasEmbedding = status.provider.models.some(m => m.name.includes('mxbai-embed-large'));
+          
+          this.addResult({
+            component: 'Models',
+            status: hasLlama && hasEmbedding ? 'PASS' : 'FAIL',
+            metric: 'Required Models',
+            value: `llama3.1:8b: ${hasLlama ? '✅' : '❌'}, mxbai-embed-large: ${hasEmbedding ? '✅' : '❌'}`,
+          });
+        } else if (provider === 'openai') {
+          // For OpenAI, just verify the configuration
+          this.addResult({
+            component: 'Models',
+            status: 'PASS',
+            metric: 'Configuration',
+            value: `Chat: ${aiConfig.getChatModel()}, Embed: ${aiConfig.getEmbeddingModel()}`,
+          });
+        }
         
       } else {
         this.addResult({
-          component: 'Ollama',
+          component: provider.toUpperCase(),
           status: 'FAIL',
           metric: 'Connection',
           value: '❌ Not connected',
-          notes: 'Run: ollama serve'
+          notes: provider === 'ollama' ? 'Run: ollama serve' : 'Check API key configuration'
         });
       }
     } catch (error) {
       this.addResult({
-        component: 'Ollama',
+        component: provider.toUpperCase(),
         status: 'FAIL',
         metric: 'Connection',
         value: '❌ Error',
@@ -120,18 +133,29 @@ class QualityChecker {
     console.log('📊 Checking embedding index...');
     
     try {
-      const indexPath = path.join(process.cwd(), '.index', 'embeddings.json');
-      const indexExists = await fs.access(indexPath).then(() => true).catch(() => false);
+      const baseMemoriesDir = getMemoriesPath();
+      const indexPath = aiConfig.getIndexPath(path.join(baseMemoriesDir, 'embeddings'));
+      const embeddingsFile = path.join(indexPath, 'embeddings.txt');
+      const indexExists = await fs.access(embeddingsFile).then(() => true).catch(() => false);
       
       if (indexExists) {
-        const data = await fs.readFile(indexPath, 'utf8');
-        const index = JSON.parse(data);
+        const stats = await fs.stat(embeddingsFile);
+        const data = await fs.readFile(embeddingsFile, 'utf8');
+        
+        // Parse structured text format to get basic info
+        const totalMatch = data.match(/# Total Embeddings: (\d+)/);
+        const modelMatch = data.match(/# Model: (.+)/);
+        const updatedMatch = data.match(/# Updated: (.+)/);
+        
+        const totalEmbeddings = totalMatch ? parseInt(totalMatch[1]) : 0;
+        const model = modelMatch ? modelMatch[1] : 'unknown';
+        const updated = updatedMatch ? updatedMatch[1] : new Date().toISOString();
         
         this.addResult({
           component: 'Index',
           status: 'PASS',
           metric: 'Embeddings Count',
-          value: index.totalEmbeddings || 0,
+          value: totalEmbeddings,
           threshold: '> 0'
         });
         
@@ -139,11 +163,11 @@ class QualityChecker {
           component: 'Index',
           status: 'PASS',
           metric: 'Model',
-          value: index.model,
-          threshold: 'mxbai-embed-large'
+          value: model,
+          threshold: `${aiConfig.getProvider()} model`
         });
         
-        const indexAge = Date.now() - new Date(index.updated).getTime();
+        const indexAge = Date.now() - new Date(updated).getTime();
         const hoursOld = indexAge / (1000 * 60 * 60);
         
         this.addResult({

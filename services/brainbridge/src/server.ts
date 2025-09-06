@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+// Load root .env configuration BEFORE any other imports
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -8,25 +13,23 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
-
-// Load root .env configuration
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 import express from 'express';
-import { LoggerService, MemoryService, AIService } from './services/index.js';
+import { LoggerService, MemoryService, AIService, EmbeddingService } from './services/index.js';
 import { MemoryHandler, PatternHandler } from './handlers/index.js';
 import { McpRoutes, HealthRoutes } from './routes/index.js';
 import { brainXchangeIntegration } from './integrations/brainxchange-integration.js';
 import { BrainProxyConnector, BrainProxyConfig } from './services/brain-proxy-connector.js';
+import { ProviderDetectionService } from './services/provider-detection.js';
 
 class BrainBridgeServer {
   private server: Server;
   private loggerService: LoggerService;
   private memoryService: MemoryService;
   private aiService: AIService;
+  private embeddingService: EmbeddingService;
   private memoryHandler: MemoryHandler;
   private patternHandler: PatternHandler;
+  private providerDetectionService: ProviderDetectionService;
   private brainProxyConnector: BrainProxyConnector | null = null;
 
   constructor() {
@@ -38,6 +41,16 @@ class BrainBridgeServer {
     this.loggerService = new LoggerService(logFile);
     this.memoryService = new MemoryService(memoriesDir, this.loggerService);
     this.aiService = new AIService(this.loggerService);
+    this.embeddingService = new EmbeddingService(this.loggerService);
+    
+    // Inject embedding service into memory service for auto-rebuild functionality
+    this.memoryService.setEmbeddingService(this.embeddingService);
+    
+    // Initialize provider detection service
+    this.providerDetectionService = new ProviderDetectionService(this.loggerService, this.embeddingService);
+    
+    // Handle provider changes on startup
+    this.initializeProviderDetection();
     
     // Initialize handlers
     this.memoryHandler = new MemoryHandler(this.memoryService);
@@ -80,6 +93,29 @@ class BrainBridgeServer {
       console.log('🔇 BrainXchange disabled via BRAINXCHANGE_ENABLED=false');
     }
     this.initializeBrainProxy();
+  }
+
+  private async initializeProviderDetection() {
+    try {
+      this.loggerService.log('🔍 Checking AI provider configuration...');
+      
+      const providerInfo = this.providerDetectionService.getProviderInfo();
+      this.loggerService.log(`Current AI provider: ${providerInfo.provider} (Chat: ${providerInfo.chatModel}, Embedding: ${providerInfo.embeddingModel})`);
+      
+      const result = await this.providerDetectionService.handleProviderChange();
+      
+      if (result.rebuilt) {
+        this.loggerService.log(`🔄 Embedding index rebuilt for ${providerInfo.provider} provider (${result.stats?.processed} files processed)`);
+      } else if (result.success) {
+        this.loggerService.log('✅ AI provider configuration verified, no rebuild needed');
+      } else {
+        this.loggerService.log(`⚠️  Provider detection warning: ${result.error}`);
+      }
+    } catch (error) {
+      this.loggerService.error('Provider detection initialization failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   private verifyAIToolsOrDie() {
@@ -702,17 +738,32 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     
     let response = '🤖 **mAGIc AI System Status**\n\n';
     
-    // Ollama status
-    response += '**Local AI Models:**\n';
-    if (status.ollama.connected) {
-      response += '✅ Ollama: Connected\n';
-      const chatModel = status.ollama.models.find(m => m.name === 'llama3.1:8b');
-      const embedModel = status.ollama.models.find(m => m.name.includes('mxbai-embed-large'));
-      response += `  📊 Chat Model (llama3.1:8b): ${chatModel ? '✅ Available' : '❌ Missing'}\n`;
-      response += `  🧠 Embed Model (mxbai-embed-large): ${embedModel ? '✅ Available' : '❌ Missing'}\n`;
+    // Provider status
+    const providerInfo = this.providerDetectionService.getProviderInfo();
+    response += `**AI Provider:** ${providerInfo.provider.toUpperCase()}\n`;
+    response += `  📊 Chat Model: ${providerInfo.chatModel}\n`;
+    response += `  🧠 Embedding Model: ${providerInfo.embeddingModel}\n`;
+    response += `  📁 Index Path: ${providerInfo.indexPath}\n\n`;
+    
+    // Provider connection status
+    response += '**Connection Status:**\n';
+    if (status.provider.connected) {
+      response += `✅ ${status.provider.name}: Connected\n`;
+      if (status.provider.models && status.provider.models.length > 0) {
+        status.provider.models.forEach(model => {
+          const modelInfo = typeof model.size !== 'undefined' 
+            ? `${model.name} (${(model.size / 1e9).toFixed(1)}GB)` 
+            : `${model.name} (${model.type || 'available'})`;
+          response += `  ✅ ${modelInfo}\n`;
+        });
+      }
     } else {
-      response += '❌ Ollama: Not accessible\n';
-      response += '   💡 Make sure Ollama is running: `ollama serve`\n';
+      response += `❌ ${status.provider.name}: Not accessible\n`;
+      if (providerInfo.provider === 'ollama') {
+        response += '   💡 Make sure Ollama is running: `ollama serve`\n';
+      } else if (providerInfo.provider === 'openai') {
+        response += '   💡 Check your OPENAI_API_KEY environment variable\n';
+      }
     }
     
     // Memory storage
@@ -727,15 +778,12 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     // Index status
     response += '\n**Vector Index:**\n';
     if (status.index.exists) {
-      response += `✅ Index directory exists (${status.index.files.length} files)\n`;
-      if (status.index.files.includes('metadata.json')) {
-        response += '  📊 Metadata index ready\n';
-      }
-      if (status.index.files.includes('embeddings.json')) {
-        response += '  🧠 Embeddings metadata ready\n';
+      response += `✅ ${status.index.provider?.toUpperCase() || 'Provider'} index exists (${status.index.files.length} files)\n`;
+      if (status.index.files.some(f => f.includes('embeddings.txt'))) {
+        response += '  🧠 Vector embeddings ready\n';
       }
     } else {
-      response += '❌ No vector index found\n';
+      response += `❌ No ${status.index.provider?.toUpperCase() || 'provider'} vector index found\n`;
       response += '   💡 Run `magic index` to build initial index\n';
     }
     
@@ -846,7 +894,13 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       transport: 'stdio'
     });
     console.error('BrainBridge MCP Server running on stdio');
-    console.error('🧠 AI Synthesis Mode: LOCAL (using Ollama LLM for conversational responses)');
+    
+    // Show AI synthesis mode based on actual provider
+    const providerInfo = this.providerDetectionService.getProviderInfo();
+    const synthesisModeMsg = providerInfo.provider === 'openai' 
+      ? `🧠 AI Synthesis Mode: CLOUD (using ${providerInfo.chatModel} for conversational responses)`
+      : `🧠 AI Synthesis Mode: LOCAL (using ${providerInfo.chatModel} for conversational responses)`;
+    console.error(synthesisModeMsg);
   }
 
   async runHTTP(port: number = 8147) {
