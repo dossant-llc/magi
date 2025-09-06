@@ -9,7 +9,7 @@ export class MemoryHandler {
   }
 
   async searchMemories(query: string, category?: string): Promise<ToolResponse> {
-    const results: SearchResult[] = this.memoryService.searchMemories(query, category);
+    const results: SearchResult[] = await this.memoryService.searchMemoriesVector(query, category);
 
     const responseText = results.length > 0 
       ? `Found ${results.length} file(s) with matches:\n\n` + 
@@ -30,7 +30,18 @@ export class MemoryHandler {
 
   async addMemory(title: string, content: string, category: string): Promise<ToolResponse> {
     const entry = { title, content, category };
-    this.memoryService.addMemory(entry);
+    
+    try {
+      // Use auto-rebuild method if available, fallback to regular addMemory
+      if (this.memoryService.addMemoryWithAutoRebuild) {
+        await this.memoryService.addMemoryWithAutoRebuild(entry);
+      } else {
+        this.memoryService.addMemory(entry);
+      }
+    } catch (error) {
+      // If auto-rebuild fails, try regular save as fallback
+      this.memoryService.addMemory(entry);
+    }
 
     const filename = `${category.toLowerCase().replace(/\s+/g, '-')}.md`;
     

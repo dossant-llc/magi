@@ -48,7 +48,15 @@ memories/
 
 ## Technical Components
 
-### 1. MCP Server (`src/server.ts`)
+### 1. magi CLI System ([MAGI_CLI_DESIGN.md](MAGI_CLI_DESIGN.md))
+**Purpose**: Two-layer command interface for personal AI interactions
+**Architecture**:
+- **Service Layer**: `magi start` - Background MCP service management
+- **REPL Layer**: `magi` - Interactive command-line companion
+- **Wake Word Ecosystem**: Universal `magi` command prefix for all AI operations
+- **Process Management**: Separated service lifecycle from user interaction
+
+### 2. MCP Server (`src/server.ts`)
 **Purpose**: Bridge between AI assistants and memory bank
 **Key features**:
 - `add_memory` tool with smart categorization
@@ -56,7 +64,7 @@ memories/
 - Resource access for direct file reading
 - Consent request handling
 
-### 2. Privacy Classifier (`src/privacy/classifier.ts`)
+### 3. Privacy Classifier (`src/privacy/classifier.ts`)
 **Purpose**: Intelligent privacy level detection
 **Algorithm**:
 - Rule-based scoring (keywords, patterns)
@@ -64,7 +72,7 @@ memories/
 - User preference learning
 - Conservative bias for uncertainty
 
-### 3. Consent Engine (`src/privacy/consent.ts`)
+### 4. Consent Engine (`src/privacy/consent.ts`)
 **Purpose**: User control over memory access
 **Features**:
 - Interactive CLI prompts
@@ -72,7 +80,7 @@ memories/
 - Trust score management  
 - Access audit logging
 
-### 4. Memory Store (File system)
+### 5. Memory Store (File system)
 **Purpose**: Organized, searchable memory storage
 **Structure**:
 - Privacy-level directories

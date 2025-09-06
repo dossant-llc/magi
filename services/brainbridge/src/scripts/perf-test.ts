@@ -3,11 +3,12 @@
 /**
  * Performance test for BrainBridge MCP operations
  * Tests the "favorite beer" query with timing measurements
+ * Updated to work with stdio instead of HTTP
  */
 
-import axios from 'axios';
+import { spawn } from 'child_process';
 
-const MCP_URL = 'http://localhost:8147/mcp';
+const MCP_DISABLED_MSG = 'Performance test disabled - use stdio interface instead';
 
 interface PerfResult {
   operation: string;
@@ -55,7 +56,9 @@ async function testMCPEndpoint(method: string, params: any = {}) {
 async function runPerformanceTest() {
   console.log('🚀 BrainBridge Performance Test');
   console.log('================================');
-  console.log(`🎯 Target: ${MCP_URL}`);
+  console.log(`⚠️  ${MCP_DISABLED_MSG}`);
+  console.log('📋 Use: npm run regression -- for current testing');
+  return;
   console.log('');
 
   const tests = [

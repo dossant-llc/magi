@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>magi - Your Personal AI</title>
+    <meta name="description" content="Your personal AI that remembers what matters to you. Privacy-first, locally-controlled.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .hero {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            margin: 4rem 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            color: #4a5568;
+            letter-spacing: 0.1em;
+        }
+        
+        .tagline {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+        
+        .wake-word {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .wake-word h3 {
+            color: #4a5568;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+        
+        .command {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            text-align: left;
+        }
+        
+        .command .prompt {
+            color: #68d391;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: left;
+        }
+        
+        .feature h3 {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+        
+        .cta {
+            background: #4c51bf;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .cta:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            margin-top: 4rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .footer a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 3rem;
+            }
+            
+            .hero {
+                padding: 2rem 1rem;
+                margin: 2rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>magi</h1>
+            <div class="tagline">Your personal AI that remembers what matters to you</div>
+            
+            <div class="wake-word">
+                <h3>Just ask magi:</h3>
+                <div class="command">
+                    <span class="prompt">→</span> magi help me with that client problem from last month
+                </div>
+                <div class="command">
+                    <span class="prompt">→</span> magi save this debugging solution for next time
+                </div>
+                <div class="command">
+                    <span class="prompt">→</span> magi what did I learn about team management?
+                </div>
+            </div>
+            
+            <a href="#setup" class="cta">Get Started with magi</a>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🔒 Privacy First</h3>
+                <p>Your memories stay on your machine. magi only accesses what you explicitly allow, when you allow it.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🧠 Your Context</h3>
+                <p>Unlike generic AI, magi knows your past solutions, preferences, and learned lessons.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>⚡ Wake Word Magic</h3>
+                <p>Just say "magi" and your personal AI activates with your full context and memory.</p>
+            </div>
+        </div>
+        
+        <div id="setup" class="hero">
+            <h2>Ready to meet your magi?</h2>
+            <p style="margin: 1rem 0; color: #666;">Set up your personal AI in minutes</p>
+            
+            <div class="wake-word">
+                <div class="command">
+                    <span class="prompt">$</span> git clone https://github.com/your-repo/magi
+                </div>
+                <div class="command">
+                    <span class="prompt">$</span> cd magi && npm run magi
+                </div>
+            </div>
+            
+            <p style="color: #666; margin-top: 1rem;">
+                That's it! One command sets up everything you need.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>
+                Open source, privacy-first personal AI • 
+                <a href="https://ifitsmagic.com">Learn more about the magic</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

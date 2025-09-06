@@ -5,17 +5,8 @@ const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { tryPatterns, isComplexDevQuestion } = require('./dev-patterns');
-
-const colors = {
-  prompt: '\x1b[36m',
-  success: '\x1b[92m',
-  system: '\x1b[33m',
-  error: '\x1b[31m',
-  hint: '\x1b[90m',
-  info: '\x1b[36m',
-  warning: '\x1b[33m',
-  reset: '\x1b[0m'
-};
+const { getLogsDir } = require('../../utils/magi-root');
+const { colors, log, getAIProvider, getTimestamp, isDev, getProjectRoot } = require('./common');
 
 // Check for streaming logs mode
 const args = process.argv.slice(2);
@@ -31,8 +22,8 @@ function startStreamingLogs() {
   console.log(`${colors.system}🧙 Magi Log Companion - Streaming BrainBridge Activity${colors.reset}`);
   console.log(`${colors.hint}Press Ctrl+C to exit${colors.reset}\n`);
   
-  // Try to find the most recent log file
-  const logsDir = path.join(process.cwd(), 'services', 'brainbridge', 'logs');
+  // Try to find the most recent log file using MAGI_ROOT
+  const logsDir = getLogsDir();
   let logFile = path.join(logsDir, 'brainbridge-default.log');
   
   try {
@@ -137,27 +128,95 @@ function startStreamingLogs() {
 function formatLogLine(line, timestamp) {
   if (!line.trim()) return '';
   
+  // Parse multiple log formats
+  // Verbose format: "🕐 23:42:52.864 │ info │ Message"
+  // ISO format: "💡 2025-09-02T23:53:20.693-05:00 │ [INFO ] │ Message"
+  
+  let message = line;
+  let level = '';
+  
+  // Try verbose format first
+  const verbosePattern = /^[🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛]?\s*(\d{1,2}:\d{2}:\d{2}\.\d{3})\s*│\s*(\w+)\s*│\s*(.*)$/;
+  let match = line.match(verbosePattern);
+  
+  if (match) {
+    const [, logTime, logLevel, logMessage] = match;
+    message = logMessage;
+    level = logLevel.toLowerCase();
+    
+    // Convert 24-hour time to 12-hour AM/PM format
+    if (logTime) {
+      const [hours, minutes, seconds] = logTime.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      timestamp = `${hour12}:${minutes}:${seconds.split('.')[0]} ${ampm}`;
+    }
+  } else {
+    // Check if line contains ISO timestamp (it's already been prefixed with emojis)
+    if (line.includes('T') && line.includes('│')) {
+      // Remove everything before the actual message part
+      // Pattern: anything → timestamp → │ → [LEVEL] → │ → message
+      const parts = line.split('│');
+      if (parts.length >= 3) {
+        // Get the actual message (last part after second │)
+        message = parts.slice(2).join('│').trim();
+        
+        // Get the log level from middle part
+        const levelPart = parts[1] || '';
+        const levelMatch = levelPart.match(/\[?(\w+)\s*\]?/);
+        if (levelMatch) {
+          level = levelMatch[1].toLowerCase().trim();
+        }
+      }
+    }
+  }
+  
+  // Keep existing ANSI colors if present, otherwise add our own
+  const hasColors = message.includes('\x1b[');
+  
+  // Format time in desired style with color
   const time = `${colors.hint}[${timestamp}]${colors.reset}`;
   
-  // If line already has formatting (ANSI codes), just add timestamp
-  if (line.includes('\x1b[') || line.includes('[0m')) {
-    return `${time} ${line}`;
+  // Choose emoji and color based on content or level
+  let emoji = '💡';
+  let messageColor = '';
+  
+  if (level === 'error' || message.includes('ERROR') || message.includes('Failed')) {
+    emoji = '❌';
+    messageColor = hasColors ? '' : colors.error;
+  } else if (level === 'warn' || message.includes('WARN')) {
+    emoji = '⚠️';
+    messageColor = hasColors ? '' : colors.warning;
+  } else if (message.includes('memory') || message.includes('Memory')) {
+    emoji = '🧠';
+    messageColor = hasColors ? '' : colors.info;
+  } else if (message.includes('AI') || message.includes('Ollama') || message.includes('LLM')) {
+    emoji = '🤖';
+    messageColor = hasColors ? '' : colors.success;
+  } else if (message.includes('sync') || message.includes('Sync')) {
+    emoji = '🔄';
+    messageColor = hasColors ? '' : colors.info;
+  } else if (message.includes('save') || message.includes('Save') || message.includes('store')) {
+    emoji = '💾';
+    messageColor = hasColors ? '' : colors.success;
+  } else if (message.includes('search') || message.includes('Search') || message.includes('query')) {
+    emoji = '🔍';
+    messageColor = hasColors ? '' : colors.info;
+  } else if (message.includes('connect') || message.includes('Connect')) {
+    emoji = '🔌';
+    messageColor = hasColors ? '' : colors.success;
+  } else if (level === 'debug' || level === 'trace') {
+    emoji = '🔍';
+    messageColor = hasColors ? '' : colors.hint;
+  } else {
+    messageColor = hasColors ? '' : colors.info;
   }
   
-  // Otherwise, add our own formatting
-  if (line.includes('[ERROR]') || line.includes('ERROR:')) {
-    return `${time} ${colors.error}❌ ${line}${colors.reset}`;
-  } else if (line.includes('[WARN]') || line.includes('WARN:')) {
-    return `${time} ${colors.warning}⚠️  ${line}${colors.reset}`;
-  } else if (line.includes('[INFO]') || line.includes('INFO:')) {
-    return `${time} ${colors.info}ℹ️  ${line}${colors.reset}`;
-  } else if (line.includes('[DEBUG]') || line.includes('DEBUG:')) {
-    return `${time} ${colors.hint}🔍 ${line}${colors.reset}`;
-  } else if (line.includes('[TRACE]') || line.includes('TRACE:')) {
-    return `${time} ${colors.hint}📍 ${line}${colors.reset}`;
-  } else {
-    return `${time} ${line}`;
-  }
+  // Apply color if message doesn't already have colors
+  const coloredMessage = messageColor ? `${messageColor}${message}${colors.reset}` : message;
+  
+  return `${time} ${emoji} ${coloredMessage}`;
 }
 
 /**
@@ -168,41 +227,71 @@ function showPeriodicStatus() {
     // Quick system check
     let statusLine = `${colors.system}━━━ STATUS CHECK ━━━${colors.reset} `;
     
-    // Check BrainBridge processes
+    // Check BrainBridge processes - look for tsx running server.ts
     try {
-      const processes = execSync('ps aux | grep "brainbridge.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+      const processes = execSync('ps aux | grep "tsx.*server\\.ts" | grep -v grep', { encoding: 'utf8' }).trim();
       const count = processes ? processes.split('\n').filter(line => line.trim()).length : 0;
       statusLine += `🧠 BB:${count} `;
     } catch (e) {
       statusLine += '🧠 BB:0 ';
     }
     
-    // Check Ollama
-    try {
-      const response = execSync('curl -s http://localhost:11434/api/tags', { encoding: 'utf8', timeout: 1000 });
-      const data = JSON.parse(response);
-      statusLine += `🤖 Ollama:${data.models?.length || 0} `;
-    } catch (e) {
-      statusLine += '🤖 Ollama:❌ ';
+    // Check AI Provider
+    const aiProvider = getAIProvider();
+    if (aiProvider === 'openai') {
+      // Check OpenAI by checking if API key is configured
+      try {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (apiKey && apiKey.startsWith('sk-')) {
+          statusLine += `🤖 OpenAI:✅ `;
+        } else {
+          statusLine += `🤖 OpenAI:❌ `;
+        }
+      } catch (e) {
+        statusLine += '🤖 OpenAI:❌ ';
+      }
+    } else {
+      // Check Ollama
+      try {
+        const response = execSync('curl -s http://localhost:11434/api/tags', { encoding: 'utf8', timeout: 1000 });
+        const data = JSON.parse(response);
+        statusLine += `🤖 Ollama:${data.models?.length || 0} `;
+      } catch (e) {
+        statusLine += '🤖 Ollama:❌ ';
+      }
     }
     
     // Check memory count
     try {
-      const memoriesDir = process.env.MEMORIES_DIR || path.join(require('os').homedir(), 'Documents', 'memories');
+      const { getMemoriesDir } = require('../../utils/magi-root');
+      const memoriesDir = getMemoriesDir();
       let totalMemories = 0;
+      
+      // Count all .md files in the actual memories directory
       if (fs.existsSync(memoriesDir)) {
-        const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
-        for (const level of privacyLevels) {
-          const levelDir = path.join(memoriesDir, level);
-          if (fs.existsSync(levelDir)) {
-            const files = fs.readdirSync(levelDir).filter(f => f.endsWith('.md'));
-            totalMemories += files.length;
+        const countFiles = (dir) => {
+          let count = 0;
+          try {
+            const items = fs.readdirSync(dir);
+            for (const item of items) {
+              const fullPath = path.join(dir, item);
+              const stat = fs.statSync(fullPath);
+              if (stat.isDirectory() && !item.startsWith('.')) {
+                count += countFiles(fullPath);
+              } else if (item.endsWith('.md')) {
+                count++;
+              }
+            }
+          } catch (e) {
+            // Ignore permission errors
           }
-        }
+          return count;
+        };
+        totalMemories = countFiles(memoriesDir);
       }
       statusLine += `📁 Mem:${totalMemories}`;
     } catch (e) {
-      statusLine += '📁 Mem:? ';
+      statusLine += '📁 Mem:0 ';
     }
     
     console.log(statusLine);
@@ -217,7 +306,7 @@ console.log(`${colors.hint}Starting MCP server... (dev questions get instant res
 // Start MCP server
 const server = spawn('npm', ['run', 'dev:stdio', '--workspace=services/brainbridge'], {
   stdio: ['pipe', 'pipe', 'inherit'],
-  cwd: process.cwd()
+  cwd: getProjectRoot()
 });
 
 let messageId = 1;
@@ -243,11 +332,13 @@ server.stdout.on('data', (data) => {
     if (line.startsWith('{')) {
       try {
         const response = JSON.parse(line);
+        let promptShown = false;
         
         if (response.result && response.result.protocolVersion) {
           console.log(`${colors.success}✅ Connected to BrainBridge!${colors.reset}\n`);
           isReady = true;
           showPrompt();
+          promptShown = true;
         } else if (response.result && response.result.memories) {
           console.log(`${colors.success}🔍 Found ${response.result.memories.length} memories:${colors.reset}`);
           response.result.memories.forEach((memory, i) => {
@@ -258,6 +349,7 @@ server.stdout.on('data', (data) => {
             }
           });
           showPrompt();
+          promptShown = true;
         } else if (response.result && response.result.content) {
           // Handle content array format from MCP
           if (Array.isArray(response.result.content)) {
@@ -270,15 +362,25 @@ server.stdout.on('data', (data) => {
             console.log(`${colors.success}📝 ${response.result.content}${colors.reset}`);
           }
           showPrompt();
+          promptShown = true;
         } else if (response.result) {
           console.log(`${colors.success}✅ ${JSON.stringify(response.result)}${colors.reset}`);
           showPrompt();
+          promptShown = true;
         }
         
         if (response.error) {
           console.log(`${colors.error}❌ ${response.error.message}${colors.reset}`);
           showPrompt();
+          promptShown = true;
         }
+        
+        // Fallback: if we processed a response but didn't show prompt, do it now
+        if (response.id && response.id > 1 && !promptShown) {
+          console.log(`${colors.warning}⚠️ Unexpected response format${colors.reset}`);
+          showPrompt();
+        }
+        
       } catch (e) {
         // Ignore non-JSON
       }
@@ -338,18 +440,27 @@ async function handleInput(input) {
     }
     
     // Tier 3: Send to BrainBridge memory system (existing behavior)
+    const currentMsgId = messageId++;
     sendMessage({
       jsonrpc: "2.0",
-      id: messageId++,
+      id: currentMsgId,
       method: "tools/call",
       params: {
         name: "ai_query_memories",
         arguments: {
           question: trimmed,
-          synthesis_mode: "raw"
+          synthesis_mode: "local"
         }
       }
     });
+    
+    // Timeout fallback to prevent hanging
+    setTimeout(() => {
+      console.log(`${colors.warning}⚠️ Response timeout - BrainBridge may be slow or stuck${colors.reset}`);
+      showPrompt();
+    }, 45000); // 45 second timeout
+    
+    // Note: showPrompt() will be called by the response handler (or timeout)
     
   } catch (error) {
     console.log(`${colors.error}❌ Error: ${error.message}${colors.reset}`);

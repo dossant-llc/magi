@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import winston from 'winston';
-import { createWinstonConfig, PerformanceTimer } from './logger-config.js';
+import { createWinstonConfig, PerformanceTimer } from './logger-config';
 
 export class LoggerService {
   private logFile: string;

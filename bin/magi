@@ -1,0 +1,273 @@
+#!/usr/bin/env node
+
+const path = require('path');
+const { execSync, spawn } = require('child_process');
+
+// Auto-detect project root from magi command location
+const projectRoot = path.resolve(__dirname, '..');
+process.env.MAGI_ROOT = projectRoot;
+
+const colors = {
+  prompt: '\x1b[36m',
+  success: '\x1b[92m',
+  system: '\x1b[33m',
+  error: '\x1b[31m',
+  hint: '\x1b[90m',
+  info: '\x1b[36m',
+  warning: '\x1b[33m',
+  reset: '\x1b[0m'
+};
+
+// Handle basic flags
+const args = process.argv.slice(2);
+const command = args[0];
+
+if (args.includes('--version') || args.includes('-v')) {
+  const pkg = require('../package.json');
+  console.log(pkg.version);
+  process.exit(0);
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log('🧙 Magi - Your Personal AI Memory Bank');
+  console.log('');
+  console.log('Usage: magi [command] [options]');
+  console.log('');
+  console.log('Commands:');
+  console.log('  start     Start BrainBridge service and stream logs');
+  console.log('            Options: --dev (development mode with explicit file watching)');
+  console.log('  stop      Stop BrainBridge service');
+  console.log('  restart   Restart BrainBridge service (preserves --dev flag)');
+  console.log('  status    Show system status and diagnostics');
+  console.log('  logs      Stream BrainBridge logs (if running)');
+  console.log('  index     Build vector index for AI search');
+  console.log('            Options: --force (rebuild all)');
+  console.log('  install   Install integrations');
+  console.log('    claude  Install Claude Code MCP server');
+  console.log('  remove    Remove integrations');
+  console.log('    claude  Remove Claude Code MCP server');
+  console.log('');
+  console.log('Options:');
+  console.log('  --version, -v    Show version');
+  console.log('  --help, -h       Show help');
+  console.log('  --dev            Development mode (file watching enabled)');
+  console.log('');
+  console.log('Examples:');
+  console.log('  magi start       # Start service (file watching always enabled)');
+  console.log('  magi start --dev # Development mode (explicit file watching)');
+  console.log('  magi             # Show logs (if running) or prompt to start');
+  process.exit(0);
+}
+
+// Check if BrainBridge is running
+function isBrainBridgeRunning() {
+  try {
+    const processes = execSync('ps aux | grep "tsx.*server.ts.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+    return processes.length > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Handle subcommands
+switch (command) {
+  case 'start':
+    // Check for --dev flag
+    const hasDevFlag = args.includes('--dev');
+    
+    // Start BrainBridge service with logs
+    const startScript = require.resolve('../dev/scripts/magi-start.js');
+    const scriptArgs = hasDevFlag ? ['--dev'] : [];
+    
+    if (hasDevFlag) {
+      console.log(`${colors.info}🔧 Starting in development mode (verbose logging enabled)${colors.reset}`);
+    }
+    spawn('node', [startScript, ...scriptArgs], { stdio: 'inherit' });
+    break;
+    
+  case 'stop':
+    console.log(`${colors.system}🛑 Stopping BrainBridge service...${colors.reset}`);
+    try {
+      execSync('pkill -f "brainbridge.*stdio"', { stdio: 'inherit' });
+      console.log(`${colors.success}✅ BrainBridge stopped${colors.reset}`);
+    } catch (error) {
+      console.log(`${colors.warning}⚠️ No BrainBridge processes found${colors.reset}`);
+    }
+    break;
+    
+  case 'restart':
+    console.log(`${colors.system}🔄 Restarting BrainBridge service...${colors.reset}`);
+    try {
+      // Stop existing processes
+      execSync('pkill -f "brainbridge.*stdio"', { stdio: 'pipe' });
+      console.log(`${colors.hint}Stopped existing processes${colors.reset}`);
+    } catch (error) {
+      // No existing processes, that's fine
+    }
+    
+    // Remove any stale lock file
+    const projectRoot = path.resolve(__dirname, '..');
+    const lockFile = path.join(projectRoot, '.magi-start.lock');
+    try {
+      if (require('fs').existsSync(lockFile)) {
+        require('fs').unlinkSync(lockFile);
+        console.log(`${colors.hint}Removed stale lock file${colors.reset}`);
+      }
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    
+    // Start new instance with same args (preserve --dev flag if present)
+    const restartArgs = process.argv.slice(2).filter(arg => arg !== 'restart');
+    restartArgs.unshift('start');
+    
+    console.log(`${colors.info}Starting fresh instance...${colors.reset}`);
+    spawn('node', [__filename, ...restartArgs], { stdio: 'inherit' });
+    break;
+    
+  case 'status':
+    // Show enhanced status
+    try {
+      execSync('npm run diag', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+    } catch (error) {
+      console.log(`${colors.error}❌ Status check failed${colors.reset}`);
+    }
+    break;
+    
+  case 'logs':
+    // Show logs if running
+    if (isBrainBridgeRunning()) {
+      console.log(`${colors.info}📜 Streaming BrainBridge logs...${colors.reset}`);
+      try {
+        spawn('node', [path.join(__dirname, '../dev/scripts/chat-simple.js'), 'logs'], { stdio: 'inherit' });
+      } catch (error) {
+        console.log(`${colors.error}❌ Failed to stream logs: ${error.message}${colors.reset}`);
+      }
+    } else {
+      console.log(`${colors.warning}⚠️ BrainBridge is not running${colors.reset}`);
+      console.log(`${colors.hint}💡 Start it with: magi start${colors.reset}`);
+    }
+    break;
+    
+  case 'index':
+    // Run indexing
+    let profile = 'default';
+    let forceRebuild = false;
+    
+    // Parse arguments: magi index [profile] [--force]
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--force' || args[i] === '-f') {
+        forceRebuild = true;
+      } else if (!args[i].startsWith('-')) {
+        profile = args[i];
+      }
+    }
+    
+    const location = process.env.MEMORIES_LOCATION || 'project';
+    const memoriesPath = process.env.MEMORIES_DIR || 
+      (location === 'documents' 
+        ? path.join(require('os').homedir(), 'Documents', 'memories', 'profiles', profile)
+        : path.join(path.join(__dirname, '..'), 'data', 'memories', 'profiles', profile));
+    
+    console.log(`${colors.info}🧠 Building vector index for profile: ${colors.success}${profile}${colors.reset}`);
+    console.log(`${colors.hint}📁 Indexing memories from: ${memoriesPath}${colors.reset}`);
+    console.log(`${colors.hint}💾 Index will be stored at: ${path.join(memoriesPath, 'embeddings')}${colors.reset}`);
+    
+    if (forceRebuild) {
+      console.log(`${colors.warning}🔄 Force rebuild enabled - will reprocess all files${colors.reset}`);
+    }
+    
+    try {
+      const startTime = Date.now();
+      
+      if (forceRebuild) {
+        execSync('npm run magic --workspace=services/brainbridge -- index --force', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+      } else {
+        execSync('npm run magic --workspace=services/brainbridge -- index', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+      }
+      
+      const endTime = Date.now();
+      const elapsedMs = endTime - startTime;
+      const elapsedSec = Math.round(elapsedMs / 1000);
+      const elapsedMin = Math.floor(elapsedSec / 60);
+      const remainingSec = elapsedSec % 60;
+      
+      let timeString;
+      if (elapsedMin > 0) {
+        timeString = `${elapsedMin}m ${remainingSec}s`;
+      } else {
+        timeString = `${elapsedSec}s`;
+      }
+      
+      console.log(`${colors.success}✅ Indexing complete for profile: ${profile}${colors.reset}`);
+      console.log(`${colors.hint}⏱️  Total time: ${timeString}${colors.reset}`);
+    } catch (error) {
+      console.log(`${colors.error}❌ Indexing failed${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+
+  case 'install':
+    const installTarget = args[1];
+    if (installTarget === 'claude') {
+      console.log(`${colors.info}🔧 Installing Claude Code MCP server...${colors.reset}`);
+      try {
+        // First try to remove existing server if it exists
+        try {
+          execSync('claude mcp remove magi', { stdio: 'pipe' });
+          console.log(`${colors.hint}Removed existing MCP server configuration${colors.reset}`);
+        } catch {
+          // Server doesn't exist, that's fine
+        }
+        
+        const projectRoot = '/Users/igor/Documents/code/agiforme';
+        // Use the lean stdio mode with cd to ensure proper module resolution
+        const mcpCommand = `claude mcp add --scope user magi --env PROJECT_FOLDER=${projectRoot} -- sh -c "cd ${projectRoot} && npm run magi:mcp"`;
+        console.log(`${colors.hint}Running lean stdio MCP server setup...${colors.reset}`);
+        execSync(mcpCommand, { stdio: 'inherit' });
+        console.log(`${colors.success}✅ Claude Code MCP server installed (lean stdio mode)${colors.reset}`);
+        console.log(`${colors.hint}💡 Server 'magi' is now available globally in Claude Code${colors.reset}`);
+        console.log(`${colors.hint}📝 No HTTP server or port 8147 registration - pure stdio communication${colors.reset}`);
+      } catch (error) {
+        console.log(`${colors.error}❌ Failed to install Claude Code MCP server${colors.reset}`);
+        console.log(`${colors.hint}💡 Make sure 'claude' command is available and 'tsx' is installed globally${colors.reset}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(`${colors.error}❌ Unknown install target: ${installTarget}${colors.reset}`);
+      console.log(`${colors.hint}💡 Available targets: claude${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+
+  case 'remove':
+    const removeTarget = args[1];
+    if (removeTarget === 'claude') {
+      console.log(`${colors.info}🔧 Removing Claude Code MCP server...${colors.reset}`);
+      try {
+        execSync('claude mcp remove magi', { stdio: 'inherit' });
+        console.log(`${colors.success}✅ Claude Code MCP server removed successfully${colors.reset}`);
+      } catch (error) {
+        console.log(`${colors.error}❌ Failed to remove Claude Code MCP server${colors.reset}`);
+        console.log(`${colors.hint}💡 Server may not be installed or 'claude' command is unavailable${colors.reset}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(`${colors.error}❌ Unknown remove target: ${removeTarget}${colors.reset}`);
+      console.log(`${colors.hint}💡 Available targets: claude${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+    
+  default:
+    // Default behavior: show status, don't stream logs
+    if (isBrainBridgeRunning()) {
+      console.log(`${colors.success}🧙 BrainBridge is running${colors.reset}`);
+      console.log(`${colors.hint}💡 Commands: ${colors.prompt}magi logs${colors.reset} ${colors.hint}(stream logs) | ${colors.prompt}magi status${colors.reset} ${colors.hint}(full status)${colors.reset}`);
+    } else {
+      console.log(`${colors.warning}🧙 BrainBridge is down${colors.reset}`);
+      console.log(`${colors.hint}💡 Start it with: ${colors.prompt}magi start${colors.reset} ${colors.hint}in another window${colors.reset}`);
+      console.log(`${colors.hint}Or run: ${colors.prompt}magi status${colors.reset} ${colors.hint}to check system health${colors.reset}`);
+    }
+    break;
+}
