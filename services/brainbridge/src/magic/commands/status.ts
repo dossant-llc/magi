@@ -78,8 +78,8 @@ async function checkOllamaStatus(config: any) {
     const ollama = new Ollama({ host: config.ollamaHost ? `http://${config.ollamaHost}:${config.ollamaPort}` : 'http://127.0.0.1:11434' });
     
     const models = await ollama.list();
-    const chatModel = models.models.find(m => m.name.includes(config.chatModel.split(':')[0]));
-    const embedModel = models.models.find(m => m.name.includes(config.embeddingModel.split(':')[0]));
+    const chatModel = models.models.find((m: any) => m.name.includes(config.chatModel.split(':')[0]));
+    const embedModel = models.models.find((m: any) => m.name.includes(config.embeddingModel.split(':')[0]));
     
     console.log('✅ Ollama: Connected');
     console.log(`  📊 Chat Model (${config.chatModel}): ${chatModel ? '✅ Available' : '❌ Missing'}`);
@@ -110,7 +110,7 @@ async function checkOpenAIStatus(config: any) {
       console.log('     Set OPENAI_API_KEY in .env file');
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.log('❌ OpenAI: Configuration error');
     console.log(`   Error: ${error.message}`);
   }
@@ -132,7 +132,7 @@ async function checkGeminiStatus(config: any) {
       console.log('     Get your free key at: https://aistudio.google.com/app/apikey');
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.log('❌ Gemini: Configuration error');
     console.log(`   Error: ${error.message}`);
   }

@@ -276,13 +276,19 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
+      const timestamp = new Date().toISOString();
+      
       this.loggerService.winston.info('Received MCP request', {
         component: 'BrainBridgeServer',
         action: 'call_tool',
         requestType: 'CallToolRequest',
         toolName: name,
-        args
+        args,
+        timestamp
       });
+      
+      // Log stdio connection activity
+      console.error(`📡 [${timestamp}] MCP tool called: ${name} via stdio connection`);
 
       if (!args) {
         throw new Error('Missing arguments');
@@ -887,13 +893,30 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
 
   async runStdio() {
     const transport = new StdioServerTransport();
+    
+    // Log when a connection is opened
+    transport.onclose = () => {
+      const timestamp = new Date().toISOString();
+      this.loggerService.winston.info('MCP stdio connection closed', {
+        component: 'BrainBridgeServer',
+        action: 'stdio_disconnect',
+        timestamp
+      });
+      console.error(`📡 [${timestamp}] MCP stdio connection closed`);
+    };
+    
     await this.server.connect(transport);
+    
+    const timestamp = new Date().toISOString();
     this.loggerService.winston.info('BrainBridge MCP Server running', {
       component: 'BrainBridgeServer',
       action: 'start_stdio',
-      transport: 'stdio'
+      transport: 'stdio',
+      timestamp
     });
     console.error('BrainBridge MCP Server running on stdio');
+    console.error(`📡 [${timestamp}] MCP stdio connection established - ready for Claude Code`);
+    console.error('🔄 File watching enabled - server will restart on code changes');
     
     // Show AI synthesis mode based on actual provider
     const providerInfo = this.providerDetectionService.getProviderInfo();

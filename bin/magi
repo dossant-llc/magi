@@ -3,6 +3,10 @@
 const path = require('path');
 const { execSync, spawn } = require('child_process');
 
+// Auto-detect project root from magi command location
+const projectRoot = path.resolve(__dirname, '..');
+process.env.MAGI_ROOT = projectRoot;
+
 const colors = {
   prompt: '\x1b[36m',
   success: '\x1b[92m',
@@ -31,8 +35,10 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('');
   console.log('Commands:');
   console.log('  start     Start BrainBridge service and stream logs');
+  console.log('            Options: --dev (development mode with explicit file watching)');
   console.log('  stop      Stop BrainBridge service');
-  console.log('  status    Show system status');
+  console.log('  restart   Restart BrainBridge service (preserves --dev flag)');
+  console.log('  status    Show system status and diagnostics');
   console.log('  logs      Stream BrainBridge logs (if running)');
   console.log('  index     Build vector index for AI search');
   console.log('            Options: --force (rebuild all)');
@@ -44,9 +50,11 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('Options:');
   console.log('  --version, -v    Show version');
   console.log('  --help, -h       Show help');
+  console.log('  --dev            Development mode (file watching enabled)');
   console.log('');
   console.log('Examples:');
-  console.log('  magi start       # Start service and show logs');
+  console.log('  magi start       # Start service (file watching always enabled)');
+  console.log('  magi start --dev # Development mode (explicit file watching)');
   console.log('  magi             # Show logs (if running) or prompt to start');
   process.exit(0);
 }
@@ -64,9 +72,17 @@ function isBrainBridgeRunning() {
 // Handle subcommands
 switch (command) {
   case 'start':
+    // Check for --dev flag
+    const hasDevFlag = args.includes('--dev');
+    
     // Start BrainBridge service with logs
     const startScript = require.resolve('../dev/scripts/magi-start.js');
-    spawn('node', [startScript], { stdio: 'inherit' });
+    const scriptArgs = hasDevFlag ? ['--dev'] : [];
+    
+    if (hasDevFlag) {
+      console.log(`${colors.info}🔧 Starting in development mode (verbose logging enabled)${colors.reset}`);
+    }
+    spawn('node', [startScript, ...scriptArgs], { stdio: 'inherit' });
     break;
     
   case 'stop':
@@ -77,6 +93,36 @@ switch (command) {
     } catch (error) {
       console.log(`${colors.warning}⚠️ No BrainBridge processes found${colors.reset}`);
     }
+    break;
+    
+  case 'restart':
+    console.log(`${colors.system}🔄 Restarting BrainBridge service...${colors.reset}`);
+    try {
+      // Stop existing processes
+      execSync('pkill -f "brainbridge.*stdio"', { stdio: 'pipe' });
+      console.log(`${colors.hint}Stopped existing processes${colors.reset}`);
+    } catch (error) {
+      // No existing processes, that's fine
+    }
+    
+    // Remove any stale lock file
+    const projectRoot = path.resolve(__dirname, '..');
+    const lockFile = path.join(projectRoot, '.magi-start.lock');
+    try {
+      if (require('fs').existsSync(lockFile)) {
+        require('fs').unlinkSync(lockFile);
+        console.log(`${colors.hint}Removed stale lock file${colors.reset}`);
+      }
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    
+    // Start new instance with same args (preserve --dev flag if present)
+    const restartArgs = process.argv.slice(2).filter(arg => arg !== 'restart');
+    restartArgs.unshift('start');
+    
+    console.log(`${colors.info}Starting fresh instance...${colors.reset}`);
+    spawn('node', [__filename, ...restartArgs], { stdio: 'inherit' });
     break;
     
   case 'status':

@@ -8,6 +8,10 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { getProjectRoot } = require('../../utils/magi-root');
+
+// Load .env configuration
+require('dotenv').config({ path: path.join(getProjectRoot(), '.env') });
 
 const colors = {
   success: '\x1b[32m',
@@ -23,6 +27,26 @@ class Diagnostics {
     this.issues = [];
     this.warnings = [];
     this.passed = [];
+    this.currentProvider = this.detectProvider();
+  }
+
+  /**
+   * Detect current AI provider from config
+   */
+  detectProvider() {
+    try {
+      const configPath = path.join(process.cwd(), 'config.js');
+      if (fs.existsSync(configPath)) {
+        delete require.cache[require.resolve(configPath)];
+        const config = require(configPath);
+        const aiConfig = config.getAIConfig();
+        return aiConfig.provider || 'ollama';
+      }
+    } catch (error) {
+      // Fallback to environment variable
+      return process.env.AI_PROVIDER || 'ollama';
+    }
+    return 'ollama';
   }
 
   /**
@@ -74,6 +98,18 @@ class Diagnostics {
     this.log(message, 'success');
   }
 
+  async checkAIProvider() {
+    if (this.currentProvider === 'ollama') {
+      await this.checkOllama();
+    } else if (this.currentProvider === 'openai') {
+      await this.checkOpenAI();
+    } else if (this.currentProvider === 'gemini') {
+      await this.checkGemini();
+    } else {
+      this.addWarning(`Unknown AI provider: ${this.currentProvider}`, 'Check config.js for supported providers');
+    }
+  }
+
   async checkOllama() {
     this.log('\n🤖 Checking Ollama AI Service...', 'info');
     
@@ -103,6 +139,77 @@ class Diagnostics {
       }
     } catch (error) {
       this.addIssue('Ollama not running or unreachable', 'ollama serve');
+    }
+  }
+
+  async checkOpenAI() {
+    this.log('\n🤖 Checking OpenAI Service...', 'info');
+    
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      this.addIssue('OpenAI API key not found', 'Set OPENAI_API_KEY environment variable');
+      return;
+    }
+    
+    // Don't expose the key, just show first/last chars
+    const maskedKey = `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`;
+    this.addPassed(`OpenAI API key configured (${maskedKey})`);
+    
+    // Test API connectivity (optional, basic check)
+    try {
+      const testResponse = execSync(`curl -s -H "Authorization: Bearer ${apiKey}" https://api.openai.com/v1/models`, { 
+        encoding: 'utf8',
+        timeout: 5000 
+      });
+      
+      const data = JSON.parse(testResponse);
+      if (data.data && Array.isArray(data.data)) {
+        this.addPassed(`OpenAI API accessible (${data.data.length} models available)`);
+      } else if (data.error) {
+        this.addIssue(`OpenAI API error: ${data.error.message}`, 'Check API key and account status');
+      }
+    } catch (error) {
+      this.addWarning('Could not test OpenAI API connectivity', 'Network may be slow or API temporarily unavailable');
+    }
+  }
+
+  async checkGemini() {
+    this.log('\n🤖 Checking Gemini Service...', 'info');
+    
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      this.addIssue('Gemini API key not found', 'Set GEMINI_API_KEY or GOOGLE_API_KEY environment variable');
+      this.addWarning('Get your free API key at: https://aistudio.google.com/app/apikey', 'Free tier: 5 requests/minute, 25 requests/day');
+      return;
+    }
+    
+    // Don't expose the key, just show first/last chars
+    const maskedKey = `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`;
+    this.addPassed(`Gemini API key configured (${maskedKey})`);
+    
+    // Test API connectivity with embedding request
+    try {
+      const testBody = JSON.stringify({
+        model: 'models/text-embedding-004',
+        content: {
+          parts: [{ text: 'API connectivity test' }]
+        }
+      });
+
+      const testResponse = execSync(`curl -s -X POST -H "Content-Type: application/json" -d '${testBody}' "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}"`, { 
+        encoding: 'utf8',
+        timeout: 10000 
+      });
+      
+      const data = JSON.parse(testResponse);
+      if (data.embedding && data.embedding.values) {
+        this.addPassed(`Gemini API accessible (768D embeddings working)`);
+        this.addWarning('Free tier limits: 5 requests/minute, 25 requests/day', 'Consider paid tier for production use');
+      } else if (data.error) {
+        this.addIssue(`Gemini API error: ${data.error.message}`, 'Check API key and quota status');
+      }
+    } catch (error) {
+      this.addWarning('Could not test Gemini API connectivity', 'Network may be slow or API temporarily unavailable');
     }
   }
 
@@ -264,14 +371,28 @@ class Diagnostics {
   async checkEnvironmentConfig() {
     this.log('\n⚙️ Checking Environment Configuration...', 'info');
     
+    // Show current AI provider prominently
+    this.addPassed(`AI_PROVIDER: ${this.currentProvider}`);
+    
     const memoriesDir = this.getMemoriesPath();
     const location = process.env.MEMORIES_LOCATION || 'project';
     this.addPassed(`MEMORIES_LOCATION: ${location} (${location === 'project' ? 'project-local' : 'global Documents'})`);
     this.addPassed(`MEMORIES_DIR: ${memoriesDir}`);
     
-    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
-    const ollamaPort = process.env.OLLAMA_PORT || '11434';
-    this.addPassed(`Ollama: http://${ollamaHost}:${ollamaPort}`);
+    // Provider-specific configuration
+    if (this.currentProvider === 'ollama') {
+      const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
+      const ollamaPort = process.env.OLLAMA_PORT || '11434';
+      this.addPassed(`Ollama endpoint: http://${ollamaHost}:${ollamaPort}`);
+    } else if (this.currentProvider === 'openai') {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (apiKey) {
+        const maskedKey = `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`;
+        this.addPassed(`OpenAI API key: ${maskedKey}`);
+      } else {
+        this.addIssue('OpenAI API key not configured', 'Set OPENAI_API_KEY environment variable');
+      }
+    }
   }
 
   async checkDiskSpace() {
@@ -297,9 +418,9 @@ class Diagnostics {
   }
 
   async runAll() {
-    console.log(`${colors.info}🧙 Magi System Status${colors.reset}\n`);
+    console.log(`${colors.info}🧙 Magi System Status (${this.currentProvider.toUpperCase()})${colors.reset}\n`);
     
-    await this.checkOllama();
+    await this.checkAIProvider();
     await this.checkMemoryPaths();
     await this.checkVectorIndex();
     await this.checkBrainBridgeProcesses();

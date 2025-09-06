@@ -7,15 +7,62 @@ import * as path from 'path';
 import * as os from 'os';
 
 /**
- * Get the project root directory
- * Priority: MAGI_ROOT env var > auto-detect from script location
+ * Get the project root directory - ROBUST VERSION
+ * Priority: MAGI_ROOT env var > auto-detect by finding project markers
  */
 export function getProjectRoot(): string {
   if (process.env.MAGI_ROOT) {
     return process.env.MAGI_ROOT;
   }
-  // BrainBridge is at services/brainbridge, so go up 2 levels to project root
-  return path.resolve(__dirname, '..', '..', '..');
+  
+  const fs = require('fs');
+  
+  // Start from current file location and walk up until we find project root markers
+  let currentDir = __dirname;
+  const maxLevels = 10; // Safety limit to prevent infinite loops
+  
+  for (let i = 0; i < maxLevels; i++) {
+    // Look for MAGI project root indicators - must have multiple key files
+    const requiredIndicators = [
+      'config.js',      // MAGI config
+      'bin/magi'        // MAGI CLI script
+    ];
+    
+    const optionalIndicators = [
+      'data/memories',  // MAGI memory storage
+      '.git'           // Git repository
+    ];
+    
+    // Must have ALL required indicators
+    const hasAllRequired = requiredIndicators.every(indicator => {
+      const fullPath = path.join(currentDir, indicator);
+      return fs.existsSync(fullPath);
+    });
+    
+    // And at least one optional indicator
+    const hasOptional = optionalIndicators.some(indicator => {
+      const fullPath = path.join(currentDir, indicator);
+      return fs.existsSync(fullPath);
+    });
+    
+    if (hasAllRequired && hasOptional) {
+      return currentDir;
+    }
+    
+    // Go up one level
+    const parentDir = path.dirname(currentDir);
+    
+    // If we've reached the root of the filesystem, stop
+    if (parentDir === currentDir) {
+      break;
+    }
+    
+    currentDir = parentDir;
+  }
+  
+  // Fallback: if we can't find project root, use the old method but warn about it
+  console.warn('⚠️  Could not find project root using indicators, falling back to relative path');
+  return path.resolve(__dirname, '..', '..', '..', '..');
 }
 
 /**
