@@ -7,6 +7,7 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { getProjectRoot, getMemoriesPath } = require('./path-utils');
 
 console.log('🧪 BrainBridge Comprehensive Regression Test');
 console.log('============================================\n');
@@ -18,7 +19,7 @@ const TEST_SCENARIOS = [
       {
         name: 'Embeddings Index Exists',
         run: () => {
-          const embeddingsPath = path.join(__dirname, '../../data/memories/profiles/default/embeddings/embeddings.txt');
+          const embeddingsPath = path.join(getMemoriesPath(), 'embeddings', 'embeddings.txt');
           if (!fs.existsSync(embeddingsPath)) {
             throw new Error('Embeddings file missing');
           }
@@ -32,7 +33,7 @@ const TEST_SCENARIOS = [
       {
         name: 'Blue Moon Memory File Exists',
         run: () => {
-          const memoriesDir = path.join(__dirname, '../../data/memories/profiles/default/personal');
+          const memoriesDir = path.join(getMemoriesPath(), 'personal');
           const files = fs.readdirSync(memoriesDir);
           const blueMoonFile = files.find(f => f.includes('blue-moon-beer'));
           

@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { getProjectRoot, getMemoriesPath } = require('./path-utils');
 
 const colors = {
   success: '\x1b[32m',
@@ -33,7 +34,7 @@ class PathFixer {
     
     const oldIndexDir = path.join(process.cwd(), '.index');
     const oldEmbeddingsFile = path.join(oldIndexDir, 'embeddings.json');
-    const baseMemoriesDir = path.join(process.cwd(), '..', 'memories');
+    const baseMemoriesDir = getMemoriesPath();
     const newEmbeddingsDir = path.join(baseMemoriesDir, 'embeddings');
     
     if (fs.existsSync(oldIndexDir)) {
@@ -70,7 +71,7 @@ class PathFixer {
   async ensureMemoryDirectories() {
     this.log('📁 Ensuring memory directories exist...', 'info');
     
-    const baseMemoriesDir = path.join(process.cwd(), '..', 'memories');
+    const baseMemoriesDir = getMemoriesPath();
     const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
     
     try {
@@ -133,7 +134,7 @@ class PathFixer {
   async fixPermissions() {
     this.log('🔐 Checking file permissions...', 'info');
     
-    const baseMemoriesDir = path.join(process.cwd(), '..', 'memories');
+    const baseMemoriesDir = getMemoriesPath();
     
     try {
       if (fs.existsSync(baseMemoriesDir)) {

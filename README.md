@@ -6,7 +6,9 @@
 
 > **Your Personal AI That Remembers What Matters to You**
 
-Transform scattered knowledge into an AI-accessible, privacy-first memory bank that grows smarter with every interaction.
+The other day I fixed my printer (wrong Wi-Fi network 🙃) and jotted a note about it. Then it hit me: that note would probably vanish into the abyss of my drive.
+
+That's what pushed me to build **magi** — a personal AI that actually remembers. Instead of losing notes like that printer fix, you can just ask: "Hey, how did I fix it?" — and magi knows. ✨🧙
 
 ---
 
@@ -260,10 +262,11 @@ npm run test                  # Run test suite
 - 🐛 **Issues**: [GitHub Issues](https://github.com/your-org/magi/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/your-org/magi/discussions)
 
-### Stay Updated  
+### Share Your Experience  
 - ⭐ **Star this repo** to follow development
 - 📢 **[Release Notes](CHANGELOG.md)** for version updates
-- 🗣️ **Spread the word** about privacy-first AI
+- 💭 **Share your use cases** - How are you using magi?
+- 🔁 **Spread the word** about privacy-first AI
 
 ## 📄 License & Legal
 
@@ -279,7 +282,9 @@ See [LICENSE](LICENSE) for complete terms.
 
 <div align="center">
 
-**Built with ❤️ for developers who value privacy and context**
+**Built by Igor Ramos**
+
+*It started as an experiment, but it's also the kind of work I love — chasing a thread of curiosity, turning it into something real, and exploring what AGI feels like when it becomes personal.*
 
 [⭐ Star](https://github.com/your-org/magi) • [📖 Docs](docs/) • [🐛 Issues](https://github.com/your-org/magi/issues) • [💬 Discuss](https://github.com/your-org/magi/discussions)
 

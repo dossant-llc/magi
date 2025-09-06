@@ -8,6 +8,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { getProjectRoot } = require('./path-utils');
 
 /**
  * Get the memories path for a specific profile
@@ -87,7 +88,7 @@ function findMemoriesPath() {
   const legacyPaths = [
     path.join(process.cwd(), 'data', 'memories', 'main'), // Old main path
     path.join(process.cwd(), 'memories'), // Very old path
-    path.join(process.cwd(), '..', 'memories'), // External path
+    path.join(getProjectRoot(), 'data', 'memories'), // Project root path
     path.join(os.homedir(), 'Documents', 'memories'), // Documents path
     process.env.MEMORIES_DIR // Custom path
   ].filter(Boolean);
