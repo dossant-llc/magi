@@ -260,14 +260,24 @@ switch (command) {
     break;
     
   default:
-    // Default behavior: show status, don't stream logs
-    if (isBrainBridgeRunning()) {
-      console.log(`${colors.success}🧙 BrainBridge is running${colors.reset}`);
-      console.log(`${colors.hint}💡 Commands: ${colors.prompt}magi logs${colors.reset} ${colors.hint}(stream logs) | ${colors.prompt}magi status${colors.reset} ${colors.hint}(full status)${colors.reset}`);
-    } else {
-      console.log(`${colors.warning}🧙 BrainBridge is down${colors.reset}`);
-      console.log(`${colors.hint}💡 Start it with: ${colors.prompt}magi start${colors.reset} ${colors.hint}in another window${colors.reset}`);
-      console.log(`${colors.hint}Or run: ${colors.prompt}magi status${colors.reset} ${colors.hint}to check system health${colors.reset}`);
+    // Default behavior: Launch interactive REPL
+    console.log(`${colors.info}🧙 Launching MAGI Interactive Mode...${colors.reset}`);
+    const replScript = path.join(__dirname, '../dev/scripts/magi-repl.js');
+    
+    try {
+      spawn('node', [replScript], { stdio: 'inherit' });
+    } catch (error) {
+      console.log(`${colors.error}❌ Failed to start REPL: ${error.message}${colors.reset}`);
+      
+      // Fallback to old behavior  
+      if (isBrainBridgeRunning()) {
+        console.log(`${colors.success}🧙 BrainBridge is running${colors.reset}`);
+        console.log(`${colors.hint}💡 Commands: ${colors.prompt}magi logs${colors.reset} ${colors.hint}(stream logs) | ${colors.prompt}magi status${colors.reset} ${colors.hint}(full status)${colors.reset}`);
+      } else {
+        console.log(`${colors.warning}🧙 BrainBridge is down${colors.reset}`);
+        console.log(`${colors.hint}💡 Start it with: ${colors.prompt}magi start${colors.reset} ${colors.hint}in another window${colors.reset}`);
+        console.log(`${colors.hint}Or run: ${colors.prompt}magi status${colors.reset} ${colors.hint}to check system health${colors.reset}`);
+      }
     }
     break;
 }

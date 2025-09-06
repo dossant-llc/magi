@@ -1,5 +1,9 @@
 # BrainHub Local
 
+> 🔨 **EXPERIMENTAL** - Basic multi-user orchestration working, needs UI polish
+> 
+> **Status**: Core functionality works, rough user experience
+
 A Node.js-based hub for orchestrating multiple AI brain instances in a hub-and-spoke architecture without Docker.
 
 ## Why This Exists

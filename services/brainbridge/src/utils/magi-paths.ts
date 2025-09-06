@@ -29,8 +29,8 @@ export function getProjectRoot(): string {
     ];
     
     const optionalIndicators = [
-      'data/memories',  // MAGI memory storage
-      '.git'           // Git repository
+      'data/memories/profiles',  // MAGI memory storage (more specific)
+      '.git'                    // Git repository
     ];
     
     // Must have ALL required indicators
@@ -46,6 +46,23 @@ export function getProjectRoot(): string {
     });
     
     if (hasAllRequired && hasOptional) {
+      // Additional validation: ensure this is actually a MAGI project
+      const packageJsonPath = path.join(currentDir, 'package.json');
+      if (fs.existsSync(packageJsonPath)) {
+        try {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          // Look for MAGI-specific indicators in package.json
+          if (packageJson.name === 'agiforme' || 
+              packageJson.description?.includes('mAGI') ||
+              packageJson.scripts?.['magic'] ||
+              packageJson.workspaces?.includes('services/brainbridge')) {
+            return currentDir;
+          }
+        } catch (error) {
+          // If package.json is malformed, continue searching
+        }
+      }
+      // If no package.json validation, still accept (for compatibility)
       return currentDir;
     }
     

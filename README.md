@@ -1,4 +1,4 @@
-# magi
+# mAgi
 [![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-0.1.0-green.svg)](CHANGELOG.md)
 [![Node](https://img.shields.io/badge/Node.js-22+-green.svg)](package.json)
@@ -8,13 +8,13 @@
 
 The other day I fixed my printer (wrong Wi-Fi network 🙃) and jotted a note about it. Then it hit me: that note would probably vanish into the abyss of my drive.
 
-That's what pushed me to build **magi** — a personal AI that actually remembers. Instead of losing notes like that printer fix, you can just ask: "Hey, how did I fix it?" — and magi knows. ✨🧙
+That's what pushed me to build **mAgi** — your personal AI that remembers what matters to you. Instead of losing notes like that printer fix, you can just ask: "Hey, how did I fix it?" — and **mAgi** knows. ✨🧙
 
 ---
 
-## ✨ What is magi?
+## ✨ What is mAgi?
 
-**magi** is a personal AI knowledge system that bridges the gap between human memory and AI assistance. It learns from your experiences, remembers your preferences, and provides contextual help—all while keeping your data completely under your control.
+**mAgi** is a personal AI knowledge system that bridges the gap between human memory and AI assistance. It learns from your experiences, remembers your preferences, and provides contextual help—all while keeping your data completely under your control.
 
 ### 🎯 The Core Problem
 
@@ -22,14 +22,14 @@ That's what pushed me to build **magi** — a personal AI that actually remember
 - **Context Loss**: AI assistants lack your personal context and learned lessons  
 - **Privacy Concerns**: Your knowledge shouldn't be training data for corporate AI
 
-### 💡 The magi Solution
+### 💡 The mAgi Solution
 
 ```bash
 # Generic AI Response
 "Help me debug this React component"
 → Generic troubleshooting steps
 
-# Personal AI with magi
+# Personal AI with mAgi
 "magi help me debug this React component"  
 → Remembers your past React debugging patterns
 → Knows your preferred debugging tools and approaches
@@ -38,7 +38,7 @@ That's what pushed me to build **magi** — a personal AI that actually remember
 
 ## 🏗️ Architecture Overview
 
-magi operates as a **hybrid architecture** combining local AI processing with optional cloud AI integration:
+mAgi operates as a **hybrid architecture** combining local AI processing with optional cloud AI integration:
 
 ```mermaid
 graph TB
@@ -52,6 +52,15 @@ graph TB
     E --> H[Personal Memories]  
     E --> I[Private Memories]
     E --> J[Sensitive Memories]
+    
+    style A fill:#e6f3ff
+    style B fill:#e6ffe6
+    style E fill:#fff2e6
+    style F fill:#f0e6ff
+    style G fill:#e6ffe6
+    style H fill:#fff2e6
+    style I fill:#ffe6e6
+    style J fill:#f0e6e6
 ```
 
 ### 🧠 Core Components
@@ -73,8 +82,8 @@ graph TB
 
 ### One-Command Install
 ```bash
-git clone https://github.com/your-org/magi.git
-cd magi
+git clone https://github.com/your-org/mAgi.git
+cd mAgi
 npm run magi
 ```
 
@@ -152,7 +161,7 @@ memories/
 | **Google Gemini** | Gemini Pro, Flash | Fast responses | Add `GOOGLE_API_KEY` |
 
 ### Provider Fallback
-magi automatically switches between providers based on availability:
+mAgi automatically switches between providers based on availability:
 1. **Local AI** (if available)
 2. **OpenAI** (if API key provided)  
 3. **Gemini** (if API key provided)
@@ -199,19 +208,25 @@ magi restart                  # Reset if needed
 ## 🛠️ Development
 
 ### Architecture
-```bash
-magi/
-├── bin/magi                   # CLI entry point
-├── services/brainbridge/      # Core MCP service  
-├── docs/                      # Comprehensive documentation
-├── memories/                  # Your knowledge base (git-ignored)
-└── utils/                     # Shared utilities
+```mermaid
+graph TD
+    A[mAgi/] --> B[bin/magi<br/>CLI entry point]
+    A --> C[services/brainbridge/<br/>Core MCP service]
+    A --> D[docs/<br/>Comprehensive documentation]
+    A --> E[memories/<br/>Your knowledge base<br/><em>git-ignored</em>]
+    A --> F[utils/<br/>Shared utilities]
+    
+    style B fill:#e6f3ff
+    style C fill:#e6ffe6
+    style D fill:#fff2e6
+    style E fill:#ffe6e6
+    style F fill:#f0f0f0
 ```
 
 ### Development Setup
 ```bash
-git clone https://github.com/your-org/magi.git
-cd magi
+git clone https://github.com/your-org/mAgi.git
+cd mAgi
 npm install
 npm run dev                   # Start development server
 npm run test                  # Run test suite
@@ -238,7 +253,7 @@ npm run test                  # Run test suite
 - 🔒 **[Privacy Design](docs/architecture/PRIVACY_DESIGN.md)** - Privacy-first principles
 - 🗺️ **[Roadmap](docs/architecture/ROADMAP.md)** - Future development
 
-## 🌟 Why Choose magi?
+## 🌟 Why Choose mAgi?
 
 ### For Developers
 - **Local-First**: Your code insights stay private
@@ -270,7 +285,7 @@ npm run test                  # Run test suite
 
 ## 📄 License & Legal
 
-magi is released under a **custom license** that prioritizes:
+mAgi is released under a **custom license** that prioritizes:
 - ✅ **Personal Use**: Free for individuals and developers
 - ✅ **Open Source**: Full source code transparency  
 - ✅ **Privacy Protection**: Legal guarantees about data handling

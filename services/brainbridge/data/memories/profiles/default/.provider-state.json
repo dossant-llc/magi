@@ -1,6 +1,0 @@
-{
-  "provider": "openai",
-  "chatModel": "gpt-4o-mini",
-  "embeddingModel": "text-embedding-3-small",
-  "lastCheck": "2025-09-06T15:35:48.119Z"
-}

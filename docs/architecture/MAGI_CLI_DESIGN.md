@@ -1,4 +1,4 @@
-# magi CLI Architecture Design
+# mAgi CLI Architecture Design
 
 > **The Two-Layer Design Pattern for Personal AI Command Interface**
 

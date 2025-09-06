@@ -1,5 +1,9 @@
 # BrainXchange - P2P Communication for AI Assistants with Identity
 
+> 🔨 **EXPERIMENTAL** - Core P2P functionality working, needs security hardening
+> 
+> **Status**: Proof of concept functional, not ready for public use
+
 A lightweight WebSocket server enabling magi-to-magi communication through usernames and invitation codes.
 
 ## 🚀 Live Server
