@@ -1,4 +1,4 @@
-# Magi-to-Magi Communication System Design
+# mAgi-to-mAgi Communication System Design
 
 ## Overview
 A distributed communication system allowing AI assistants (magi) to securely exchange queries and responses across different instances and users.
@@ -50,17 +50,29 @@ A distributed communication system allowing AI assistants (magi) to securely exc
 ## Architecture
 
 ### Server Components
-```
-Claude Code        BrainBridge         magi-exchange Server         Other BrainBridge
-┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐    ┌─────────────────┐
-│   Client    │◄──►│ BrainXchange│◄──►│  your-server.com    │◄──►│  BrainXchange   │
-│  (MCP Tool) │    │ Integration │    │       :8082         │    │  Integration    │
-└─────────────┘    │   - Conn    │    │                     │    │   - Conn        │
-     MCP            │   - Msgs    │    │ - WebSocket Hub     │    │   - Msgs        │
-  Protocol          │   - Users   │    │ - Invite Manager    │    │   - Users       │
-                    └─────────────┘    │ - Message Router    │    └─────────────────┘
-                      WebSocket        │ - Live Dashboard    │       WebSocket
-                                      └─────────────────────┘
+```mermaid
+graph LR
+    A[Claude Code<br/>Client MCP Tool] <--> B[BrainBridge<br/>BrainXchange Integration]
+    B <--> C[magi-exchange Server<br/>your-server.com:8082]
+    C <--> D[Other BrainBridge<br/>BrainXchange Integration]
+    
+    B --> B1[Connection Management]
+    B --> B2[Message Handling]
+    B --> B3[User Management]
+    
+    C --> C1[WebSocket Hub]
+    C --> C2[Invite Manager]
+    C --> C3[Message Router]
+    C --> C4[Live Dashboard]
+    
+    D --> D1[Connection Management]
+    D --> D2[Message Handling]
+    D --> D3[User Management]
+    
+    style A fill:#e6f3ff
+    style B fill:#e6ffe6
+    style C fill:#fff2e6
+    style D fill:#e6ffe6
 ```
 
 ### Communication Flow

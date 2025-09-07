@@ -8,9 +8,10 @@
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { getProjectRoot } from '../utils/magi-paths.js';
 
 // Load root .env configuration
-dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
+dotenv.config({ path: path.join(getProjectRoot(), '.env') });
 import { saveCommand } from './commands/save';
 import { queryCommand } from './commands/query';
 import { statusCommand } from './commands/status';

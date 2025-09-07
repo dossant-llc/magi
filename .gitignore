@@ -1,22 +1,29 @@
-# Personal data and configuration
-# Only ignore the default profile (real user data), not sample profiles
-data/memories/profiles/default/**
-!data/memories/profiles/default/.placeholder
-.env
-**/.env
-.env.*
-**/.env.*
+# SECURITY FIRST: Ignore all dot files by default
+.*
+
+# EXCEPTIONS: Allow specific dot files needed for the project
+!.gitignore
+!.github/
 !.env.template
 !**/.env.template
 
+# Personal data and configuration
+# Only ignore the default profile (real user data), not sample profiles  
+data/memories/profiles/default/**
+!data/memories/profiles/default/.placeholder
+/services/data/memories/profiles/default
+
 # Development and runtime files
-.claude/
 logs/
 *.log
-/.vscode
 /brainbridge/logs
 
 # Node modules and build artifacts
 node_modules/
 dist/
 build/
+
+# Local configuration and secrets (redundant but explicit)
+config.js.local
+*.backup
+*.secret

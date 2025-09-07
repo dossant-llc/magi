@@ -1,5 +1,9 @@
 # Brain Proxy (BP) Integration Design
 
+> 🔨 **EXPERIMENTAL** - Core proxy functionality working, needs authentication polish
+> 
+> **Status**: Custom GPT bridge functional, rough edges on security
+
 ## Overview
 Extend the existing magi-exchange server on your-server.com:8082 to support Brain Proxy functionality, enabling Custom GPTs to access local BrainBridge MCP servers via standardized HTTPS API.
 

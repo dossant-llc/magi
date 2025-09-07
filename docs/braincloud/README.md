@@ -1,5 +1,9 @@
 # BrainCloud Platform
 
+> 🔨 **EXPERIMENTAL** - Working but not production-ready. Needs polish before public release.
+> 
+> **Status**: Functional core, rough edges, security hardening needed
+
 **The unified platform for AI-powered P2P communication and collaboration.**
 
 BrainCloud is the latest evolution of our brain-sharing ecosystem, consolidating all services into a single, robust platform. It replaces the individual BrainXchange and Brain Proxy deployments with a unified architecture.

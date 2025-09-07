@@ -1,8 +1,11 @@
 {
-  "name": "agiforme",
-  "version": "1.0.0",
-  "description": "AGIfor.me - Your Personal AI Memory Bank. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
+  "name": "magi",
+  "version": "0.1.0",
+  "description": "magi - Your Personal AI That Remembers What Matters to You. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
   "private": true,
+  "bin": {
+    "magi": "./bin/magi"
+  },
   "workspaces": [
     "services/brainbridge",
     "brainkeeper",
@@ -21,7 +24,7 @@
     "test:chatgpt": "node dev/scripts/test-chatgpt-integration.js",
     "quick": "npm run bb:stdio",
     "magi": "node dev/scripts/auto-setup.js && npm run bb:cli",
-    "magi:mcp": "npm run bb:stdio",
+    "magi:mcp": "node dev/scripts/magi-mcp-bridge.js",
     "setup:mcp": "node dev/scripts/setup-mcp.js",
     "install:global": "node dev/scripts/install-global.js",
     "setup": "bash dev/scripts/setup.sh",
@@ -61,17 +64,21 @@
     "perf:compare": "npm run perf:compare --workspace=services/brainbridge",
     "test:mcp": "node dev/scripts/test-mcp.js",
     "test:chat": "node dev/scripts/chat-working.js",
+    "test:integration": "node services/brainbridge/tests/integration/test-openai-e2e.js",
+    "test:integration:all": "for file in services/brainbridge/tests/integration/test-*.js; do echo \"Running $file...\"; node \"$file\"; done",
+    "test:color-search": "node services/brainbridge/tests/integration/test-color-search.js",
     "test": "npm run test --workspaces --if-present"
   },
   "keywords": [
-    "agiforme",
+    "magi",
     "personal-ai",
     "memory-bank",
     "privacy",
     "mcp",
     "knowledge-base",
     "ai-assistant",
-    "claude"
+    "claude",
+    "wake-word"
   ],
   "author": "",
   "license": "SEE LICENSE FILE",
@@ -80,6 +87,7 @@
   },
   "dependencies": {
     "dotenv": "^17.2.1",
+    "tsx": "^4.19.2",
     "ws": "^8.18.3"
   }
 }

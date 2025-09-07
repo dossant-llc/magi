@@ -1,6 +1,8 @@
-# Architecture Overview
+# mAgi Architecture Overview
 
 > **Personal AI Knowledge Base with Smart Privacy Controls**
+> 
+> **Status**: v0.1.0 Developer Preview (Core features working, advanced features in development)
 
 ## Core Concept
 
@@ -8,29 +10,38 @@ Transform scattered lessons learned into an AI-accessible, privacy-aware memory 
 
 ## System Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   AI Assistant  │────│   MCP Server     │────│  Smart Privacy  │
-│   (Claude, etc) │    │   (TypeScript)   │    │   Classifier    │
-└─────────────────┘    └──────────┬───────┘    └─────────┬───────┘
-                                  │                      │
-                       ┌──────────▼───────┐    ┌─────────▼──────────┐
-                       │  Knowledge Store │    │   Consent Engine   │
-                       │ (Privacy Levels) │    │ (User in Control)  │
-                       └──────────────────┘    └────────────────────┘
+```mermaid
+graph TB
+    A[AI Assistant<br/>Claude, etc] --> B[MCP Server<br/>TypeScript]
+    B --> C[Smart Privacy<br/>Classifier]
+    B --> D[Knowledge Store<br/>Privacy Levels]
+    C --> E[Consent Engine<br/>User in Control]
+    
+    style A fill:#e6f3ff
+    style B fill:#e6ffe6
+    style C fill:#fff2e6
+    style D fill:#f0e6ff
+    style E fill:#ffe6f3
 ```
 
 ## Privacy-First Design
 
 ### Memory Organization
-```
-memories/
-├── public/          🌍 Anyone can access
-├── team/           👥 Work colleagues only
-├── personal/       🏠 Close friends/family context  
-├── private/        🔒 Local AI assistants only
-├── sensitive/      🚨 Maximum protection required
-└── examples/       📚 Templates and learning materials
+```mermaid
+graph TD
+    A[memories/] --> B[public/ 🌍<br/>Anyone can access]
+    A --> C[team/ 👥<br/>Work colleagues only]
+    A --> D[personal/ 🏠<br/>Close friends/family context]
+    A --> E[private/ 🔒<br/>Local AI assistants only]
+    A --> F[sensitive/ 🚨<br/>Maximum protection required]
+    A --> G[examples/ 📚<br/>Templates and learning materials]
+    
+    style B fill:#e6ffe6
+    style C fill:#e6f3ff
+    style D fill:#fff2e6
+    style E fill:#ffe6e6
+    style F fill:#f0e6e6
+    style G fill:#f0f0f0
 ```
 
 ### Smart Categorization Flow
@@ -48,31 +59,40 @@ memories/
 
 ## Technical Components
 
-### 1. MCP Server (`src/server.ts`)
+### 1. magi CLI System ([MAGI_CLI_DESIGN.md](MAGI_CLI_DESIGN.md))
+**Purpose**: Two-layer command interface for personal AI interactions
+**Architecture**:
+- **Service Layer**: `magi start` - Background MCP service management
+- **REPL Layer**: `magi` - Interactive command-line companion
+- **Wake Word Ecosystem**: Universal `magi` command prefix for all AI operations
+- **Process Management**: Separated service lifecycle from user interaction
+
+### 2. MCP Server (`services/brainbridge/src/server.ts`) ✅ **IMPLEMENTED**
 **Purpose**: Bridge between AI assistants and memory bank
 **Key features**:
-- `add_memory` tool with smart categorization
-- `search_memories` tool with privacy filtering
+- `ai_save_memory` tool with smart categorization
+- `ai_query_memories` tool with privacy filtering
 - Resource access for direct file reading
-- Consent request handling
+- Multi-provider AI support (OpenAI, Gemini, Ollama)
 
-### 2. Privacy Classifier (`src/privacy/classifier.ts`)
+### 3. Privacy Classifier 🔨 **BASIC IMPLEMENTATION**
 **Purpose**: Intelligent privacy level detection
+**Current Status**: Basic rule-based categorization in `services/brainbridge/src/services/ai-service.ts`
 **Algorithm**:
 - Rule-based scoring (keywords, patterns)
-- Confidence calculation (0-100%)
-- User preference learning
-- Conservative bias for uncertainty
+- Privacy level suggestion based on content
+- Default conservative bias for uncertainty
 
-### 3. Consent Engine (`src/privacy/consent.ts`)
+### 4. Consent Engine 🔮 **PLANNED**
 **Purpose**: User control over memory access
-**Features**:
+**Target**: v0.2.0
+**Planned Features**:
 - Interactive CLI prompts
 - Permission rule storage
 - Trust score management  
 - Access audit logging
 
-### 4. Memory Store (File system)
+### 5. Memory Store (File system)
 **Purpose**: Organized, searchable memory storage
 **Structure**:
 - Privacy-level directories
@@ -83,33 +103,48 @@ memories/
 ## Data Flow
 
 ### Adding Memories
-```typescript
-User: "Add memory: Always check WiFi network first when troubleshooting"
-├─> Privacy Classifier analyzes content
-├─> High confidence (92%): "public" level  
-├─> Auto-generate tags: [network, troubleshooting, wifi]
-├─> Store in public/network-troubleshooting.md
-└─> Confirm to user: "✅ Added to public memories"
+```mermaid
+flowchart TD
+    A[User: Add memory about WiFi troubleshooting] --> B[Privacy Classifier analyzes content]
+    B --> C[High confidence 92%: public level]
+    C --> D[Auto-generate tags:<br/>network, troubleshooting, wifi]
+    D --> E[Store in public/<br/>network-troubleshooting.md]
+    E --> F[✅ Confirm to user:<br/>Added to public memories]
+    
+    style A fill:#e6f3ff
+    style F fill:#e6ffe6
 ```
 
 ### Searching Memories  
-```typescript
-AI Assistant: "Search for network troubleshooting tips"
-├─> Check AI assistant permissions
-├─> Filter by accessible privacy levels
-├─> Search across allowed files
-├─> Return results with privacy context
-└─> Log access for audit
+```mermaid
+flowchart TD
+    A[AI Assistant: Search for network troubleshooting tips] --> B[Check AI assistant permissions]
+    B --> C[Filter by accessible privacy levels]
+    C --> D[Search across allowed files]
+    D --> E[Return results with privacy context]
+    E --> F[Log access for audit]
+    
+    style A fill:#e6f3ff
+    style F fill:#fff2e6
 ```
 
 ### Consent Flow
-```typescript
-Cloud AI: "I want to access team-level memories about deployment"
-├─> Generate consent request
-├─> Show user: requester, intent, files needed
-├─> User decision: allow/deny/modify
-├─> Update permission rules
-└─> Grant/deny access accordingly
+```mermaid
+flowchart TD
+    A[Cloud AI: Access team-level<br/>deployment memories] --> B[Generate consent request]
+    B --> C[Show user: requester,<br/>intent, files needed]
+    C --> D{User decision}
+    D -->|Allow| E[Update permission rules]
+    D -->|Deny| F[Deny access]
+    D -->|Modify| G[Adjust permissions]
+    E --> H[Grant access]
+    F --> I[Log denial]
+    G --> H
+    H --> I[Complete audit log]
+    
+    style A fill:#fff2e6
+    style D fill:#e6f3ff
+    style I fill:#f0f0f0
 ```
 
 ## Key Design Principles

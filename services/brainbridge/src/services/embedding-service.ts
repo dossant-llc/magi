@@ -2,11 +2,13 @@
  * Embedding Service - Generates and manages vector embeddings using local models
  */
 
-import { Ollama } from 'ollama';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { LoggerService } from './logger-service';
+import { IEmbeddingProvider } from '../providers/ai-interfaces';
+import { aiProviderFactory } from '../providers/ai-provider-factory';
+import { aiConfig } from '../config/ai-config';
 
 interface MemoryEmbedding {
   id: string;
@@ -35,24 +37,55 @@ interface EmbeddingIndex {
 }
 
 export class EmbeddingService {
-  private ollama: Ollama;
+  private embeddingProvider: IEmbeddingProvider;
   private loggerService: LoggerService;
   private indexPath: string;
   private embeddingsPath: string;
+  private lockPath: string;
   
   constructor(loggerService: LoggerService) {
-    // Use Docker environment variables or fallback to localhost
-    const ollamaHost = process.env.OLLAMA_HOST || '127.0.0.1';
-    const ollamaPort = process.env.OLLAMA_PORT || '11434';
-    const ollamaUrl = `http://${ollamaHost}:${ollamaPort}`;
-    
-    this.ollama = new Ollama({ host: ollamaUrl });
+    this.embeddingProvider = aiProviderFactory.createEmbeddingProvider();
     this.loggerService = loggerService;
     
-    // Simple memory path resolution
-    const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
-    this.indexPath = path.join(baseMemoriesDir, 'embeddings');
+    // Use provider-specific index path
+    const { getMemoriesPath } = require('../utils/magi-paths');
+    const baseMemoriesDir = getMemoriesPath();
+    this.indexPath = aiConfig.getIndexPath(path.join(baseMemoriesDir, 'embeddings'));
     this.embeddingsPath = path.join(this.indexPath, 'embeddings.txt');
+    this.lockPath = path.join(this.indexPath, 'lock.txt');
+    
+    this.loggerService.log(`EmbeddingService initialized with ${aiConfig.getProvider()} provider, index path: ${this.indexPath}`);
+  }
+
+  /**
+   * Simple file locking mechanism to prevent concurrent access
+   */
+  private async acquireLock(timeoutMs: number = 5000): Promise<boolean> {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        // Try to create lock file (fails if exists)
+        await fs.writeFile(this.lockPath, `${process.pid}-${Date.now()}`, { flag: 'wx' });
+        return true;
+      } catch (error) {
+        // Lock exists, wait and retry
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Release the file lock
+   */
+  private async releaseLock(): Promise<void> {
+    try {
+      await fs.unlink(this.lockPath);
+    } catch (error) {
+      // Lock file may not exist, that's ok
+    }
   }
 
   /**
@@ -63,20 +96,16 @@ export class EmbeddingService {
     this.loggerService.startTimer('embedding_generation');
 
     try {
-      const response = await this.ollama.embeddings({
-        model: 'mxbai-embed-large',
-        prompt: content,
+      const response = await this.embeddingProvider.generateEmbedding({
+        model: this.embeddingProvider.getModelName(),
+        input: content,
       });
 
       this.loggerService.endTimer('embedding_generation', {
-        model: 'mxbai-embed-large',
+        model: response.model,
         contentLength: content.length,
-        embeddingDimensions: response.embedding?.length || 0
+        embeddingDimensions: response.embedding.length
       });
-
-      if (!response.embedding) {
-        throw new Error('No embedding returned from model');
-      }
 
       return response.embedding;
     } catch (error) {
@@ -84,9 +113,9 @@ export class EmbeddingService {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         contentLength: content.length,
-        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
-        model: 'nomic-embed-text',
-        cause: error instanceof Error && error.cause ? error.cause : 'Unknown - likely Ollama server not running or model not available'
+        provider: aiConfig.getProvider(),
+        model: this.embeddingProvider.getModelName(),
+        cause: error instanceof Error && error.cause ? error.cause : 'Unknown - AI provider unavailable or model not accessible'
       });
       throw error;
     }
@@ -164,6 +193,11 @@ export class EmbeddingService {
    * Load existing embedding index from structured text format
    */
   async loadIndex(): Promise<EmbeddingIndex> {
+    // Acquire lock before reading
+    if (!(await this.acquireLock())) {
+      this.loggerService.trace('Failed to acquire lock for loadIndex, proceeding without lock');
+    }
+    
     try {
       await fs.mkdir(this.indexPath, { recursive: true });
       
@@ -180,12 +214,14 @@ export class EmbeddingService {
       }
     } catch (error) {
       this.loggerService.trace('Failed to load existing index', { error });
+    } finally {
+      await this.releaseLock();
     }
 
     // Return empty index
     return {
       version: '1.0.0',
-      model: 'mxbai-embed-large',
+      model: this.embeddingProvider.getModelName(),
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       totalEmbeddings: 0,
@@ -200,7 +236,7 @@ export class EmbeddingService {
     const lines = data.split('\n');
     const index: EmbeddingIndex = {
       version: '1.0.0',
-      model: 'mxbai-embed-large',
+      model: this.embeddingProvider.getModelName(),
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       totalEmbeddings: 0,
@@ -247,7 +283,48 @@ export class EmbeddingService {
       } else if (trimmed.startsWith('Vector:')) {
         if (currentEmbedding) {
           currentEmbedding.embedding = trimmed.substring(7).trim().split(',').map(s => parseFloat(s.trim()));
-          currentEmbedding.content = ''; // We'll need to extract this from the file if needed
+          
+          // Load content from the original file
+          if (currentEmbedding.filePath) {
+            try {
+              const fs = require('fs');
+              const path = require('path');
+              const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+              // Convert memories/privacy/file.md to profiles/default/privacy/file.md  
+              const relativePath = currentEmbedding.filePath.replace(/^memories\//, '');
+              const fullPath = path.join(baseMemoriesDir, relativePath);
+              this.loggerService.trace('Loading content for embedding', { 
+                filePath: currentEmbedding.filePath, 
+                fullPath: fullPath 
+              });
+              
+              if (fs.existsSync(fullPath)) {
+                const fileContent = fs.readFileSync(fullPath, 'utf8');
+                // Extract main content without frontmatter
+                const mainContent = fileContent.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+                currentEmbedding.content = mainContent;
+                this.loggerService.trace('Successfully loaded content', { 
+                  contentLength: mainContent.length,
+                  contentPreview: mainContent.slice(0, 100) + '...'
+                });
+              } else {
+                this.loggerService.warn('File not found for embedding', { 
+                  filePath: currentEmbedding.filePath, 
+                  fullPath: fullPath 
+                });
+                currentEmbedding.content = 'Content not available - file not found';
+              }
+            } catch (error) {
+              this.loggerService.error('Failed to load content for embedding', { 
+                filePath: currentEmbedding.filePath, 
+                error: error instanceof Error ? error.message : String(error)
+              });
+              currentEmbedding.content = 'Content not available - error loading file';
+            }
+          } else {
+            currentEmbedding.content = 'Content not available - no file path';
+          }
+          
           currentEmbedding.metadata = currentMetadata;
         }
       } else if (trimmed === '---' && currentEmbedding && currentEmbedding.id) {
@@ -270,10 +347,16 @@ export class EmbeddingService {
    * Save embedding index to disk in structured text format
    */
   async saveIndex(index: EmbeddingIndex): Promise<void> {
-    index.updated = new Date().toISOString();
-    index.totalEmbeddings = index.embeddings.length;
+    // Acquire lock before writing
+    if (!(await this.acquireLock())) {
+      throw new Error('Failed to acquire lock for saveIndex - another process may be writing');
+    }
     
-    const lines: string[] = [
+    try {
+      index.updated = new Date().toISOString();
+      index.totalEmbeddings = index.embeddings.length;
+      
+      const lines: string[] = [
       '# Embedding Index',
       `# Version: ${index.version}`,
       `# Model: ${index.model}`,
@@ -296,11 +379,14 @@ export class EmbeddingService {
       lines.push('---');
     }
     
-    await fs.writeFile(this.embeddingsPath, lines.join('\n'));
-    this.loggerService.trace('Saved embedding index', { 
-      totalEmbeddings: index.totalEmbeddings,
-      path: this.embeddingsPath 
-    });
+      await fs.writeFile(this.embeddingsPath, lines.join('\n'));
+      this.loggerService.trace('Saved embedding index', { 
+        totalEmbeddings: index.totalEmbeddings,
+        path: this.embeddingsPath 
+      });
+    } finally {
+      await this.releaseLock();
+    }
   }
 
   /**
@@ -376,7 +462,7 @@ export class EmbeddingService {
         threshold: threshold,
         searchQuery: query,
         indexExists: require('fs').existsSync(this.embeddingsPath),
-        ollamaHost: `http://${process.env.OLLAMA_HOST || '127.0.0.1'}:${process.env.OLLAMA_PORT || '11434'}`,
+        provider: aiConfig.getProvider(),
         cause: 'Likely embedding generation failed or vector index corrupted'
       });
       throw error;
@@ -400,7 +486,7 @@ export class EmbeddingService {
     try {
       const index = force ? {
         version: '1.0.0',
-        model: 'mxbai-embed-large',
+        model: this.embeddingProvider.getModelName(),
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         totalEmbeddings: 0,
@@ -416,6 +502,20 @@ export class EmbeddingService {
       // Find all memory files  
       const memoriesDir = require('../utils/memory-path').getMemoriesPath();
       const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
+      
+      // Count total files for progress tracking
+      let totalFiles = 0;
+      for (const level of privacyLevels) {
+        try {
+          const levelDir = path.join(memoriesDir, level);
+          const files = await fs.readdir(levelDir);
+          totalFiles += files.filter(f => f.endsWith('.md')).length;
+        } catch (error) {
+          // Directory might not exist, skip
+        }
+      }
+      
+      let processedCount = 0;
       
       for (const level of privacyLevels) {
         try {
@@ -452,6 +552,14 @@ export class EmbeddingService {
               
               index.embeddings.push(memoryEmbedding);
               stats.processed++;
+              processedCount++;
+              
+              // Show progress for force rebuilds
+              if (force && totalFiles > 0) {
+                const progress = Math.round((processedCount / totalFiles) * 100);
+                const bar = '█'.repeat(Math.floor(progress / 5)) + '░'.repeat(20 - Math.floor(progress / 5));
+                console.log(`\r🔄 [${bar}] ${progress}% (${processedCount}/${totalFiles}) Processing: ${file}`);
+              }
               
             } catch (error) {
               this.loggerService.log(`Error processing ${relativePath}: ${error}`, 'error');
@@ -471,6 +579,12 @@ export class EmbeddingService {
       
       this.loggerService.log(`Index build complete: ${stats.processed} processed, ${stats.skipped} skipped, ${stats.errors} errors`);
       
+      // Clear progress line and show completion for force rebuilds
+      if (force && totalFiles > 0 && stats.processed > 0) {
+        const bar = '█'.repeat(20);
+        console.log(`\r🎉 [${bar}] 100% Complete! Processed ${stats.processed} files\n`);
+      }
+      
       return stats;
     } catch (error) {
       this.loggerService.log(`Index build failed: ${error}`, 'error');
@@ -485,6 +599,7 @@ export class EmbeddingService {
     id: string;
     title: string;
     contentPreview: string;
+    content: string;
     category: string;
     privacy: string;
     similarity: number;
@@ -500,16 +615,46 @@ export class EmbeddingService {
       // Load existing index
       const index = await this.loadIndex();
       
-      // Calculate similarities and return lightweight results
-      const results = index.embeddings.map(memory => ({
-        id: memory.id,
-        title: memory.metadata.title || 'Untitled',
-        contentPreview: memory.contentPreview,
-        category: memory.metadata.category || 'general',
-        privacy: memory.metadata.privacy || 'personal',
-        similarity: this.cosineSimilarity(queryEmbedding, memory.embedding),
-        filePath: memory.filePath
-      }));
+      // Calculate similarities and return lightweight results with content
+      const results = index.embeddings.map(memory => {
+        let content = memory.contentPreview;
+        
+        // Load content from the original file if available
+        if (memory.filePath) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const baseMemoriesDir = require('../utils/memory-path').getMemoriesPath();
+            // Convert memories/privacy/file.md to profiles/default/privacy/file.md  
+            const relativePath = memory.filePath.replace(/^memories\//, '');
+            const fullPath = path.join(baseMemoriesDir, relativePath);
+            
+            if (fs.existsSync(fullPath)) {
+              const fileContent = fs.readFileSync(fullPath, 'utf8');
+              // Extract main content without frontmatter
+              const mainContent = fileContent.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+              content = mainContent || memory.contentPreview || 'Content not available - empty file';
+            }
+          } catch (error) {
+            this.loggerService.trace('Failed to load content for search result', { 
+              filePath: memory.filePath, 
+              error: error instanceof Error ? error.message : String(error) 
+            });
+            content = memory.contentPreview || 'Content not available - error loading file';
+          }
+        }
+
+        return {
+          id: memory.id,
+          title: memory.metadata.title || 'Untitled',
+          contentPreview: memory.contentPreview,
+          content: content, // Add full content for search results
+          category: memory.metadata.category || 'general',
+          privacy: memory.metadata.privacy || 'personal',
+          similarity: this.cosineSimilarity(queryEmbedding, memory.embedding),
+          filePath: memory.filePath
+        };
+      });
 
       const filteredResults = results.filter(result => result.similarity >= threshold);
       const finalResults = filteredResults
@@ -519,7 +664,14 @@ export class EmbeddingService {
       this.loggerService.endTimer('fast_vector_search', { 
         results: finalResults.length,
         threshold,
-        topSimilarity: finalResults[0]?.similarity || 0
+        topSimilarity: finalResults[0]?.similarity || 0,
+        avgSimilarity: finalResults.length > 0 ? Math.round((finalResults.reduce((sum, r) => sum + r.similarity, 0) / finalResults.length) * 1000) / 1000 : 0,
+        indexSize: index.embeddings.length,
+        totalCandidates: results.length,
+        filteredOut: results.length - finalResults.length,
+        similarityRange: finalResults.length > 1 ? 
+          `${Math.round((finalResults[finalResults.length - 1]?.similarity || 0) * 1000) / 1000} - ${Math.round((finalResults[0]?.similarity || 0) * 1000) / 1000}` : 
+          finalResults.length === 1 ? Math.round((finalResults[0]?.similarity || 0) * 1000) / 1000 : 'none'
       });
 
       return finalResults;

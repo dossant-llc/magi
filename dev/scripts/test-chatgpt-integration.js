@@ -8,9 +8,10 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { getEnvPath } = require('./path-utils');
 
 // Load configuration
-const envPath = path.join(__dirname, '..', 'brainbridge', '.env');
+const envPath = getEnvPath();
 const env = {};
 
 if (fs.existsSync(envPath)) {
