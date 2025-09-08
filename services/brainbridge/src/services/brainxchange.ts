@@ -34,7 +34,7 @@ export class BrainXchangeService extends EventEmitter {
     super();
     // Always get fresh environment variable, don't cache at module load time
     const defaultDomain = process.env.AGIFORME_SERVER_DOMAIN || 'localhost';
-    this.serverUrl = serverUrl || process.env.BRAINXCHANGE_SERVER || `ws://${defaultDomain}:8082/bx`;
+    this.serverUrl = serverUrl || process.env.BRAINXCHANGE_SERVER || `ws://${defaultDomain}:9025/bx`;
   }
 
   async connect(): Promise<string> {

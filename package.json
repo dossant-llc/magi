@@ -1,6 +1,6 @@
 {
   "name": "magi",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "magi - Your Personal AI That Remembers What Matters to You. Transform scattered lessons learned into an AI-accessible, privacy-aware memory bank.",
   "private": true,
   "bin": {
@@ -22,6 +22,7 @@
     "help": "node dev/scripts/help.js",
     "kill": "bash dev/scripts/kill-all.sh",
     "test:chatgpt": "node dev/scripts/test-chatgpt-integration.js",
+    "test:register": "node tests/test-magi-register.js",
     "quick": "npm run bb:stdio",
     "magi": "node dev/scripts/auto-setup.js && npm run bb:cli",
     "magi:mcp": "node dev/scripts/magi-mcp-bridge.js",

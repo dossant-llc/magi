@@ -93,20 +93,20 @@ class BrainProxyService {
         description: `Access your personal AI memory bank through AGIfor.me.
 
 **Authentication Required:**
-- Header: \`X-Brain-Key\` with your personal brain access key (minimum 16 characters)
+- Header: \`Authorization: Bearer <your-personal-brain-key>\` with your personal brain access key (minimum 16 characters)
 - Route: Use your unique route identifier (e.g., your username or email)
 - Connection: Your local BrainBridge must be connected with matching key and route
 
 **Setup Instructions:**
 1. Generate a unique brain key (UUID or secure random string)
 2. Configure your local BrainBridge with this key and your chosen route
-3. Use the same key in the \`X-Brain-Key\` header when calling this API
+3. Use Bearer token authentication: \`Authorization: Bearer <your-key>\`
 4. Use your route identifier in the URL path: \`/rpc/{your-route}\``,
         version: '1.0.4'
       },
       servers: [
         {
-          url: `${process.env.BRAINCLOUD_PROTOCOL || 'https'}://${process.env.BRAINCLOUD_DOMAIN || 'your-domain.com'}${process.env.BRAIN_PROXY_HTTP_PATH || '/bp'}`,
+          url: `${process.env.BRAINCLOUD_PROTOCOL || 'https'}://${process.env.BRAINCLOUD_DOMAIN || 'hub.m.agifor.me'}${process.env.BRAIN_PROXY_HTTP_PATH || '/bp'}`,
           description: 'AGIfor.me Brain Proxy'
         }
       ],
@@ -114,10 +114,9 @@ class BrainProxyService {
         schemas: {},
         securitySchemes: {
           BrainKeyAuth: {
-            type: 'apiKey',
-            in: 'header',
-            name: 'X-Brain-Key',
-            description: 'Your personal brain access key'
+            type: 'http',
+            scheme: 'bearer',
+            description: 'Your personal brain access key as Bearer token'
           }
         }
       },
@@ -457,13 +456,22 @@ class BrainProxyService {
           return;
         }
 
-        // Validate authentication
-        const brainKey = req.headers['x-brain-key'];
+        // Validate authentication - support both Bearer token and legacy X-Brain-Key
+        let brainKey;
+        const authHeader = req.headers.authorization;
+        const legacyKey = req.headers['x-brain-key'];
+        
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          brainKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+        } else if (legacyKey) {
+          brainKey = legacyKey;
+        }
+        
         if (!brainKey || brainKey.length < 16) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
             id: request.id,
-            error: 'Unauthorized: Missing or invalid X-Brain-Key header' 
+            error: 'Unauthorized: Missing or invalid Authorization Bearer token or X-Brain-Key header' 
           }));
           return;
         }

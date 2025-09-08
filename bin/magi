@@ -40,6 +40,8 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('  restart   Restart BrainBridge service (preserves --dev flag)');
   console.log('  status    Show system status and diagnostics');
   console.log('  logs      Stream BrainBridge logs (if running)');
+  console.log('  register  Setup Brain Proxy for ChatGPT integration');
+  console.log('            Options: --local (use localhost instead of production server)');
   console.log('  index     Build vector index for AI search');
   console.log('            Options: --force (rebuild all)');
   console.log('  install   Install integrations');
@@ -255,6 +257,119 @@ switch (command) {
     } else {
       console.log(`${colors.error}❌ Unknown remove target: ${removeTarget}${colors.reset}`);
       console.log(`${colors.hint}💡 Available targets: claude${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+    
+  case 'register':
+    // Brain Proxy registration
+    console.log(`${colors.info}🧙 mAgi Brain Proxy Registration${colors.reset}`);
+    console.log(`${colors.hint}═══════════════════════════════════${colors.reset}`);
+    console.log('');
+    
+    try {
+      const crypto = require('crypto');
+      const os = require('os');
+      const fs = require('fs');
+      
+      // Generate credentials
+      console.log(`${colors.system}Generating secure credentials...${colors.reset}`);
+      
+      // Create route: initials + 8 char hex (e.g., ig-4f2a8b9d)
+      const initials = os.userInfo().username.substring(0, 2).toLowerCase();
+      const routeSuffix = crypto.randomBytes(4).toString('hex');
+      const route = `${initials}-${routeSuffix}`;
+      
+      // Create secret: 32 char hex
+      const secret = crypto.randomBytes(16).toString('hex');
+      
+      console.log(`${colors.success}✅ Route: ${colors.prompt}${route}${colors.reset}`);
+      console.log(`${colors.success}✅ Secret: ${colors.prompt}${secret}${colors.reset}`);
+      console.log('');
+      
+      // Determine proxy URL (production vs development)
+      const proxyUrl = args.includes('--local') 
+        ? 'wss://localhost:9025/bp/connect'
+        : 'wss://hub.m.agifor.me:9025/bp/connect';
+      
+      const openApiUrl = args.includes('--local')
+        ? 'https://localhost:9025/bp/openapi.json'  
+        : 'https://hub.m.agifor.me/bp/openapi.json';
+      
+      // Test connection to Brain Proxy
+      console.log(`${colors.system}Testing connection to BrainCloud...${colors.reset}`);
+      
+      const WebSocket = require('ws');
+      const testUrl = `${proxyUrl}?route=${encodeURIComponent(route)}&token=${encodeURIComponent(secret)}`;
+      
+      const ws = new WebSocket(testUrl);
+      let connectionTestComplete = false;
+      
+      // Set a timeout for the connection test
+      const testTimeout = setTimeout(() => {
+        if (!connectionTestComplete) {
+          connectionTestComplete = true;
+          console.log(`${colors.warning}⚠️ Connection test timed out (proxy may be offline)${colors.reset}`);
+          ws.terminate();
+          showConfiguration();
+        }
+      }, 10000); // 10 second timeout
+      
+      ws.on('open', () => {
+        if (!connectionTestComplete) {
+          connectionTestComplete = true;
+          clearTimeout(testTimeout);
+          console.log(`${colors.success}✅ Connected to ${proxyUrl}${colors.reset}`);
+          ws.close(1000, 'Registration test complete');
+          showConfiguration();
+        }
+      });
+      
+      ws.on('error', (error) => {
+        if (!connectionTestComplete) {
+          connectionTestComplete = true;
+          clearTimeout(testTimeout);
+          console.log(`${colors.warning}⚠️ Connection failed: ${error.message}${colors.reset}`);
+          console.log(`${colors.hint}💡 This may be normal if BrainCloud is offline${colors.reset}`);
+          showConfiguration();
+        }
+      });
+      
+      function showConfiguration() {
+        console.log('');
+        console.log(`${colors.info}📝 Add these to your .env file:${colors.reset}`);
+        console.log(`${colors.hint}─────────────────────────────────${colors.reset}`);
+        console.log(`BRAIN_PROXY_ENABLED=true`);
+        console.log(`BRAIN_PROXY_URL=${proxyUrl}`);
+        console.log(`BRAIN_PROXY_ROUTE=${route}`);
+        console.log(`BRAIN_PROXY_SECRET=${secret}`);
+        console.log(`BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp`);
+        console.log(`${colors.hint}─────────────────────────────────${colors.reset}`);
+        console.log('');
+        
+        console.log(`${colors.hint}💡 Quick setup:${colors.reset}`);
+        const envPath = path.join(__dirname, '..', 'services', 'brainbridge', '.env');
+        console.log(`   ${colors.prompt}echo '' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo '# Brain Proxy Configuration' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_ENABLED=true' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_URL=${proxyUrl}' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_ROUTE=${route}' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_SECRET=${secret}' >> ${envPath}${colors.reset}`);
+        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp' >> ${envPath}${colors.reset}`);
+        console.log('');
+        
+        console.log(`${colors.success}To connect ChatGPT:${colors.reset}`);
+        console.log(`1. Go to ChatGPT → Create GPT → Configure`);
+        console.log(`2. Add action with URL: ${colors.prompt}${openApiUrl}${colors.reset}`);
+        console.log(`3. Add authentication: ${colors.prompt}Bearer ${secret}${colors.reset} (or legacy header X-Brain-Key: ${secret})`);
+        console.log(`4. Save and test with "${colors.prompt}magi status${colors.reset}"`);
+        console.log('');
+        console.log(`${colors.hint}💡 Restart BrainBridge after updating .env: ${colors.prompt}magi restart${colors.reset}`);
+      }
+      
+    } catch (error) {
+      console.log(`${colors.error}❌ Registration failed: ${error.message}${colors.reset}`);
+      console.log(`${colors.hint}💡 Make sure Node.js crypto module is available${colors.reset}`);
       process.exit(1);
     }
     break;

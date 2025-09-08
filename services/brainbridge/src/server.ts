@@ -184,7 +184,7 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     const defaultDomain = process.env.AGIFORME_SERVER_DOMAIN || 'localhost';
     const brainProxyConfig: BrainProxyConfig = {
       enabled: process.env.BRAIN_PROXY_ENABLED === 'true',
-      url: process.env.BRAIN_PROXY_URL || `wss://${defaultDomain}:8082/bp/connect`,
+      url: process.env.BRAIN_PROXY_URL || `wss://${defaultDomain}:9025/bp/connect`,
       secret: process.env.BRAIN_PROXY_SECRET || '',
       route: process.env.BRAIN_PROXY_ROUTE || 'default',
       localMcpUrl: process.env.BRAIN_PROXY_LOCAL_MCP_URL || 'http://localhost:8147/mcp'

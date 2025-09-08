@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-01-07
+
+### 🌉 Brain Proxy Integration Release
+
+This release introduces the **Brain Proxy** feature, enabling seamless integration between ChatGPT and your local magi instance. Connect your ChatGPT conversations to your personal memory bank with enterprise-grade security.
+
+### ✨ Features
+
+#### 🧠 Brain Proxy - ChatGPT Integration
+- **`magi register` Command**: One-command setup for ChatGPT integration with secure credential generation
+- **WebSocket Bridge**: Real-time connection between ChatGPT and your local magi instance via BrainCloud
+- **Secure Authentication**: Route-based isolation with 32-character hex secrets
+- **Privacy-First Architecture**: Your memories stay local, accessed only through encrypted connections
+- **Offline Resilience**: Graceful fallback behavior when BrainCloud is unavailable
+
+#### 🏗️ Infrastructure Updates
+- **BrainCloud Production Ready**: Unified platform for BrainXchange and Brain Proxy services
+- **Updated Deployment Scripts**: Full PM2-based deployment for hub.m.agifor.me:9025
+- **Comprehensive Documentation**: PM2 architecture guide and Brain Proxy roadmap
+- **Enhanced Testing**: Full test suite for registration and configuration validation
+
+#### 🔧 Configuration Improvements  
+- **Updated Service URLs**: Migrated from port 8082 to hub.m.agifor.me:9025
+- **Environment Templates**: Updated .env.example files with new endpoints
+- **Documentation Updates**: Refreshed README files with current infrastructure
+
+### 📚 Documentation
+
+- **Brain Proxy Roadmap**: Multi-phase evolution plan through v0.2.0
+- **PM2 Architecture Guide**: Complete deployment and troubleshooting documentation
+- **Updated Service Integration**: Clear setup instructions for ChatGPT connection
+
+### 🧪 Testing
+
+- **Automated Test Suite**: Comprehensive testing for `magi register` command
+- **Credential Generation Tests**: Validation of route and secret format
+- **Configuration Validation**: Brain Proxy URL and parameter testing
+
+### 🔧 Technical Improvements
+
+- **Enhanced Error Handling**: Better connection failure messages and timeouts
+- **Improved Logging**: Structured logging throughout Brain Proxy components  
+- **Security Hardening**: Validation of all user inputs and connection parameters
+
+---
+
 ## [0.1.0] - 2025-01-06
 
 ### 🧪 Developer Preview Release
