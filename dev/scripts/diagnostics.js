@@ -394,6 +394,49 @@ class Diagnostics {
       }
     }
   }
+  
+  generateAuthCode() {
+    const route = process.env.BRAIN_PROXY_ROUTE;
+    const secret = process.env.BRAIN_PROXY_SECRET;
+    
+    if (!route || !secret) {
+      return null;
+    }
+    
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Create hash of route:secret:date
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256')
+      .update(`${route}:${secret}:${today}`)
+      .digest('hex');
+    
+    // Take first 6 characters for easy typing
+    return hash.substring(0, 6).toUpperCase();
+  }
+  
+  async checkBrainProxyAuth() {
+    this.log('\n🔐 Brain Proxy Authentication...', 'info');
+    
+    const route = process.env.BRAIN_PROXY_ROUTE;
+    const secret = process.env.BRAIN_PROXY_SECRET;
+    
+    if (!route || !secret) {
+      this.addWarning('Brain Proxy not configured', 'Run: magi register');
+      return;
+    }
+    
+    this.addPassed(`Brain Proxy Route: ${route}`);
+    
+    // Generate today's auth code
+    const authCode = this.generateAuthCode();
+    if (authCode) {
+      console.log(`${colors.success}📱 Claude.ai Auth Code (Today): ${colors.info}${authCode}${colors.reset}`);
+      console.log(`${colors.dim}   Use in Claude: "magi auth ${authCode}"${colors.reset}`);
+      console.log(`${colors.dim}   Valid until: ${new Date().toISOString().split('T')[0]} 23:59${colors.reset}`);
+    }
+  }
 
   async checkDiskSpace() {
     this.log('\n💾 Checking Disk Space...', 'info');
@@ -425,6 +468,7 @@ class Diagnostics {
     await this.checkVectorIndex();
     await this.checkBrainBridgeProcesses();
     await this.checkEnvironmentConfig();
+    await this.checkBrainProxyAuth();
     await this.checkDiskSpace();
     
     // Summary

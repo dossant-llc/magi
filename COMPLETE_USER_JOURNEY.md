@@ -38,7 +38,7 @@ git --version     # Any recent version
 #### 2. Install & Setup
 ```bash
 # Clone and install
-git clone [repository-url] agiforme  # (Will be public soon)
+git clone https://github.com/dossant-llc/magi agiforme
 cd agiforme
 npm install
 
@@ -147,9 +147,9 @@ curl https://your-server.com:8082/bp/health
 3. **Description**: "Access my personal memory bank"
 4. **Instructions**: "You are my personal AI assistant with access to my knowledge base through AGIfor.me Brain Proxy."
 5. **Actions**: Import from `https://your-server.com/bp/openapi.json`
-6. **Authentication**: API Key
-7. **API Key**: Use your `BRAIN_PROXY_SECRET` value
-8. **Header Name**: `X-Brain-Key`
+6. **Authentication**: API Key (Bearer)
+7. **API Key**: Use composite format: `{BRAIN_PROXY_ROUTE}:{BRAIN_PROXY_SECRET}`
+   - Example: `ig-4f2a8b9d:yoursecrethere`
 
 #### 6. Test Integration
 In your Custom GPT, try:
@@ -283,8 +283,8 @@ npm run start
 ```
 
 **"Custom GPT authentication failed"**
-- Verify `X-Brain-Key` header matches `BRAIN_PROXY_SECRET`
-- Check API endpoint URL is correct
+- Verify Bearer token uses composite format: `route:secret`
+- Check API endpoint URL is correct (`/rpc/_auto`)
 - Ensure server is deployed and accessible
 
 ### Getting Help

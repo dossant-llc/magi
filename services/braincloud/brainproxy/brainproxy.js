@@ -10,6 +10,7 @@ class BrainProxyService {
     // Brain Proxy storage
     this.connectors = new Map(); // route -> {ws, lastSeen, metadata}
     this.pendingRequests = new Map(); // requestId -> {resolve, reject, timeout}
+    this.authSessions = new Map(); // sessionId -> {route, secret, expires}
     
     // Statistics tracking
     this.stats = {
@@ -24,7 +25,7 @@ class BrainProxyService {
       Port: port
     });
 
-    // Clean up stale connections
+    // Clean up stale connections and expired sessions
     setInterval(() => {
       const now = Date.now();
       const staleTimeout = 5 * 60 * 1000; // 5 minutes
@@ -37,21 +38,59 @@ class BrainProxyService {
           this.stats.connectedBrains = this.connectors.size;
         }
       }
+      
+      // Clean up expired auth sessions
+      for (const [sessionId, session] of this.authSessions) {
+        if (now > session.expires) {
+          this.logMessage('info', `🧹 Cleaning up expired auth session`, { SessionId: sessionId });
+          this.authSessions.delete(sessionId);
+        }
+      }
     }, 60 * 1000); // Check every minute
   }
 
   handleHttpRequest(req, res, parsedUrl) {
     const path = parsedUrl.pathname.substring(4); // Remove /bp/ prefix
     
-    if (req.method === 'GET' && path === 'health') {
+    if (req.method === 'OPTIONS') {
+      // Handle CORS preflight for all paths
+      res.writeHead(200, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      });
+      res.end();
+    } else if (req.method === 'GET' && path === 'health') {
       this.handleHealthCheck(req, res);
     } else if (req.method === 'GET' && path === 'openapi.json') {
       this.handleOpenAPISchema(req, res);
     } else if (req.method === 'GET' && path === 'privacy') {
       this.handlePrivacyPolicy(req, res);
+    } else if (req.method === 'GET' && path === 'claude') {
+      // Claude.ai endpoint info
+      res.writeHead(200, { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({
+        service: 'AGIfor.me Claude Interface',
+        version: '1.0.0',
+        usage: {
+          authenticate: 'POST {"message": "magi auth [6-digit-code]"}',
+          command: 'POST {"message": "magi [command]", "sessionId": "[session-id]"}'
+        },
+        getCode: 'Run "magi status" locally to get today\'s auth code'
+      }));
+    } else if (req.method === 'GET' && path === 'claude-api.json') {
+      // OpenAPI spec for Claude.ai
+      this.handleClaudeAPISchema(req, res);
     } else if (req.method === 'POST' && path.startsWith('rpc/')) {
       const route = path.substring(4); // Remove 'rpc/' prefix
       this.handleRPCRequest(req, res, route);
+    } else if (req.method === 'POST' && path === 'mcp') {
+      this.handleMCPRequest(req, res);
+    } else if (req.method === 'POST' && path === 'claude') {
+      this.handleClaudeRequest(req, res);
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Brain Proxy endpoint not found');
@@ -126,22 +165,12 @@ class BrainProxyService {
         }
       ],
       paths: {
-        '/rpc/{route}': {
+        '/rpc/_auto': {
           post: {
             summary: 'Execute brain command',
             operationId: 'executeBrainCommand',
             'x-openai-isConsequential': false,
-            parameters: [
-              {
-                name: 'route',
-                in: 'path',
-                required: true,
-                schema: {
-                  type: 'string'
-                },
-                description: 'Your unique brain route identifier'
-              }
-            ],
+            description: 'Execute commands on your personal brain. The route is automatically extracted from your composite API key (format: route:secret).',
             requestBody: {
               required: true,
               content: {
@@ -332,6 +361,97 @@ class BrainProxyService {
     res.end(JSON.stringify(schema, null, 2));
   }
 
+  handleClaudeAPISchema(req, res) {
+    const schema = {
+      openapi: '3.1.0',
+      info: {
+        title: 'AGIfor.me Personal AI Assistant',
+        description: 'Access your personal AI memory bank through AGIfor.me',
+        version: '1.0.0'
+      },
+      servers: [
+        {
+          url: 'https://hub.m.agifor.me/bp',
+          description: 'AGIfor.me Brain Proxy'
+        }
+      ],
+      paths: {
+        '/claude': {
+          post: {
+            summary: 'Send commands to your personal AI assistant',
+            operationId: 'sendCommand',
+            requestBody: {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: {
+                        type: 'string',
+                        description: 'Your message to the AI assistant'
+                      },
+                      sessionId: {
+                        type: 'string',
+                        description: 'Session ID from authentication (optional for auth commands)'
+                      }
+                    },
+                    required: ['message']
+                  },
+                  examples: {
+                    authenticate: {
+                      summary: 'Authenticate with daily code',
+                      value: {
+                        message: 'magi auth ABC123'
+                      }
+                    },
+                    search: {
+                      summary: 'Search your memories',
+                      value: {
+                        message: 'magi search my favorite restaurants',
+                        sessionId: 'your-session-id'
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            responses: {
+              '200': {
+                description: 'Successful response',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        success: {
+                          type: 'boolean'
+                        },
+                        message: {
+                          type: 'string'
+                        },
+                        sessionId: {
+                          type: 'string',
+                          description: 'Session ID for future requests (returned on auth)'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(schema, null, 2));
+  }
+
   handlePrivacyPolicy(req, res) {
     const html = `
 <!DOCTYPE html>
@@ -456,22 +576,64 @@ class BrainProxyService {
           return;
         }
 
-        // Validate authentication - support both Bearer token and legacy X-Brain-Key
+        // Validate authentication - support composite key format (route:secret)
         let brainKey;
+        let extractedRoute;
+        let extractedSecret;
+        
         const authHeader = req.headers.authorization;
-        const legacyKey = req.headers['x-brain-key'];
         
         if (authHeader && authHeader.startsWith('Bearer ')) {
           brainKey = authHeader.substring(7); // Remove 'Bearer ' prefix
-        } else if (legacyKey) {
-          brainKey = legacyKey;
         }
         
-        if (!brainKey || brainKey.length < 16) {
+        if (!brainKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
             id: request.id,
-            error: 'Unauthorized: Missing or invalid Authorization Bearer token or X-Brain-Key header' 
+            error: 'Unauthorized: Missing Authorization Bearer token' 
+          }));
+          return;
+        }
+        
+        // Parse composite key format: route:secret
+        if (brainKey.includes(':')) {
+          const parts = brainKey.split(':');
+          extractedRoute = parts[0];
+          extractedSecret = parts[1];
+          
+          // If route is _auto, use the route from the API key
+          if (route === '_auto') {
+            route = extractedRoute;
+            this.logMessage('info', `🔑 Auto-routing from composite API key`, {
+              ExtractedRoute: extractedRoute
+            });
+          } else {
+            // Still extract the secret for validation
+            this.logMessage('info', `🔑 Using composite API key with explicit route`, {
+              ExtractedRoute: extractedRoute,
+              URLRoute: route
+            });
+          }
+        } else {
+          // Fallback to old format (just secret)
+          extractedSecret = brainKey;
+          
+          if (route === '_auto') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+              id: request.id,
+              error: 'Bad Request: _auto route requires composite API key format (route:secret)' 
+            }));
+            return;
+          }
+        }
+        
+        if (!extractedSecret || extractedSecret.length < 16) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            id: request.id,
+            error: 'Unauthorized: Invalid API key format or secret too short' 
           }));
           return;
         }
@@ -487,7 +649,9 @@ class BrainProxyService {
         const connector = this.connectors.get(route);
         
         // Verify the brain key matches the connector's key
-        if (connector && connector.token !== brainKey) {
+        // Use extractedSecret for comparison (from composite key parsing)
+        const secretToCompare = extractedSecret || brainKey;
+        if (connector && connector.token !== secretToCompare) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
             id: request.id,
@@ -666,8 +830,307 @@ For access to your personal memories and knowledge base, please ensure your loca
       offlineResponses: this.stats.offlineResponses,
       uptime: uptimeStr,
       routes: Array.from(this.connectors.keys()),
-      pendingRequests: this.pendingRequests.size
+      pendingRequests: this.pendingRequests.size,
+      activeSessions: this.authSessions.size
     };
+  }
+  
+  validateAuthCode(authCode) {
+    // Generate today's auth code for each connected brain
+    const crypto = require('crypto');
+    const today = new Date().toISOString().split('T')[0];
+    
+    for (const [route, connector] of this.connectors) {
+      const expectedCode = crypto.createHash('sha256')
+        .update(`${route}:${connector.token}:${today}`)
+        .digest('hex')
+        .substring(0, 6)
+        .toUpperCase();
+      
+      if (authCode === expectedCode) {
+        this.logMessage('info', `🔐 Auth code validated for route ${route}`, { 
+          Date: today
+        });
+        return { route, secret: connector.token };
+      }
+    }
+    
+    return null;
+  }
+  
+  createAuthSession(route, secret) {
+    const crypto = require('crypto');
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    const expires = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+    
+    this.authSessions.set(sessionId, {
+      route,
+      secret,
+      expires,
+      created: Date.now()
+    });
+    
+    this.logMessage('info', `🔐 Created auth session for route ${route}`, { 
+      SessionId: sessionId.substring(0, 8),
+      ExpiresIn: '24h'
+    });
+    
+    return sessionId;
+  }
+
+  handleClaudeRequest(req, res) {
+    let body = '';
+    
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', () => {
+      try {
+        const { message, sessionId } = JSON.parse(body);
+        
+        // Handle "magi auth [code]" pattern
+        const authMatch = message.match(/^magi auth\s+([A-Z0-9]{6})$/i);
+        if (authMatch) {
+          const authCode = authMatch[1].toUpperCase();
+          const credentials = this.validateAuthCode(authCode);
+          
+          if (credentials) {
+            const newSessionId = this.createAuthSession(credentials.route, credentials.secret);
+            res.writeHead(200, { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            });
+            res.end(JSON.stringify({
+              success: true,
+              sessionId: newSessionId,
+              message: `✅ Authenticated! You can now use magi commands for 24 hours.`
+            }));
+          } else {
+            res.writeHead(401, { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            });
+            res.end(JSON.stringify({
+              success: false,
+              message: `❌ Invalid auth code. Get today's code with: magi status`
+            }));
+          }
+          return;
+        }
+        
+        // Handle "magi [command]" pattern for authenticated sessions
+        const commandMatch = message.match(/^magi\s+(.+)$/i);
+        if (commandMatch && sessionId) {
+          const session = this.authSessions.get(sessionId);
+          
+          if (!session || Date.now() > session.expires) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              message: `❌ Session expired. Authenticate again with: magi auth [code]`
+            }));
+            return;
+          }
+          
+          // Forward command to BrainBridge (simplified for now)
+          const command = commandMatch[1];
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            message: `🧙 Received command: ${command}\n\n(Command forwarding to BrainBridge coming soon)`
+          }));
+          return;
+        }
+        
+        // Invalid format
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: `❓ Send "magi auth [code]" to authenticate or "magi [command]" to use.`
+        }));
+        
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Invalid JSON format'
+        }));
+      }
+    });
+  }
+
+  handleMCPRequest(req, res) {
+    let body = '';
+    
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', async () => {
+      try {
+        const request = JSON.parse(body);
+        
+        // MCP protocol validation
+        if (!request.method) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32600, message: 'Invalid Request: Missing method' }
+          }));
+          return;
+        }
+
+        // Extract authentication - support both composite key and OAuth-style
+        const authHeader = req.headers.authorization;
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const routeFromUrl = url.searchParams.get('route');
+        let brainKey, extractedRoute, extractedSecret;
+        
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          brainKey = authHeader.substring(7);
+        }
+        
+        if (!brainKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32000, message: 'Unauthorized: Missing Authorization Bearer token' }
+          }));
+          return;
+        }
+        
+        // Check for OAuth-style: route from URL, secret from Authorization header
+        if (routeFromUrl && !brainKey.includes(':')) {
+          extractedRoute = routeFromUrl;
+          extractedSecret = brainKey;
+        }
+        // Parse composite key format: route:secret (existing format)
+        else if (brainKey.includes(':')) {
+          const parts = brainKey.split(':');
+          extractedRoute = parts[0];
+          extractedSecret = parts[1];
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32000, message: 'Invalid authentication. Use route:secret format or provide route in URL with secret in Authorization header' }
+          }));
+          return;
+        }
+        
+        if (!extractedSecret || extractedSecret.length < 16) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32000, message: 'Invalid API key or secret too short' }
+          }));
+          return;
+        }
+        
+        this.stats.totalRequests++;
+        
+        this.logMessage('info', `🤖 Brain Proxy MCP request`, {
+          Route: extractedRoute,
+          Method: request.method,
+          ID: request.id ? request.id.toString().substring(0, 8) : 'none'
+        });
+        
+        const connector = this.connectors.get(extractedRoute);
+        
+        // Verify the brain key matches
+        if (connector && connector.token !== extractedSecret) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32000, message: 'Forbidden: Invalid credentials for route' }
+          }));
+          return;
+        }
+        
+        if (!connector || connector.ws.readyState !== 1) {
+          this.stats.offlineResponses++;
+          
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { 
+              code: -32000, 
+              message: `Brain offline. Please ensure BrainBridge is running locally with: magi start`
+            }
+          }));
+          return;
+        }
+        
+        // Update last seen
+        connector.lastSeen = Date.now();
+        
+        // Forward MCP request to BrainBridge
+        const requestId = request.id || `mcp-${Date.now()}`;
+        
+        // Set timeout for response
+        const timeout = setTimeout(() => {
+          this.pendingRequests.delete(requestId);
+          res.writeHead(504, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: { code: -32000, message: 'Request timeout' }
+          }));
+        }, 30000);
+        
+        // Store pending request
+        this.pendingRequests.set(requestId, {
+          resolve: (response) => {
+            clearTimeout(timeout);
+            this.pendingRequests.delete(requestId);
+            
+            // Forward MCP response to Claude.ai
+            res.writeHead(200, { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            });
+            res.end(JSON.stringify(response));
+          },
+          reject: (error) => {
+            clearTimeout(timeout);
+            this.pendingRequests.delete(requestId);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+              jsonrpc: '2.0',
+              id: request.id || null,
+              error: { code: -32000, message: error.message || 'Internal error' }
+            }));
+          },
+          timeout
+        });
+        
+        // Send to BrainBridge via WebSocket
+        connector.ws.send(JSON.stringify({
+          ...request,
+          id: requestId
+        }));
+        
+      } catch (error) {
+        this.logMessage('error', `❌ Brain Proxy MCP error`, { 
+          Error: error.message 
+        });
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32700, message: 'Parse error' }
+        }));
+      }
+    });
   }
 }
 

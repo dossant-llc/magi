@@ -25,13 +25,11 @@ const magiConfigTemplate = {
   "auth": {
     "type": "custom_auth",
     "custom_auth_type": "api_key",
-    "authorization_type": "custom",
+    "authorization_type": "bearer",
     "verification_tokens": {
       "openai": "your-openai-verification-token"
     },
-    "custom_headers": {
-      "X-Brain-Key": "your-unique-brain-key-here"
-    }
+    "api_key": "route:secret"
   },
   "api": {
     "type": "openapi",
@@ -42,35 +40,10 @@ const magiConfigTemplate = {
   "contact_email": "support@agiforme.ai",
   "legal_info_url": `${protocol}://${domain}${legalPath}`,
   "servers": {
-    "default": `${protocol}://${domain}${bpHttpPath}/rpc/default-user`
+    "default": `${protocol}://${domain}${bpHttpPath}/rpc/_auto`
   }
 };
 
-// Template for fixed config (same structure)
-const magiConfigFixedTemplate = {
-  "schema_version": "v1",
-  "name_for_model": "agiforme_brain_v2",
-  "name_for_human": "AGIfor.me Brain v2",
-  "description_for_model": "FIXED VERSION - Access user's personal AI memory bank through AGIfor.me Brain Proxy. Store and retrieve personal memories, insights, and knowledge using proper Custom GPT authentication headers.",
-  "description_for_human": "Your personal AI memory bank v2 - store and access your memories, insights, and knowledge through AGIfor.me (Fixed Authentication).",
-  "auth": {
-    "type": "custom_auth",
-    "custom_auth_type": "api_key",
-    "authorization_type": "custom",
-    "verification_tokens": {
-      "openai": "your-openai-verification-token-v2"
-    }
-  },
-  "api": {
-    "type": "openapi",
-    "url": `${protocol}://${domain}${bpHttpPath}/openapi.json`,
-    "has_user_authentication": true
-  },
-  "logo_url": `${protocol}://${domain}${faviconPath}`,
-  "contact_email": "support@agiforme.ai",
-  "legal_info_url": `${protocol}://${domain}${legalPath}`,
-  "privacy_policy_url": `${protocol}://${domain}${privacyPath}`
-};
 
 // Write configuration files
 try {
@@ -80,11 +53,6 @@ try {
     JSON.stringify(magiConfigTemplate, null, 2)
   );
   
-  // Write fixed config
-  fs.writeFileSync(
-    path.join(__dirname, 'magi-custom-gpt-config-fixed.json'),
-    JSON.stringify(magiConfigFixedTemplate, null, 2)
-  );
   
   // Write static config (for web serving)
   fs.writeFileSync(

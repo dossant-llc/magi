@@ -165,7 +165,7 @@ After importing the OpenAPI schema, you MUST add authentication:
    - **Auth Type:** API Key
    - **API Key:** Your Brain Proxy secret from `.env` (e.g., `8f840af7792e4672a67dfb21754a571f`)
    - **Add to:** Header
-   - **Header name:** `X-Brain-Key`
+   - **Authorization:** Bearer token
 
 **Test the action in GPT builder:**
 ```json
@@ -178,8 +178,8 @@ After importing the OpenAPI schema, you MUST add authentication:
 ```
 
 If you get a 500 error or "Unauthorized" response, verify:
-1. Your `X-Brain-Key` header matches your `BRAIN_PROXY_SECRET` in `.env`
-2. Your route name matches your `BRAIN_PROXY_ROUTE` in `.env`
+1. Your Bearer token uses composite format: `route:secret` (e.g., `ig-4f2a8b9d:yoursecrethere`)
+2. You're using the `/rpc/_auto` endpoint which automatically extracts the route from your API key
 3. Your local BrainBridge is running (`npm run dev` in `brainbridge/`)
 
 ## Usage Examples
@@ -240,22 +240,20 @@ This is the most common issue - ChatGPT is not sending the correct authenticatio
 
 1. **Verify authentication header:**
    ```bash
-   # Test with your secret as X-Brain-Key header
-   curl -X POST https://your-server.com/bp/rpc/your-route-name \
+   # Test with composite Bearer token
+   curl -X POST https://your-server.com/bp/rpc/_auto \
      -H "Content-Type: application/json" \
-     -H "X-Brain-Key: your-brain-proxy-secret" \
+     -H "Authorization: Bearer your-route:your-secret" \
      -d '{"id": "test", "method": "ai_status", "params": {}}'
    ```
 
 2. **In ChatGPT Action Configuration:**
-   - Authentication Type: API Key
-   - Add to: Header
-   - Header name: `X-Brain-Key`
-   - API Key: Your exact `BRAIN_PROXY_SECRET` value from `.env`
+   - Authentication Type: API Key (Bearer)
+   - API Key: Composite format `route:secret` (e.g., `ig-4f2a8b9d:yoursecrethere`)
 
 3. **Common mistakes:**
-   - Using wrong header name (must be `X-Brain-Key`)
-   - Using route name instead of secret for authentication
+   - Not using the composite key format (must be `route:secret`)
+   - Using route name instead of full composite key for authentication
    - Not configuring authentication at all in GPT Action
 
 ### GPT Not Responding

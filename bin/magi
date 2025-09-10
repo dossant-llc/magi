@@ -42,6 +42,7 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('  logs      Stream BrainBridge logs (if running)');
   console.log('  register  Setup Brain Proxy for ChatGPT integration');
   console.log('            Options: --local (use localhost instead of production server)');
+  console.log('                     --reset (regenerate existing credentials)');
   console.log('  index     Build vector index for AI search');
   console.log('            Options: --force (rebuild all)');
   console.log('  install   Install integrations');
@@ -272,16 +273,79 @@ switch (command) {
       const os = require('os');
       const fs = require('fs');
       
-      // Generate credentials
-      console.log(`${colors.system}Generating secure credentials...${colors.reset}`);
+      // Check for existing credentials in .env file (root project .env)
+      const envPath = path.join(__dirname, '..', '.env');
+      let route, secret;
       
-      // Create route: initials + 8 char hex (e.g., ig-4f2a8b9d)
-      const initials = os.userInfo().username.substring(0, 2).toLowerCase();
-      const routeSuffix = crypto.randomBytes(4).toString('hex');
-      const route = `${initials}-${routeSuffix}`;
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        const routeMatch = envContent.match(/^BRAIN_PROXY_ROUTE=(.+)$/m);
+        const secretMatch = envContent.match(/^BRAIN_PROXY_SECRET=(.+)$/m);
+        
+        if (routeMatch && secretMatch) {
+          route = routeMatch[1];
+          secret = secretMatch[1];
+          console.log(`${colors.warning}⚠️ Existing credentials found in .env file${colors.reset}`);
+          console.log(`${colors.hint}To regenerate credentials, delete the BRAIN_PROXY_* lines from:${colors.reset}`);
+          console.log(`${colors.hint}   ${envPath}${colors.reset}`);
+          console.log(`${colors.hint}Or use: ${colors.prompt}magi register --reset${colors.reset}`);
+          console.log('');
+        }
+      }
       
-      // Create secret: 32 char hex
-      const secret = crypto.randomBytes(16).toString('hex');
+      // Track if we're using existing credentials
+      const usingExisting = !!(route && secret && !args.includes('--reset'));
+      
+      // Generate new credentials if none exist or --reset flag is used
+      if (!usingExisting) {
+        if (args.includes('--reset')) {
+          console.log(`${colors.system}🔄 Resetting credentials (--reset flag detected)...${colors.reset}`);
+        } else {
+          console.log(`${colors.system}Generating secure credentials...${colors.reset}`);
+        }
+        
+        // Create route: initials + 8 char hex (e.g., ig-4f2a8b9d)
+        const initials = os.userInfo().username.substring(0, 2).toLowerCase();
+        const routeSuffix = crypto.randomBytes(4).toString('hex');
+        route = `${initials}-${routeSuffix}`;
+        
+        // Create secret: 32 char hex
+        secret = crypto.randomBytes(16).toString('hex');
+        
+        // Write new credentials to .env file
+        console.log(`${colors.system}Writing credentials to .env file...${colors.reset}`);
+        
+        // Read existing .env content
+        let envContent = '';
+        if (fs.existsSync(envPath)) {
+          envContent = fs.readFileSync(envPath, 'utf8');
+          // Remove existing BRAIN_PROXY_* lines if doing a reset
+          if (args.includes('--reset')) {
+            envContent = envContent.split('\n')
+              .filter(line => !line.startsWith('BRAIN_PROXY_'))
+              .join('\n');
+          }
+        }
+        
+        // Determine proxy URL (production vs development)
+        const proxyUrl = args.includes('--local') 
+          ? 'wss://localhost:9025/bp/connect'
+          : 'wss://hub.m.agifor.me:9025/bp/connect';
+        
+        // Append new configuration
+        const newConfig = `
+# Brain Proxy Configuration
+BRAIN_PROXY_ENABLED=true
+BRAIN_PROXY_URL=${proxyUrl}
+BRAIN_PROXY_ROUTE=${route}
+BRAIN_PROXY_SECRET=${secret}
+BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
+`;
+        
+        fs.writeFileSync(envPath, envContent + newConfig);
+        console.log(`${colors.success}✅ Credentials saved to ${envPath}${colors.reset}`);
+        console.log('');
+      }
       
       console.log(`${colors.success}✅ Route: ${colors.prompt}${route}${colors.reset}`);
       console.log(`${colors.success}✅ Secret: ${colors.prompt}${secret}${colors.reset}`);
@@ -337,34 +401,49 @@ switch (command) {
       
       function showConfiguration() {
         console.log('');
-        console.log(`${colors.info}📝 Add these to your .env file:${colors.reset}`);
-        console.log(`${colors.hint}─────────────────────────────────${colors.reset}`);
-        console.log(`BRAIN_PROXY_ENABLED=true`);
-        console.log(`BRAIN_PROXY_URL=${proxyUrl}`);
-        console.log(`BRAIN_PROXY_ROUTE=${route}`);
-        console.log(`BRAIN_PROXY_SECRET=${secret}`);
-        console.log(`BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp`);
-        console.log(`${colors.hint}─────────────────────────────────${colors.reset}`);
-        console.log('');
         
-        console.log(`${colors.hint}💡 Quick setup:${colors.reset}`);
-        const envPath = path.join(__dirname, '..', 'services', 'brainbridge', '.env');
-        console.log(`   ${colors.prompt}echo '' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo '# Brain Proxy Configuration' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_ENABLED=true' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_URL=${proxyUrl}' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_ROUTE=${route}' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_SECRET=${secret}' >> ${envPath}${colors.reset}`);
-        console.log(`   ${colors.prompt}echo 'BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp' >> ${envPath}${colors.reset}`);
-        console.log('');
+        // Create composite API key with route:secret format
+        const compositeApiKey = `${route}:${secret}`;
         
         console.log(`${colors.success}To connect ChatGPT:${colors.reset}`);
         console.log(`1. Go to ChatGPT → Create GPT → Configure`);
         console.log(`2. Add action with URL: ${colors.prompt}${openApiUrl}${colors.reset}`);
-        console.log(`3. Add authentication: ${colors.prompt}Bearer ${secret}${colors.reset} (or legacy header X-Brain-Key: ${secret})`);
+        console.log(`3. Add authentication: ${colors.prompt}Bearer ${compositeApiKey}${colors.reset}`);
+        console.log(`   ${colors.hint}(This includes both your route and secret)${colors.reset}`);
         console.log(`4. Save and test with "${colors.prompt}magi status${colors.reset}"`);
         console.log('');
-        console.log(`${colors.hint}💡 Restart BrainBridge after updating .env: ${colors.prompt}magi restart${colors.reset}`);
+        
+        const mcpUrl = args.includes('--local')
+          ? 'https://localhost/bp/mcp'
+          : 'https://hub.m.agifor.me/bp/mcp';
+        
+        console.log(`${colors.success}To connect Claude.ai:${colors.reset}`);
+        console.log(`${colors.warning}⚠️ MCP connectors require Claude for Work (Enterprise)${colors.reset}`);
+        console.log('');
+        // Generate today's auth code
+        const crypto = require('crypto');
+        const today = new Date().toISOString().split('T')[0];
+        const authCode = crypto.createHash('sha256')
+          .update(`${route}:${secret}:${today}`)
+          .digest('hex')
+          .substring(0, 6)
+          .toUpperCase();
+        
+        console.log(`${colors.info}Plan B - Daily Auth Code Method:${colors.reset}`);
+        console.log(`1. Run ${colors.prompt}magi status${colors.reset} to get today's auth code`);
+        console.log(`2. Today's code: ${colors.prompt}${authCode}${colors.reset}`);
+        console.log(`3. Add Custom Connector in Claude.ai:`);
+        console.log(`   - URL: ${colors.prompt}https://hub.m.agifor.me/bp/claude-api.json${colors.reset}`);
+        console.log(`   - No authentication required`);
+        console.log(`4. In Claude.ai, start with: ${colors.prompt}"magi auth ${authCode}"${colors.reset}`);
+        console.log(`5. Then use: ${colors.prompt}"magi search [query]"${colors.reset} etc.`);
+        console.log('');
+        console.log(`${colors.hint}💡 Code changes daily at midnight${colors.reset}`);
+        
+        // Only show restart hint if credentials were new or reset
+        if (!usingExisting) {
+          console.log(`${colors.hint}💡 Restart BrainBridge to load new credentials: ${colors.prompt}magi restart${colors.reset}`);
+        }
       }
       
     } catch (error) {

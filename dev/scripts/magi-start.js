@@ -1,23 +1,27 @@
-#!/usr/bin/env node
-
-const { spawn, execSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
-const { getProjectRoot, getMemoriesDir } = require('../../utils/magi-root');
+const fs = require('fs');
+const { spawn, execSync } = require('child_process');
+const { colors } = require('./common');
+const { getProjectRoot } = require('./path-utils');
 
-// Load .env configuration
-require('dotenv').config({ path: path.join(getProjectRoot(), '.env') });
+// Configure global error handler
+process.on('uncaughtException', (error) => {
+  console.error(`${colors.error}❌ Uncaught error: ${error.message}${colors.reset}`);
+  releaseLock();
+  process.exit(1);
+});
 
-const colors = {
-  prompt: '\x1b[36m',
-  success: '\x1b[92m',
-  system: '\x1b[33m',
-  error: '\x1b[31m',
-  hint: '\x1b[90m',
-  info: '\x1b[36m',
-  warning: '\x1b[33m',
-  reset: '\x1b[0m'
-};
+// Cleanup on exit
+process.on('exit', () => {
+  releaseLock();
+});
+
+// Handle SIGTERM
+process.on('SIGTERM', () => {
+  console.log(`\n${colors.system}🛑 Received SIGTERM, cleaning up...${colors.reset}`);
+  releaseLock();
+  process.exit(0);
+});
 
 // Check for --dev flag to control verbosity
 const isDevMode = process.argv.includes('--dev');
@@ -74,8 +78,13 @@ function acquireLock() {
         
         process.exit(1);
       } catch (e) {
-        // Process is dead, remove stale lock file
-        console.log(`${colors.warning}🧹 Removing stale lock file${colors.reset}`);
+        // Process is dead but lock file exists - this is a stale lock
+        console.log(`${colors.warning}⚠️ Found stale lock file from non-running process${colors.reset}`);
+        console.log(`${colors.system}📍 Stale lock details:${colors.reset}`);
+        console.log(`   PID: ${lockData.pid} (not running)`);
+        console.log(`   Started: ${new Date(lockData.started).toLocaleString()}`);
+        console.log(`   Mode: ${lockData.dev ? 'development (--dev)' : 'production'}`);
+        console.log(`${colors.success}🧹 Cleaning up stale lock and proceeding with startup...${colors.reset}\n`);
         fs.unlinkSync(lockFile);
       }
     }
@@ -87,355 +96,54 @@ function acquireLock() {
       dev: isDevMode
     };
     fs.writeFileSync(lockFile, JSON.stringify(lockData, null, 2));
-    
-    console.log(`${colors.system}🔒 Acquired singleton lock (PID: ${process.pid})${colors.reset}`);
-    return true;
   } catch (error) {
-    console.error(`${colors.error}❌ Failed to acquire lock: ${error.message}${colors.reset}`);
+    console.error(`${colors.error}❌ Lock acquisition failed: ${error.message}${colors.reset}`);
     process.exit(1);
   }
 }
 
 function releaseLock() {
   try {
-    // Stop MCP log file watcher
-    if (logFileWatcher) {
-      fs.unwatchFile(sharedLogFile);
-      logFileWatcher = null;
-    }
-    
-    // Clean up shared log file
-    if (fs.existsSync(sharedLogFile)) {
-      try {
-        fs.unlinkSync(sharedLogFile);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
-    
-    // Remove lock file
     if (fs.existsSync(lockFile)) {
-      fs.unlinkSync(lockFile);
-      console.log(`${colors.system}🔓 Released singleton lock${colors.reset}`);
+      const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      if (lockData.pid === process.pid) {
+        fs.unlinkSync(lockFile);
+      }
     }
   } catch (error) {
     // Ignore errors during cleanup
   }
 }
 
-// Acquire singleton lock before proceeding
+// Main startup execution
+console.log(`${colors.system}🔄 Starting BrainBridge service...${colors.reset}`);
 acquireLock();
 
-console.log(`${colors.system}🧙 Starting Magi BrainBridge Service${colors.reset}`);
-console.log(`${colors.hint}Press Ctrl+C to stop${colors.reset}\n`);
+const projectRoot = getProjectRoot();
+const brainbridgeService = path.join(projectRoot, 'services', 'brainbridge');
 
-// Check if BrainBridge is already running (legacy check, should be caught by lock)
-try {
-  const processes = execSync('ps aux | grep "brainbridge.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
-  if (processes) {
-    console.log(`${colors.warning}⚠️ Found existing BrainBridge processes (cleaning up)${colors.reset}`);
-    // Auto-cleanup since we have the lock
-    try {
-      execSync('pkill -f "brainbridge.*stdio"');
-      console.log(`${colors.success}✅ Cleaned up existing processes${colors.reset}`);
-    } catch (cleanupError) {
-      console.log(`${colors.hint}Manual cleanup may be needed: pkill -f "brainbridge.*stdio"${colors.reset}`);
-    }
-  }
-} catch (e) {
-  // No existing processes, good to start
-}
-
-// Start BrainBridge service
-console.log(`${colors.info}🚀 Starting BrainBridge service...${colors.reset}`);
-console.log(`${colors.hint}AI Provider: ${process.env.AI_PROVIDER || 'ollama (default)'}${colors.reset}`);
-
-const server = spawn('npm', ['run', 'dev:stdio', '--workspace=services/brainbridge'], {
-  stdio: ['pipe', 'pipe', 'pipe'],
-  cwd: getProjectRoot(),
-  env: { ...process.env } // Pass through all environment variables
-});
-
-let isReady = false;
-let lineCount = 0;
-
-// Monitor shared MCP log file for connection events from Claude Code
-const sharedLogFile = path.join(getProjectRoot(), '.magi-mcp.log');
-let logFileWatcher = null;
-let lastLogPosition = 0;
-
-function setupMCPLogMonitoring() {
-  // Clear existing log file on startup
-  try {
-    fs.writeFileSync(sharedLogFile, '');
-  } catch (e) {
-    // Ignore file creation errors
-  }
-
-  // Watch for MCP log file changes
-  if (fs.existsSync(sharedLogFile)) {
-    try {
-      logFileWatcher = fs.watchFile(sharedLogFile, { interval: 100 }, (curr, prev) => {
-        if (curr.mtime > prev.mtime) {
-          readNewMCPLogs();
-        }
-      });
-    } catch (error) {
-      // Ignore watcher setup errors
-    }
-  }
-}
-
-function readNewMCPLogs() {
-  try {
-    const data = fs.readFileSync(sharedLogFile, 'utf8');
-    const lines = data.split('\n').filter(line => line.trim());
-    
-    // Only read new lines since last position
-    const newLines = lines.slice(Math.floor(lastLogPosition / 100));
-    lastLogPosition = data.length;
-    
-    newLines.forEach(line => {
-      if (!line.trim()) return;
-      
-      try {
-        const logEntry = JSON.parse(line);
-        const timestamp = new Date(logEntry.timestamp).toLocaleTimeString();
-        
-        switch (logEntry.event) {
-          case 'connection_established':
-            const claudePid = logEntry.claude_pid ? ` (PID: ${logEntry.claude_pid})` : '';
-            console.log(`${colors.success}📡 [${timestamp}] Claude Code connected via MCP${claudePid}${colors.reset}`);
-            break;
-          case 'tool_called':
-            console.log(`${colors.info}🔧 [${timestamp}] Claude Code called: ${logEntry.tool}${colors.reset}`);
-            break;
-          case 'connection_closed':
-            console.log(`${colors.warning}📡 [${timestamp}] Claude Code disconnected from MCP${colors.reset}`);
-            break;
-          case 'bridge_start':
-            const bridgeClaudePid = logEntry.claude_pid ? ` (PID: ${logEntry.claude_pid})` : '';
-            console.log(`${colors.system}🌉 [${timestamp}] MCP Bridge started for Claude Code${bridgeClaudePid}${colors.reset}`);
-            break;
-        }
-      } catch (parseError) {
-        // Ignore malformed log entries
-      }
-    });
-  } catch (error) {
-    // Ignore read errors
-  }
-}
-
-// Start MCP log monitoring
-setupMCPLogMonitoring();
-
-// Handle server output
-server.stdout.setEncoding('utf8');
-server.stdout.on('data', (data) => {
-  const lines = data.split('\n').filter(line => line.trim());
-  
-  lines.forEach(line => {
-    lineCount++;
-    const timestamp = new Date().toLocaleTimeString();
-    const formattedLine = formatLogLine(line, timestamp);
-    if (formattedLine) {
-      console.log(formattedLine);
-    }
-    
-    // Check for ready indicators
-    if (!isReady && (line.includes('MCP server running') || line.includes('Server started'))) {
-      isReady = true;
-      setTimeout(() => {
-        console.log(`\n${colors.success}✅ BrainBridge is ready! Service running in background.${colors.reset}`);
-        console.log(`${colors.hint}🔄 Streaming logs... (Ctrl+C to stop)${colors.reset}\n`);
-        showPeriodicStatus();
-      }, 1000);
-    }
-    
-    // Show periodic status updates less frequently
-    if (lineCount % 50 === 0) {
-      showPeriodicStatus();
-    }
-  });
-});
-
-server.stderr.setEncoding('utf8');
-server.stderr.on('data', (data) => {
-  const lines = data.split('\n').filter(line => line.trim());
-  lines.forEach(line => {
-    const timestamp = new Date().toLocaleTimeString();
-    console.log(`${colors.hint}[${timestamp}]${colors.reset} ${colors.error}⚠️ ${line}${colors.reset}`);
-  });
-});
-
-server.on('error', (error) => {
-  console.error(`${colors.error}❌ Failed to start BrainBridge: ${error.message}${colors.reset}`);
-  releaseLock();
+// Check if BrainBridge service exists
+if (!fs.existsSync(brainbridgeService)) {
+  console.error(`${colors.error}❌ BrainBridge service not found at: ${brainbridgeService}${colors.reset}`);
   process.exit(1);
+}
+
+// Start BrainBridge
+console.log(`${colors.info}🚀 Launching BrainBridge...${colors.reset}`);
+const child = spawn('npm', ['run', 'start'], {
+  cwd: brainbridgeService,
+  stdio: 'inherit',
+  detached: false
 });
 
-server.on('close', (code) => {
-  if (code === 0) {
-    console.log(`${colors.system}👋 BrainBridge stopped gracefully${colors.reset}`);
-  } else {
-    console.log(`${colors.error}❌ BrainBridge exited with code ${code}${colors.reset}`);
-  }
+child.on('close', (code) => {
+  console.log(`${colors.system}BrainBridge process exited with code ${code}${colors.reset}`);
   releaseLock();
   process.exit(code);
 });
 
-// Handle Ctrl+C gracefully
-process.on('SIGINT', () => {
-  console.log(`\n${colors.system}🛑 Stopping BrainBridge service...${colors.reset}`);
-  server.kill('SIGTERM');
-  
-  // Force kill after 5 seconds if needed
-  setTimeout(() => {
-    server.kill('SIGKILL');
-    releaseLock();
-    process.exit(1);
-  }, 5000);
-});
-
-// Handle other exit signals
-process.on('SIGTERM', () => {
-  console.log(`\n${colors.system}🛑 Received SIGTERM, stopping...${colors.reset}`);
+child.on('error', (error) => {
+  console.error(`${colors.error}❌ BrainBridge startup failed: ${error.message}${colors.reset}`);
   releaseLock();
-  server.kill('SIGTERM');
-  process.exit(0);
+  process.exit(1);
 });
-
-process.on('exit', () => {
-  releaseLock();
-});
-
-/**
- * Format log line with colors and timestamp
- */
-function formatLogLine(line, timestamp) {
-  if (!line.trim()) return '';
-  
-  // Skip verbose dotenv messages
-  if (line.includes('[dotenv@') && line.includes('tip:')) return '';
-  
-  // Skip duplicate/verbose startup messages unless in dev mode
-  if (!isDevMode) {
-    const skipPatterns = [
-      'AI Provider Factory initialized',
-      'OpenAI Chat Provider initialized with model',
-      'OpenAI Embedding Provider initialized with model',
-      'EmbeddingService initialized with openai provider',
-      'AI Service initialized with openai provider',
-      'Building tools list',
-      'Built 8 tools successfully',
-      'Tools verification: Found 8 tools',
-      'AI Query tool available',
-      'AI Save tool available',
-      '✅ AI tools verification passed',
-      'Initializing BrainXchange integration',
-      'BrainXchange integration initialized successfully',
-      'Brain Proxy connector disabled via configuration'
-    ];
-    
-    for (const pattern of skipPatterns) {
-      if (line.includes(pattern)) return '';
-    }
-  }
-  
-  // If line already has BrainBridge timestamp (🕐), don't add our timestamp
-  if (line.includes('🕐')) {
-    return line; // Return as-is with original formatting
-  }
-  
-  const time = `${colors.hint}[${timestamp}]${colors.reset}`;
-  
-  // If line already has formatting (ANSI codes), just add timestamp
-  if (line.includes('\x1b[') || line.includes('[0m')) {
-    return `${time} ${line}`;
-  }
-  
-  // Otherwise, add our own formatting
-  if (line.includes('[ERROR]') || line.includes('ERROR:')) {
-    return `${time} ${colors.error}❌ ${line}${colors.reset}`;
-  } else if (line.includes('[WARN]') || line.includes('WARN:')) {
-    return `${time} ${colors.warning}⚠️  ${line}${colors.reset}`;
-  } else if (line.includes('[INFO]') || line.includes('INFO:')) {
-    return `${time} ${colors.info}ℹ️  ${line}${colors.reset}`;
-  } else if (line.includes('[DEBUG]') || line.includes('DEBUG:')) {
-    return `${time} ${colors.hint}🔍 ${line}${colors.reset}`;
-  } else if (line.includes('[TRACE]') || line.includes('TRACE:')) {
-    return `${time} ${colors.hint}📍 ${line}${colors.reset}`;
-  } else {
-    return `${time} ${line}`;
-  }
-}
-
-/**
- * Show periodic system status
- */
-function showPeriodicStatus() {
-  try {
-    let statusLine = `${colors.system}━━━ STATUS ━━━${colors.reset} `;
-    
-    // Check BrainBridge processes
-    try {
-      const processes = execSync('ps aux | grep "tsx.*server.ts.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
-      const count = processes ? processes.split('\n').filter(line => line.trim()).length : 0;
-      statusLine += `🧠 BB:${count} `;
-    } catch (e) {
-      statusLine += '🧠 BB:0 ';
-    }
-    
-    // Check AI Provider
-    const aiProvider = process.env.AI_PROVIDER || 'ollama';
-    if (aiProvider === 'openai') {
-      // Check OpenAI by checking if API key is configured
-      try {
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (apiKey && apiKey.startsWith('sk-')) {
-          statusLine += `🤖 OpenAI:✅ `;
-        } else {
-          statusLine += `🤖 OpenAI:❌ `;
-        }
-      } catch (e) {
-        statusLine += '🤖 OpenAI:❌ ';
-      }
-    } else {
-      // Check Ollama
-      try {
-        const response = execSync('curl -s -m 2 http://localhost:11434/api/tags', { encoding: 'utf8' });
-        const data = JSON.parse(response);
-        statusLine += `🤖 Ollama:${data.models?.length || 0} `;
-      } catch (e) {
-        statusLine += '🤖 Ollama:❌ ';
-      }
-    }
-    
-    // Check memory count across all privacy levels
-    try {
-      const memoriesDir = getMemoriesDir();
-      let totalMemories = 0;
-      if (fs.existsSync(memoriesDir)) {
-        const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
-        for (const level of privacyLevels) {
-          const levelDir = path.join(memoriesDir, level);
-          if (fs.existsSync(levelDir)) {
-            const files = fs.readdirSync(levelDir).filter(f => f.endsWith('.md'));
-            totalMemories += files.length;
-          }
-        }
-      }
-      statusLine += `📁 Mem:${totalMemories}`;
-    } catch (e) {
-      statusLine += '📁 Mem:?';
-    }
-    
-    console.log(statusLine);
-  } catch (error) {
-    // Ignore status check errors
-  }
-}
-
-// Show initial status after delay
-setTimeout(showPeriodicStatus, 3000);

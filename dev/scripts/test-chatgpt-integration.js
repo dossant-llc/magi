@@ -92,9 +92,13 @@ const testCases = [
 // Make HTTP request
 function makeRequest(testCase) {
   return new Promise((resolve, reject) => {
-    const url = `${BRAIN_PROXY_BASE_URL}/rpc/${BRAIN_PROXY_ROUTE}`;
+    // Use _auto route with composite API key
+    const url = `${BRAIN_PROXY_BASE_URL}/rpc/_auto`;
     const urlObj = new URL(url);
     const payload = JSON.stringify(testCase.payload);
+    
+    // Create composite API key (route:secret)
+    const compositeApiKey = `${BRAIN_PROXY_ROUTE}:${BRAIN_PROXY_SECRET}`;
     
     const options = {
       hostname: urlObj.hostname,
@@ -103,7 +107,7 @@ function makeRequest(testCase) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Brain-Key': BRAIN_PROXY_SECRET,
+        'Authorization': `Bearer ${compositeApiKey}`,
         'Content-Length': Buffer.byteLength(payload)
       }
     };

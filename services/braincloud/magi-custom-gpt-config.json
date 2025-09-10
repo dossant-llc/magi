@@ -7,13 +7,11 @@
   "auth": {
     "type": "custom_auth",
     "custom_auth_type": "api_key",
-    "authorization_type": "custom",
+    "authorization_type": "bearer",
     "verification_tokens": {
       "openai": "your-openai-verification-token"
     },
-    "custom_headers": {
-      "X-Brain-Key": "your-unique-brain-key-here"
-    }
+    "api_key": "route:secret"
   },
   "api": {
     "type": "openapi",
@@ -24,6 +22,6 @@
   "contact_email": "support@agiforme.ai",
   "legal_info_url": "https://your-server.com/legal",
   "servers": {
-    "default": "https://your-server.com/bp/rpc/default-user"
+    "default": "https://your-server.com/bp/rpc/_auto"
   }
 }

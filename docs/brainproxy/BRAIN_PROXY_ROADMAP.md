@@ -78,9 +78,9 @@ graph LR
 
 3. **Request Phase**:
    ```
-   ChatGPT → POST /bp/rpc/ig-4f2a8b9d
-   Headers: X-Brain-Key: abc123...
-   Brain Proxy → Validates token matches stored route
+   ChatGPT → POST /bp/rpc/_auto
+   Headers: Authorization: Bearer ig-4f2a8b9d:abc123...
+   Brain Proxy → Extracts route from composite key and validates
    ```
 
 ### 🛠️ Implementation Tasks

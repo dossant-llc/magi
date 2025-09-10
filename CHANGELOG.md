@@ -131,7 +131,7 @@ This is the first **developer preview** of **magi** - Your Personal AI That Reme
 
 ```bash
 # Quick Start (Recommended)
-git clone [repository-url] agiforme
+git clone https://github.com/dossant-llc/magi agiforme
 cd agiforme
 npm run magi
 
