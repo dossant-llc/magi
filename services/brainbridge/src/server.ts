@@ -457,6 +457,22 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
           },
         });
       }
+
+      // Add Brain Proxy command tool
+      tools.push({
+        name: 'brain_proxy_command',
+        description: 'Handle Brain Proxy connection commands (enable, disable, status)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            command: {
+              type: 'string',
+              description: 'Brain Proxy command to execute: enable, disable, or status',
+            },
+          },
+          required: ['command'],
+        },
+      });
       
       this.loggerService.log(`Built ${tools.length} tools successfully`);
       return { tools };
@@ -525,6 +541,8 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
         return await this.handleToggleTraceMode(args);
       case 'brainxchange_command':
         return await this.handleBrainXchangeCommand(args);
+      case 'brain_proxy_command':
+        return await this.handleBrainProxyCommand(args);
       
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -887,6 +905,129 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
           {
             type: 'text',
             text: `❌ BrainXchange command failed: ${errorMessage}`
+          }
+        ]
+      };
+    }
+  }
+
+  private async handleBrainProxyCommand(args: any) {
+    const { command } = args;
+    
+    if (!command || typeof command !== 'string') {
+      throw new Error('Command is required and must be a string');
+    }
+    
+    this.loggerService.winston.info('Brain Proxy command received', {
+      component: 'BrainBridgeServer',
+      action: 'brain_proxy_command',
+      command
+    });
+
+    try {
+      const normalizedCommand = command.toLowerCase().trim();
+      
+      switch (normalizedCommand) {
+        case 'enable':
+          if (this.brainProxyConnector) {
+            this.brainProxyConnector.enable();
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '✅ BrainProxy enabled and connecting...'
+                }
+              ]
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '⚠️  BrainProxy connector not initialized (check BRAIN_PROXY_SECRET and other config)'
+                }
+              ]
+            };
+          }
+          
+        case 'disable':
+          if (this.brainProxyConnector) {
+            this.brainProxyConnector.disable();
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '🔇 BrainProxy disabled'
+                }
+              ]
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '⚠️  BrainProxy connector not initialized'
+                }
+              ]
+            };
+          }
+          
+        case 'status':
+          if (this.brainProxyConnector) {
+            const status = this.brainProxyConnector.getStatus();
+            const statusEmoji = status.connected ? '🟢' : '🔴';
+            const connectionStatus = status.connected ? 'Connected' : 'Disconnected';
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `${statusEmoji} BrainProxy Status: ${connectionStatus}\n` +
+                        `Route: ${status.route}\n` +
+                        `Reconnect attempts: ${status.attempts}`
+                }
+              ]
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: '🔴 BrainProxy connector not initialized'
+                }
+              ]
+            };
+          }
+          
+        default:
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `❓ Unknown BrainProxy command: "${command}"\n\n` +
+                      `Available commands:\n` +
+                      `• enable - Enable BrainProxy connection\n` +
+                      `• disable - Disable BrainProxy connection\n` +
+                      `• status - Show BrainProxy connection status`
+              }
+            ]
+          };
+      }
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.loggerService.winston.error('Brain Proxy command failed', {
+        component: 'BrainBridgeServer',
+        action: 'brain_proxy_command_error',
+        command,
+        error: errorMessage
+      });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ BrainProxy command failed: ${errorMessage}`
           }
         ]
       };

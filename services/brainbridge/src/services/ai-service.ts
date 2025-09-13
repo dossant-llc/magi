@@ -334,6 +334,256 @@ ${content}
   /**
    * Query memories with AI-powered synthesis
    */
+  /**
+   * Generate synthesis prompt based on query classification and temporal context
+   */
+  private generateSynthesisPrompt(
+    question: string,
+    memories: Array<{ filename: string; content: string; category?: string; tags?: string; relevanceScore: number }>,
+    classification: { type: string; responseStyle: string; temporalSensitive: boolean }
+  ): string {
+    // Extract dates from filenames and sort memories chronologically
+    const memoriesWithDates = memories.map((memory, index) => {
+      const dateMatch = memory.filename.match(/(\d{4}-\d{2}-\d{2})/);
+      return {
+        ...memory,
+        originalIndex: index + 1,
+        extractedDate: dateMatch ? dateMatch[1] : null,
+        parsedDate: dateMatch ? new Date(dateMatch[1]) : null
+      };
+    });
+
+    // Sort by date if temporal sensitivity is high
+    const sortedMemories = classification.temporalSensitive
+      ? [...memoriesWithDates].sort((a, b) => {
+          if (!a.parsedDate && !b.parsedDate) return 0;
+          if (!a.parsedDate) return 1;
+          if (!b.parsedDate) return -1;
+          return b.parsedDate.getTime() - a.parsedDate.getTime(); // Newest first
+        })
+      : memoriesWithDates;
+
+    const baseInstructions = this.getResponseStyleInstructions(classification);
+    const temporalInstructions = classification.temporalSensitive
+      ? this.getTemporalInstructions()
+      : '';
+
+    const memoryContext = sortedMemories.map((memory) => {
+      const dateInfo = memory.extractedDate
+        ? ` (${memory.extractedDate})`
+        : '';
+
+      return `[${memory.originalIndex}] ${memory.filename}${dateInfo}
+Category: ${memory.category || 'unknown'}
+Tags: ${memory.tags || 'none'}
+Relevance Score: ${memory.relevanceScore.toFixed(3)}
+Content: ${memory.content?.slice(0, 800) || 'No content'}${(memory.content?.length || 0) > 800 ? '...' : ''}`;
+    }).join('\n\n');
+
+    return `You are an AI assistant helping a user understand their personal knowledge base.
+Answer their question using ONLY the provided context from their memories.
+
+Query Type: ${classification.type}
+Response Style: ${classification.responseStyle}
+Temporal Sensitivity: ${classification.temporalSensitive}
+
+Question: "${question}"
+
+${baseInstructions}
+
+${temporalInstructions}
+
+Context from user's memories${classification.temporalSensitive ? ' (ordered by date, newest first)' : ''}:
+${memoryContext}
+
+Reference specific memories when citing information (e.g., "According to your notes in [1]...").
+
+If the memories don't contain enough information to fully answer the question, say so and suggest what additional information might be helpful.`;
+  }
+
+  /**
+   * Get response style instructions based on classification
+   */
+  private getResponseStyleInstructions(classification: { type: string; responseStyle: string }): string {
+    const styleInstructions: Record<string, string> = {
+      conversational: 'Provide a natural, friendly response as if talking to a friend. Be warm and personal.',
+      structured: 'Organize your response clearly with headings, bullet points, or numbered lists as appropriate.',
+      technical: 'Be precise and detailed. Include technical specifics and accurate terminology.'
+    };
+
+    const typeInstructions: Record<string, string> = {
+      question: 'Answer the question directly and comprehensively.',
+      list: 'Provide a well-organized list or summary of the requested items.',
+      analytical: 'Analyze the information thoroughly and provide insights, patterns, or conclusions.',
+      lookup: 'Find and present the specific information requested.'
+    };
+
+    return `Response Style: ${styleInstructions[classification.responseStyle] || styleInstructions.conversational}
+
+Approach: ${typeInstructions[classification.type] || typeInstructions.question}`;
+  }
+
+  /**
+   * Get temporal-specific instructions for handling time-sensitive queries
+   */
+  private getTemporalInstructions(): string {
+    return `IMPORTANT - Temporal Context:
+- Pay special attention to dates and chronological order
+- When information conflicts across different time periods, prioritize more recent entries
+- If preferences or opinions have evolved over time, acknowledge this evolution (e.g., "You initially preferred X, but more recently have shifted to Y...")
+- Note any patterns or changes in thinking over time
+- If information is contradictory, explain the timeline of changes`;
+  }
+
+  /**
+   * Direct AI query without memory search (for analysis tasks)
+   */
+  async queryWithAI(prompt: string): Promise<string> {
+    try {
+      this.loggerService.trace('Direct AI query', { promptLength: prompt.length });
+
+      const response = await Promise.race([
+        this.chatProvider.chat({
+          model: this.chatProvider.getModelName(),
+          messages: [{ role: 'user', content: prompt }],
+          stream: false,
+        }),
+        new Promise((_, reject) => {
+          const timeoutMs = parseInt(process.env.AI_TIMEOUT || '60000');
+          setTimeout(() => reject(new Error(`AI chat timeout after ${timeoutMs/1000} seconds`)), timeoutMs);
+        })
+      ]) as any;
+
+      const answer = response.content.trim();
+      this.loggerService.trace('Direct AI query completed', { responseLength: answer.length });
+
+      return answer;
+    } catch (error: any) {
+      this.loggerService.log('Direct AI query failed', 'error');
+      this.loggerService.trace('AI query error details', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Apply temporal weighting to prioritize recent memories
+   */
+  private applyTemporalWeighting(memories: Array<{
+    filename: string;
+    content: string;
+    category?: string;
+    tags?: string;
+    relevanceScore: number;
+  }>): Array<{
+    filename: string;
+    content: string;
+    category?: string;
+    tags?: string;
+    relevanceScore: number;
+  }> {
+    const now = Date.now();
+
+    return memories.map(memory => {
+      try {
+        // Try to extract date from filename (YYYY-MM-DD format)
+        let createdAt: Date | null = null;
+        const dateMatch = memory.filename.match(/(\d{4}-\d{2}-\d{2})/);
+
+        if (dateMatch) {
+          createdAt = new Date(dateMatch[1]);
+        } else {
+          // Fallback: use file system stats if available
+          // For now, assume recent if no date found
+          createdAt = new Date(now - (7 * 24 * 60 * 60 * 1000)); // 1 week ago
+        }
+
+        if (createdAt && !isNaN(createdAt.getTime())) {
+          const ageInDays = (now - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+          // Exponential decay over 90 days (newer memories get higher weight)
+          const temporalWeight = Math.exp(-ageInDays / 90);
+
+          // Apply temporal weight to relevance score
+          const enhancedScore = memory.relevanceScore * (0.7 + 0.3 * temporalWeight);
+
+          this.loggerService.trace('Applied temporal weighting', {
+            filename: memory.filename,
+            ageInDays: Math.round(ageInDays),
+            temporalWeight: temporalWeight.toFixed(3),
+            originalScore: memory.relevanceScore.toFixed(3),
+            enhancedScore: enhancedScore.toFixed(3)
+          });
+
+          return {
+            ...memory,
+            relevanceScore: enhancedScore
+          };
+        }
+      } catch (error: any) {
+        this.loggerService.log('Error applying temporal weighting', 'error');
+        this.loggerService.trace('Temporal weighting error details', {
+          filename: memory.filename,
+          error: error.message
+        });
+      }
+
+      return memory;
+    }).sort((a, b) => b.relevanceScore - a.relevanceScore);
+  }
+
+  /**
+   * Classify query to determine optimal response style
+   */
+  private async classifyQuery(question: string): Promise<{
+    type: 'question' | 'list' | 'analytical' | 'lookup';
+    responseStyle: 'conversational' | 'structured' | 'technical';
+    temporalSensitive: boolean;
+  }> {
+    try {
+      const classificationPrompt = `Classify this user query to determine the best response style:
+
+Query: "${question}"
+
+Analyze the query and respond with JSON:
+{
+  "type": "question|list|analytical|lookup",
+  "responseStyle": "conversational|structured|technical",
+  "temporalSensitive": boolean
+}
+
+Guidelines:
+- "question": Direct questions about preferences, facts, or opinions (What's my...?, How do I...?, Why did I...?)
+- "list": Requests for multiple items (Show me all..., List my..., Give me everything about...)
+- "analytical": Complex analysis requests (Analyze my..., Compare my..., What patterns...)
+- "lookup": Simple information retrieval (Find notes about..., Search for...)
+
+- "conversational": Natural, friendly responses for personal questions
+- "structured": Organized, clear formatting for lists and analysis
+- "technical": Precise, detailed responses for technical queries
+
+- temporalSensitive: true if the answer might change over time (preferences, opinions, evolving thoughts)`;
+
+      const response = await this.chatProvider.chat({
+        model: this.chatProvider.getModelName(),
+        messages: [{ role: 'user', content: classificationPrompt }],
+        stream: false,
+      });
+
+      const classification = JSON.parse(response.content.trim());
+      this.loggerService.trace('Query classified', { question, classification });
+      return classification;
+    } catch (error: any) {
+      // Fallback to default classification
+      this.loggerService.log('Query classification failed, using defaults', 'error');
+      this.loggerService.trace('Classification error details', { error: error.message });
+      return {
+        type: 'question',
+        responseStyle: 'conversational',
+        temporalSensitive: true
+      };
+    }
+  }
+
   async queryMemoriesWithAI(question: string, maxPrivacy: string = 'personal', limit: number = 5): Promise<{
     success: boolean;
     answer?: string;
@@ -344,12 +594,20 @@ ${content}
     try {
       this.loggerService.log(`AI Query request: "${question}", privacy=${maxPrivacy}, limit=${limit}`);
       this.loggerService.trace('Starting AI query operation', { question, maxPrivacy, limit });
-      
+
+      // Classify the query to determine optimal response approach
+      const queryClassification = await this.classifyQuery(question);
+
       // Performance tracking for search
       this.loggerService.startTimer('memory_search');
-      
+
       // Search for relevant memories (simplified version)
-      const memories = await this.searchMemories(question, maxPrivacy, limit);
+      let memories = await this.searchMemories(question, maxPrivacy, limit);
+
+      // Apply temporal weighting if query is temporally sensitive
+      if (queryClassification.temporalSensitive && memories.length > 1) {
+        memories = this.applyTemporalWeighting(memories);
+      }
       
       this.loggerService.endTimer('memory_search', {
         foundCount: memories.length,
@@ -377,25 +635,8 @@ ${content}
         totalContextLength: memories.reduce((sum, m) => sum + m.content.length, 0)
       });
       
-      // Use AI to synthesize answer
-      const contextPrompt = `
-You are an AI assistant helping a user understand their personal knowledge base. 
-Answer their question using ONLY the provided context from their memories.
-
-Question: "${question}"
-
-Context from user's memories:
-${memories.map((memory, index) => `
-[${index + 1}] ${memory.filename}
-Category: ${memory.category || 'unknown'}
-Tags: ${memory.tags || 'none'}
-Content: ${memory.content?.slice(0, 800) || 'No content'}${(memory.content?.length || 0) > 800 ? '...' : ''}
-`).join('\n')}
-
-Please provide a helpful answer based on this context. If you reference specific information, mention which memory it comes from (e.g., "According to your notes in [1]...").
-
-If the memories don't contain enough information to fully answer the question, say so and suggest what additional information might be helpful.
-`;
+      // Generate enhanced synthesis prompt based on query classification
+      const contextPrompt = this.generateSynthesisPrompt(question, memories, queryClassification);
 
       this.loggerService.trace('Starting AI synthesis', { 
         provider: aiConfig.getProvider(),

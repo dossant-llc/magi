@@ -187,9 +187,72 @@ export class MemoryService {
     }
   }
 
+  /**
+   * Get all memories from all privacy levels for analysis
+   */
+  async getAllMemories(): Promise<Array<{
+    filename: string;
+    content: string;
+    category?: string;
+    privacy?: string;
+    filepath: string;
+  }>> {
+    this.logger.log(`Loading all memories for analysis from: ${this.memoriesDir}`);
+
+    const allMemories: Array<{
+      filename: string;
+      content: string;
+      category?: string;
+      privacy?: string;
+      filepath: string;
+    }> = [];
+
+    // Define privacy levels in order
+    const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
+
+    for (const privacyLevel of privacyLevels) {
+      const privacyDir = path.join(this.memoriesDir, privacyLevel);
+      this.logger.log(`Checking privacy directory: ${privacyDir}`);
+
+      if (fs.existsSync(privacyDir)) {
+        try {
+          const files = fs.readdirSync(privacyDir).filter(file => file.endsWith('.md'));
+          this.logger.log(`Found ${files.length} .md files in ${privacyLevel} directory`);
+
+          for (const file of files) {
+            const filepath = path.join(privacyDir, file);
+            try {
+              const content = fs.readFileSync(filepath, 'utf8');
+
+              // Extract category from content if available (first heading)
+              const categoryMatch = content.match(/^# (.+)$/m);
+              const category = categoryMatch ? categoryMatch[1] : 'unknown';
+
+              allMemories.push({
+                filename: file,
+                content,
+                category,
+                privacy: privacyLevel,
+                filepath
+              });
+            } catch (fileError) {
+              this.logger.log(`Failed to read memory file: ${filepath}`, 'warn');
+            }
+          }
+        } catch (dirError) {
+          // Privacy directory doesn't exist or can't be read, skip it
+          this.logger.log(`Could not read privacy directory: ${privacyDir}`, 'warn');
+        }
+      }
+    }
+
+    this.logger.log(`Loaded ${allMemories.length} memories across all privacy levels`);
+    return allMemories;
+  }
+
   getOrganizationPatterns(): OrganizationPattern[] {
     this.logger.log('Getting organization patterns');
-    
+
     const files = this.getMemoryFiles();
     const patterns: OrganizationPattern[] = [];
     const categoryStats = new Map<string, CategoryStats>();

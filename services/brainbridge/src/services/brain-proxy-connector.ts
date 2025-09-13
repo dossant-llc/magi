@@ -398,6 +398,58 @@ export class BrainProxyConnector {
     };
   }
 
+  public enable() {
+    if (this.config.enabled) {
+      this.logger.winston.info('BrainProxyConnector already enabled', {
+        component: 'BrainProxyConnector',
+        action: 'enable_skipped',
+        route: this.config.route
+      });
+      return;
+    }
+
+    this.config.enabled = true;
+    this.reconnectAttempts = 0;
+    
+    this.logger.winston.info('BrainProxyConnector enabled', {
+      component: 'BrainProxyConnector',
+      action: 'enable',
+      route: this.config.route
+    });
+    
+    this.connect();
+  }
+
+  public disable() {
+    if (!this.config.enabled) {
+      this.logger.winston.info('BrainProxyConnector already disabled', {
+        component: 'BrainProxyConnector',
+        action: 'disable_skipped',
+        route: this.config.route
+      });
+      return;
+    }
+
+    this.config.enabled = false;
+    this.stopHeartbeat();
+    
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      this.ws.close(1000, 'Disabled via command');
+      this.ws = null;
+    }
+
+    this.logger.winston.info('BrainProxyConnector disabled', {
+      component: 'BrainProxyConnector',
+      action: 'disable',
+      route: this.config.route
+    });
+  }
+
   public disconnect() {
     this.config.enabled = false;
     this.stopHeartbeat();

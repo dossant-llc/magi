@@ -275,10 +275,17 @@ class Diagnostics {
 
   async checkVectorIndex() {
     this.log('\n🧠 Checking AI Embeddings & Vector Index...', 'info');
-    
+
     const baseMemoriesDir = this.getMemoriesPath();
     const embeddingsDir = path.join(baseMemoriesDir, 'embeddings');
-    const embeddingsFile = path.join(embeddingsDir, 'embeddings.txt');
+
+    // Check provider-specific embeddings file
+    let embeddingsFile;
+    if (this.currentProvider === 'openai') {
+      embeddingsFile = path.join(embeddingsDir, 'openai', 'embeddings.txt');
+    } else {
+      embeddingsFile = path.join(embeddingsDir, 'embeddings.txt'); // Default/Ollama
+    }
     const oldIndexDir = path.join(process.cwd(), '.index');
     
     // Check for old index location (migration needed)
@@ -350,21 +357,44 @@ class Diagnostics {
 
   async checkBrainBridgeProcesses() {
     this.log('\n🔗 Checking BrainBridge Processes...', 'info');
-    
+
     try {
-      const processes = execSync('ps aux | grep "brainbridge.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
-      if (processes) {
-        const lines = processes.split('\n').filter(line => line.trim());
-        if (lines.length > 3) {
-          this.addWarning(`${lines.length} BrainBridge processes running`, 'magi stop && magi start');
-        } else {
-          this.addPassed(`${lines.length} BrainBridge processes running`);
+      // Check for HTTP server on port 8147
+      let httpServer = null;
+      try {
+        const portCheck = execSync('lsof -i :8147 2>/dev/null | grep LISTEN', { encoding: 'utf8' }).trim();
+        if (portCheck) {
+          httpServer = portCheck.split('\n')[0];
+          this.addPassed('BrainBridge HTTP server running (port 8147)');
         }
-      } else {
+      } catch (e) {
+        // No HTTP server found
+      }
+
+      // Check for stdio processes (Claude Code sessions)
+      let stdioProcesses = [];
+      try {
+        const processes = execSync('ps aux | grep "src/server.ts stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+        if (processes) {
+          stdioProcesses = processes.split('\n').filter(line => line.trim());
+        }
+      } catch (e) {
+        // No stdio processes
+      }
+
+      if (stdioProcesses.length > 0) {
+        this.addPassed(`${stdioProcesses.length} BrainBridge stdio sessions (Claude Code)`);
+      }
+
+      // Summary
+      const totalProcesses = (httpServer ? 1 : 0) + stdioProcesses.length;
+      if (totalProcesses === 0) {
         this.addWarning('No BrainBridge processes found', 'magi start');
+      } else if (stdioProcesses.length > 5) {
+        this.addWarning(`Many stdio sessions running (${stdioProcesses.length})`, 'Consider cleaning up old Claude Code sessions');
       }
     } catch (error) {
-      this.addWarning('No BrainBridge processes found', 'magi start');
+      this.addWarning('Could not check BrainBridge processes', 'magi start');
     }
   }
 

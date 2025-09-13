@@ -45,6 +45,8 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('                     --reset (regenerate existing credentials)');
   console.log('  index     Build vector index for AI search');
   console.log('            Options: --force (rebuild all)');
+  console.log('  nap       Analyze and consolidate memories (v0.1.2 "Nap")');
+  console.log('            Options: --deep (full analysis), status (show insights)');
   console.log('  install   Install integrations');
   console.log('    claude  Install Claude Code MCP server');
   console.log('  remove    Remove integrations');
@@ -59,13 +61,17 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('  magi start       # Start service (file watching always enabled)');
   console.log('  magi start --dev # Development mode (explicit file watching)');
   console.log('  magi             # Show logs (if running) or prompt to start');
+  console.log('  magi nap         # Quick memory analysis and consolidation');
+  console.log('  magi nap --deep  # Deep memory analysis with recommendations');
+  console.log('  magi nap status  # Show memory health and conflicts');
   process.exit(0);
 }
 
 // Check if BrainBridge is running
 function isBrainBridgeRunning() {
   try {
-    const processes = execSync('ps aux | grep "tsx.*server.ts.*stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+    // Look for the actual process: node dist/server.js in brainbridge directory
+    const processes = execSync('ps aux | grep "node.*dist/server.js" | grep -v grep', { encoding: 'utf8' }).trim();
     return processes.length > 0;
   } catch (e) {
     return false;
@@ -91,7 +97,8 @@ switch (command) {
   case 'stop':
     console.log(`${colors.system}🛑 Stopping BrainBridge service...${colors.reset}`);
     try {
-      execSync('pkill -f "brainbridge.*stdio"', { stdio: 'inherit' });
+      // Kill the actual process pattern: node dist/server.js
+      execSync('pkill -f "node.*dist/server.js"', { stdio: 'inherit' });
       console.log(`${colors.success}✅ BrainBridge stopped${colors.reset}`);
     } catch (error) {
       console.log(`${colors.warning}⚠️ No BrainBridge processes found${colors.reset}`);
@@ -102,7 +109,7 @@ switch (command) {
     console.log(`${colors.system}🔄 Restarting BrainBridge service...${colors.reset}`);
     try {
       // Stop existing processes
-      execSync('pkill -f "brainbridge.*stdio"', { stdio: 'pipe' });
+      execSync('pkill -f "node.*dist/server.js"', { stdio: 'pipe' });
       console.log(`${colors.hint}Stopped existing processes${colors.reset}`);
     } catch (error) {
       // No existing processes, that's fine
@@ -261,7 +268,51 @@ switch (command) {
       process.exit(1);
     }
     break;
-    
+
+  case 'nap':
+    // Memory analysis and consolidation
+    const napSubcommand = args[1];
+    const isDeepAnalysis = args.includes('--deep');
+
+    if (napSubcommand === 'status') {
+      console.log(`${colors.info}🧠💤 Magi Memory Health Status${colors.reset}`);
+      try {
+        execSync('npm run magic --workspace=services/brainbridge -- nap status', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+      } catch (error) {
+        console.log(`${colors.error}❌ Memory analysis failed${colors.reset}`);
+      }
+    } else {
+      // Default nap behavior
+      console.log(`${colors.info}🧠💤 Magi is taking a nap to analyze memories...${colors.reset}`);
+
+      if (isDeepAnalysis) {
+        console.log(`${colors.info}🔍 Running deep memory analysis (this may take a while)${colors.reset}`);
+      } else {
+        console.log(`${colors.info}⚡ Running quick memory consolidation${colors.reset}`);
+      }
+
+      try {
+        const startTime = Date.now();
+        const napCommand = isDeepAnalysis ? 'nap --deep' : 'nap';
+
+        execSync(`npm run magic --workspace=services/brainbridge -- ${napCommand}`, {
+          stdio: 'inherit',
+          cwd: path.join(__dirname, '..')
+        });
+
+        const endTime = Date.now();
+        const elapsedSec = Math.round((endTime - startTime) / 1000);
+
+        console.log(`${colors.success}✅ Memory analysis complete${colors.reset}`);
+        console.log(`${colors.hint}⏱️  Analysis time: ${elapsedSec}s${colors.reset}`);
+        console.log(`${colors.hint}💡 Run '${colors.prompt}magi nap status${colors.reset}${colors.hint}' to see insights${colors.reset}`);
+      } catch (error) {
+        console.log(`${colors.error}❌ Memory analysis failed${colors.reset}`);
+        process.exit(1);
+      }
+    }
+    break;
+
   case 'register':
     // Brain Proxy registration
     console.log(`${colors.info}🧙 mAgi Brain Proxy Registration${colors.reset}`);
