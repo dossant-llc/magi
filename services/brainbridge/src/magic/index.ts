@@ -16,6 +16,7 @@ import { saveCommand } from './commands/save';
 import { queryCommand } from './commands/query';
 import { statusCommand } from './commands/status';
 import { indexCommand } from './commands/index';
+import { napCommand } from './commands/nap';
 
 const program = new Command();
 
@@ -51,6 +52,18 @@ program
   .description('Build/rebuild vector index from memories')
   .option('-f, --force', 'Force rebuild entire index')
   .action(indexCommand);
+
+program
+  .command('nap [subcommand]')
+  .description('🧠💤 Analyze and consolidate memories (v0.1.2 "Nap")')
+  .option('--deep', 'Perform deep analysis with recommendations')
+  .action((subcommand, options) => {
+    if (subcommand === 'status') {
+      napCommand({ status: true });
+    } else {
+      napCommand(options);
+    }
+  });
 
 // Parse arguments
 program.parse(process.argv);

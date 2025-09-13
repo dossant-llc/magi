@@ -57,10 +57,13 @@ const colors = {
 
 class MagiREPL {
   constructor() {
-    this.currentPersona = 'root'; // Default persona
+    this.currentPersona = 'personal'; // Default persona for v0.1.1-rc1
     this.sessionActive = true;
     this.commandHistory = [];
-    
+
+    // Clean up old stdio sessions on startup
+    this.cleanupOldStdioSessions();
+
     // Initialize readline interface
     this.rl = readline.createInterface({
       input: process.stdin,
@@ -84,13 +87,10 @@ class MagiREPL {
    */
   getPrompt() {
     const basePrompt = `${colors.prompt}🧙 magi${colors.reset}`;
-    if (this.currentPersona === 'root') {
-      return `${basePrompt} > `;
-    }
-    
+
     const persona = personas[this.currentPersona];
     if (!persona) return `${basePrompt} > `;
-    
+
     const personaColor = colors[this.currentPersona] || colors.reset;
     return `${basePrompt} > ${personaColor}${persona.emoji} ${persona.name.toLowerCase()}${colors.reset} > `;
   }
@@ -100,6 +100,63 @@ class MagiREPL {
    */
   updatePrompt() {
     this.rl.setPrompt(this.getPrompt());
+  }
+
+  /**
+   * Clean up old stdio sessions on startup
+   */
+  cleanupOldStdioSessions() {
+    try {
+      const { execSync } = require('child_process');
+
+      // Find all stdio processes with their elapsed time
+      const processes = execSync('ps axo pid,etime,command | grep "src/server.ts stdio" | grep -v grep', { encoding: 'utf8' }).trim();
+
+      if (!processes) return;
+
+      const lines = processes.split('\n');
+      const toKill = [];
+      const oneHourMs = 60 * 60 * 1000;
+
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[0];
+        const etime = parts[1]; // Format: [[DD-]hh:]mm:ss or mm:ss
+
+        // Parse elapsed time to milliseconds
+        let totalMs = 0;
+        if (etime.includes('-')) {
+          // Format: DD-hh:mm:ss
+          const [days, time] = etime.split('-');
+          const [hours, minutes, seconds] = time.split(':').map(Number);
+          totalMs = (parseInt(days) * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60 + seconds) * 1000;
+        } else {
+          const timeParts = etime.split(':').map(Number);
+          if (timeParts.length === 3) {
+            // Format: hh:mm:ss
+            const [hours, minutes, seconds] = timeParts;
+            totalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
+          } else {
+            // Format: mm:ss
+            const [minutes, seconds] = timeParts;
+            totalMs = (minutes * 60 + seconds) * 1000;
+          }
+        }
+
+        // Kill processes older than 1 hour
+        if (totalMs > oneHourMs) {
+          toKill.push(pid);
+        }
+      }
+
+      if (toKill.length > 0) {
+        console.log(`${colors.system}🧹 Cleaning up ${toKill.length} old stdio sessions (>1h)...${colors.reset}`);
+        execSync(`kill ${toKill.join(' ')}`, { stdio: 'pipe' });
+        console.log(`${colors.success}✅ Cleaned up old sessions${colors.reset}`);
+      }
+    } catch (error) {
+      // Silently ignore cleanup errors - don't block startup
+    }
   }
   
   /**
@@ -185,7 +242,10 @@ class MagiREPL {
         break;
         
       case 'cd':
-        this.changePersona(args[0]);
+        // TODO v0.1.2: Re-enable persona switching for BrainXchange
+        console.log(`${colors.warning}⚠️ Persona switching disabled in v0.1.1-rc1${colors.reset}`);
+        console.log(`${colors.hint}💡 Currently hardcoded to 'personal' persona - will be enabled in v0.1.2${colors.reset}`);
+        // this.changePersona(args[0]);
         break;
         
       case 'pwd':
@@ -234,11 +294,13 @@ class MagiREPL {
    */
   showWelcome() {
     console.log(`${colors.prompt}🧙 ${colors.bold}Welcome to MAGI - Your Personal AI Memory Bank${colors.reset}`);
-    console.log(`${colors.hint}💡 Type 'help' for commands, 'cd {persona}' to switch contexts, or just chat naturally!${colors.reset}`);
-    if (this.currentPersona === 'root') {
-      console.log(`${colors.hint}✨ Current persona: 🌟 Root${colors.reset}\n`);
+    console.log(`${colors.hint}💡 Type 'help' for commands or just chat naturally! ${colors.dim}(persona switching disabled in v0.1.1-rc1)${colors.reset}`);
+
+    const persona = personas[this.currentPersona];
+    if (persona) {
+      console.log(`${colors.hint}✨ Current persona: ${colors[this.currentPersona]}${persona.emoji} ${persona.name}${colors.reset}\n`);
     } else {
-      console.log(`${colors.hint}✨ Current persona: ${colors[this.currentPersona]}${personas[this.currentPersona].emoji} ${personas[this.currentPersona].name}${colors.reset}\n`);
+      console.log(`${colors.warning}⚠️ Unknown persona: ${this.currentPersona}${colors.reset}\n`);
     }
   }
   
@@ -251,8 +313,8 @@ class MagiREPL {
     console.log(`${colors.info}🧙 ${colors.bold}MAGI Interactive Commands${colors.reset}`);
     console.log('');
     console.log(`${colors.success}🎭 Context Commands:${colors.reset}`);
-    console.log(`  ${colors.prompt}cd {persona}${colors.reset}     Switch to different persona/context`);
-    console.log(`  ${colors.prompt}pwd${colors.reset}             Show current context`); 
+    console.log(`  ${colors.prompt}cd {persona}${colors.reset}     Switch to different persona/context ${colors.dim}(disabled in v0.1.1-rc1)${colors.reset}`);
+    console.log(`  ${colors.prompt}pwd${colors.reset}             Show current context`);
     console.log(`  ${colors.prompt}ls${colors.reset}              List available personas`);
     console.log('');
     console.log(`${colors.success}💾 Memory Commands:${colors.reset}`);
@@ -322,7 +384,7 @@ class MagiREPL {
    */
   changePersona(personaName) {
     if (!personaName) {
-      console.log(`${colors.error}❌ Please specify a persona. Available: root, ${Object.keys(personas).join(', ')}${colors.reset}`);
+      console.log(`${colors.error}❌ Please specify a persona. Available: ${Object.keys(personas).join(', ')}${colors.reset}`);
       return;
     }
     
@@ -343,11 +405,11 @@ class MagiREPL {
     
     if (!personas[personaName]) {
       console.log(`${colors.error}❌ Unknown persona: ${personaName}${colors.reset}`);
-      console.log(`${colors.hint}💡 Available personas: root, ${Object.keys(personas).join(', ')}${colors.reset}`);
+      console.log(`${colors.hint}💡 Available personas: ${Object.keys(personas).join(', ')}${colors.reset}`);
       return;
     }
     
-    const oldPersona = this.currentPersona === 'root' ? { emoji: '🌟', name: 'Root' } : personas[this.currentPersona];
+    const oldPersona = personas[this.currentPersona];
     const newPersona = personas[personaName];
     
     this.currentPersona = personaName;
@@ -380,15 +442,14 @@ class MagiREPL {
   listPersonas() {
     console.log(`${colors.info}🎭 ${colors.bold}Available Personas:${colors.reset}`);
     console.log('');
-    
-    // Show root first
-    const rootCurrent = this.currentPersona === 'root' ? `${colors.success}◄ current${colors.reset}` : '';
-    console.log(`  ${colors.info}🌟 ${colors.bold}Root${colors.reset} - System overview and cross-persona operations ${rootCurrent}`);
-    
-    // Show all other personas
+
+    // Show only valid persona objects (not utility functions)
     Object.entries(personas).forEach(([key, persona]) => {
-      const current = key === this.currentPersona ? `${colors.success}◄ current${colors.reset}` : '';
-      console.log(`  ${colors[key] || colors.info}${persona.emoji} ${colors.bold}${persona.name}${colors.reset} - ${persona.description} ${current}`);
+      // Skip utility functions - only show objects with emoji property
+      if (typeof persona === 'object' && persona.emoji && persona.name) {
+        const current = key === this.currentPersona ? `${colors.success}◄ current${colors.reset}` : '';
+        console.log(`  ${colors[key] || colors.info}${persona.emoji} ${colors.bold}${persona.name}${colors.reset} - ${persona.description} ${current}`);
+      }
     });
   }
   
@@ -486,7 +547,12 @@ class MagiREPL {
    * Show recent memories
    */
   async showRecent() {
-    console.log(`${colors.info}📅 Recent memories in ${personas[this.currentPersona].emoji} ${this.currentPersona} context:${colors.reset}`);
+    const persona = personas[this.currentPersona];
+    if (persona) {
+      console.log(`${colors.info}📅 Recent memories in ${persona.emoji} ${this.currentPersona} context:${colors.reset}`);
+    } else {
+      console.log(`${colors.info}📅 Recent memories:${colors.reset}`);
+    }
     console.log(`${colors.hint}📋 (Implementation pending)${colors.reset}`);
   }
   
@@ -495,7 +561,11 @@ class MagiREPL {
    */
   async showStats() {
     const persona = personas[this.currentPersona];
-    console.log(`${colors.info}📊 Statistics for ${persona.emoji} ${persona.name} context:${colors.reset}`);
+    if (persona) {
+      console.log(`${colors.info}📊 Statistics for ${persona.emoji} ${persona.name} context:${colors.reset}`);
+    } else {
+      console.log(`${colors.info}📊 Statistics:${colors.reset}`);
+    }
     console.log(`${colors.hint}📋 (Implementation pending)${colors.reset}`);
   }
   
