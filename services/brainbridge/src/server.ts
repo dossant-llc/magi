@@ -368,7 +368,7 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     try {
       this.loggerService.log('Building tools list...');
       const brainXchangeEnabled = process.env.BRAINXCHANGE_ENABLED?.toLowerCase() !== 'false';
-      const tools = [
+      const tools: any[] = [
         {
           name: 'search_memories',
           description: 'Search through personal memories',
@@ -667,7 +667,7 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
           this.loggerService.winston.error('Background save error', {
             component: 'BrainBridgeServer',
             action: 'ai_save_memory_error',
-            error: error.message || error
+            error: error instanceof Error ? error.message : String(error)
           });
         });
       
@@ -682,16 +682,16 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       };
     } catch (error) {
       this.loggerService.error('AI Save Memory failed with error', { 
-        error: error.message || error,
+        error: error instanceof Error ? error.message : String(error),
         content: args.content ? 'content provided' : 'no content',
-        stack: error.stack
+        stack: error instanceof Error ? error.stack : undefined
       });
       
       return {
         content: [
           {
             type: 'text',
-            text: `❌ **Error saving memory**\n\n**Details:** ${error.message || 'Unknown error occurred'}\n\nPlease check your content and try again.`
+            text: `❌ **Error saving memory**\n\n**Details:** ${error instanceof Error ? error.message : 'Unknown error occurred'}\n\nPlease check your content and try again.`
           }
         ]
       };
@@ -855,16 +855,16 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
     }
     } catch (error) {
       this.loggerService.error('AI Query Memories failed with error', { 
-        error: error.message || error,
+        error: error instanceof Error ? error.message : String(error),
         question: args.question,
-        stack: error.stack
+        stack: error instanceof Error ? error.stack : undefined
       });
       
       return {
         content: [
           {
             type: 'text',
-            text: `❌ **Error processing your query**: "${args.question || 'unknown'}"\n\n**Details:** ${error.message || 'Unknown error occurred'}\n\nPlease try again or contact support if the issue persists.`
+            text: `❌ **Error processing your query**: "${args.question || 'unknown'}"\n\n**Details:** ${error instanceof Error ? error.message : 'Unknown error occurred'}\n\nPlease try again or contact support if the issue persists.`
           }
         ]
       };
@@ -935,7 +935,7 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
 
     // Brain Proxy status
     if (this.brainProxyConnector) {
-      const bpStatus = this.brainProxyConnector.getConnectionStatus();
+      const bpStatus = this.brainProxyConnector.getStatus();
       if (bpStatus.connected) {
         response += `✅ Brain Proxy: Connected (route: ${bpStatus.route})\n`;
       } else {

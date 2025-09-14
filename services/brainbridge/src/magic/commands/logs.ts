@@ -92,7 +92,7 @@ export async function logsCommand(options: LogsOptions = {}) {
         let output = '';
         tail.stdout.pipe(grep.stdin);
 
-        grep.stdout.on('data', (data) => {
+        grep.stdout.on('data', (data: any) => {
           output += data.toString();
         });
 

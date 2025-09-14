@@ -33,7 +33,7 @@ export class MemoryService {
       this.logger.log(`Vector search found ${vectorResults.length} results`);
 
       // Convert vector results to SearchResult format
-      const searchResults: SearchResult[] = vectorResults.map(result => {
+      const searchResults: SearchResult[] = vectorResults.map((result: any) => {
         // Filter by category if specified
         if (category && result.category.toLowerCase() !== category.toLowerCase()) {
           return null;
@@ -48,7 +48,7 @@ export class MemoryService {
           category: result.category,
           privacy: result.privacy
         };
-      }).filter(result => result !== null) as SearchResult[];
+      }).filter((result: any) => result !== null) as SearchResult[];
 
       this.logger.log(`Filtered to ${searchResults.length} results after category filter`);
       return searchResults;

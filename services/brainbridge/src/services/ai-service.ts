@@ -7,6 +7,7 @@ import { queryCommand } from '../magic/commands/query';
 import { statusCommand } from '../magic/commands/status';
 import { LoggerService } from './logger-service';
 import { EmbeddingService } from './embedding-service';
+import { HybridSearchService } from './hybrid-search-service';
 import { IChatProvider } from '../providers/ai-interfaces';
 import { aiProviderFactory } from '../providers/ai-provider-factory';
 import { aiConfig } from '../config/ai-config';
@@ -15,14 +16,52 @@ export class AIService {
   private chatProvider: IChatProvider;
   private loggerService: LoggerService;
   private embeddingService: EmbeddingService;
+  private hybridSearchService: HybridSearchService;
 
   constructor(loggerService: LoggerService) {
     this.chatProvider = aiProviderFactory.createChatProvider();
     this.loggerService = loggerService;
     this.embeddingService = new EmbeddingService(loggerService);
-    
+    this.hybridSearchService = new HybridSearchService();
+
+    // Initialize BM25 index with existing memories
+    this.initializeBM25Index();
+
     const providerInfo = aiProviderFactory.getProviderInfo();
     this.loggerService.log(`AI Service initialized with ${providerInfo.provider} provider (Chat: ${providerInfo.chatModel}, Embedding: ${providerInfo.embeddingModel})`);
+  }
+
+  /**
+   * Initialize BM25 index with existing memories
+   */
+  private async initializeBM25Index(): Promise<void> {
+    try {
+      this.loggerService.trace('Initializing BM25 index with existing memories');
+
+      // Get existing memories from embedding service
+      const embeddings = await this.embeddingService.getAllEmbeddings();
+
+      for (const embedding of embeddings) {
+        const doc = {
+          id: embedding.filePath,
+          title: embedding.metadata.title || 'Untitled',
+          content: embedding.content || '',
+          category: embedding.metadata.category || 'general',
+          privacy: embedding.metadata.privacy || 'personal',
+          filePath: embedding.filePath
+        };
+
+        this.hybridSearchService.addDocument(doc);
+      }
+
+      this.loggerService.trace('BM25 index initialization completed', {
+        documentsIndexed: embeddings.length
+      });
+    } catch (error) {
+      this.loggerService.error('Failed to initialize BM25 index', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   /**
@@ -284,7 +323,7 @@ ${content}
   }
 
   /**
-   * Fast search memories using index data only (no file I/O)
+   * Hybrid search memories using both vector and BM25 with RRF fusion
    */
   private async searchMemoriesFast(query: string, maxPrivacy: string = 'personal', limit: number = 5): Promise<Array<{
     filename: string;
@@ -293,7 +332,7 @@ ${content}
     tags?: string;
     relevanceScore: number;
   }>> {
-    this.loggerService.trace('Starting fast memory search (index-only)', {
+    this.loggerService.trace('Starting hybrid memory search (Vector + BM25 + RRF)', {
       query,
       maxPrivacy,
       limit,
@@ -302,85 +341,69 @@ ${content}
     });
 
     try {
-      // Use the configured similarity threshold and top-K from AI config
-      const similarityThreshold = aiConfig.getSimilarityThreshold();
-      const vectorTopK = aiConfig.getSearchConfig().vectorTopK || 15;
-      this.loggerService.trace('Vector search parameters', {
-        query,
-        limit,
-        vectorTopK,
-        similarityThreshold,
-        embeddingService: 'searchSimilarFast'
+      // Create vector search function for hybrid service
+      const vectorSearchFn = async (query: string, topK: number) => {
+        const results = await this.embeddingService.searchSimilarFast(query, topK, 0.1); // Very low threshold for RRF
+        return results.map(r => ({
+          id: r.filePath,
+          title: r.title || 'Untitled',
+          content: r.content || r.contentPreview || '',
+          category: r.category || 'general',
+          privacy: r.privacy || 'personal',
+          filePath: r.filePath,
+          similarity: r.similarity
+        }));
+      };
+
+      // Run hybrid search with RRF fusion
+      const hybridResults = await this.hybridSearchService.hybridSearch(query, vectorSearchFn, {
+        vectorTopK: 15,
+        bm25TopK: 50,
+        fusedTopK: 20,
+        finalResults: limit * 3 // Get more candidates for privacy filtering
       });
 
-      const fastResults = await this.embeddingService.searchSimilarFast(query, vectorTopK, similarityThreshold);
-      
-      // Check if we have high-quality vector results (similarity > 0.25) or fallback to keyword search
-      const highQualityResults = fastResults?.filter(r => r.similarity > 0.25) || [];
-
-      if (highQualityResults.length > 0) {
-        this.loggerService.trace('Vector search results before filtering', {
-          foundResults: fastResults.length,
-          highQualityResults: highQualityResults.length,
-          results: highQualityResults.map(r => ({
-            file: r.filePath.split('/').pop(),
-            similarity: r.similarity,
-            privacy: r.privacy
-          })),
-          callStack: 'ai-service.searchMemoriesFast.beforePrivacyFilter'
-        });
-
-        // Filter by privacy level
-        const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
-        const maxLevel = privacyLevels.indexOf(maxPrivacy);
-        const allowedLevels = privacyLevels.slice(0, maxLevel + 1);
-
-        this.loggerService.trace('Privacy filtering parameters', {
-          maxPrivacy,
-          maxLevel,
-          allowedLevels,
-          callStack: 'ai-service.searchMemoriesFast.privacyFilter'
-        });
-
-        const filteredResults = highQualityResults
-          .filter(result => allowedLevels.includes(result.privacy))
-          .map(result => ({
-            filename: result.filePath.split('/').pop() || 'unknown',
-            content: result.content || result.contentPreview || 'No content available', // Use full content if available
-            category: result.category,
-            tags: 'none', // Could be enhanced later
-            relevanceScore: Math.round(result.similarity * 100) // Convert to 0-100 scale
-          }))
-          .slice(0, limit);
-
-        this.loggerService.trace('Final search results after filtering', {
-          finalResults: filteredResults.length,
-          results: filteredResults.map(r => ({
-            filename: r.filename,
-            relevanceScore: r.relevanceScore,
-            category: r.category,
-            contentPreview: r.content.substring(0, 100)
-          })),
-          threshold: similarityThreshold,
-          originalVectorResults: fastResults.length,
-          callStack: 'ai-service.searchMemoriesFast.final'
-        });
-
-        return filteredResults;
-      }
-      
-      this.loggerService.trace('Vector search returned no high-quality results, falling back to keyword search', {
-        query,
-        maxPrivacy,
-        limit,
-        vectorResults: fastResults?.length || 0,
-        highQualityThreshold: 0.25,
-        similarityThreshold,
-        callStack: 'ai-service.searchMemoriesFast.noResults'
+      this.loggerService.trace('Hybrid search results before privacy filtering', {
+        foundResults: hybridResults.length,
+        topResults: hybridResults.slice(0, 3).map(r => ({
+          title: r.title?.substring(0, 40),
+          totalScore: Math.round(r.score * 1000) / 1000,
+          privacy: r.privacy
+        })),
+        callStack: 'ai-service.searchMemoriesFast.hybridResults'
       });
-      return [];
+
+      // Filter by privacy level
+      const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
+      const maxLevel = privacyLevels.indexOf(maxPrivacy);
+      const allowedLevels = privacyLevels.slice(0, maxLevel + 1);
+
+      const filteredResults = hybridResults
+        .filter(result => allowedLevels.includes(result.privacy))
+        .map(result => ({
+          filename: result.filePath.split('/').pop() || 'unknown',
+          content: result.content || 'No content available',
+          category: result.category,
+          tags: 'hybrid', // Mark as hybrid search result
+          relevanceScore: Math.round(result.score * 100) // Convert to 0-100 scale
+        }))
+        .slice(0, limit);
+
+      this.loggerService.trace('Final hybrid search results after privacy filtering', {
+        finalResults: filteredResults.length,
+        privacyFilter: { maxPrivacy, allowedLevels },
+        results: filteredResults.map(r => ({
+          filename: r.filename,
+          relevanceScore: r.relevanceScore,
+          category: r.category,
+          contentPreview: r.content.substring(0, 100)
+        })),
+        callStack: 'ai-service.searchMemoriesFast.final'
+      });
+
+      return filteredResults;
     } catch (error) {
-      this.loggerService.error('Fast vector search failed', {
+      this.loggerService.error('Hybrid search failed', {
         error: error instanceof Error ? error.message : String(error),
         searchQuery: query,
         searchLimit: limit,

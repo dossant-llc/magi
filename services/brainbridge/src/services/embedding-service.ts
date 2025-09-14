@@ -419,31 +419,32 @@ export class EmbeddingService {
   }
 
   /**
-   * Calculate cosine similarity between two vectors
+   * L2 normalize a vector for consistent cosine similarity
+   */
+  private l2Normalize(vec: number[]): number[] {
+    const magnitude = Math.sqrt(vec.reduce((sum, val) => sum + val * val, 0));
+    return magnitude ? vec.map(v => v / magnitude) : vec;
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors (using L2 normalized vectors)
    */
   private cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
       throw new Error('Vectors must have same dimensions');
     }
 
+    // L2 normalize both vectors for proper cosine similarity
+    const normA = this.l2Normalize(a);
+    const normB = this.l2Normalize(b);
+
+    // With normalized vectors, cosine similarity = dot product
     let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+    for (let i = 0; i < normA.length; i++) {
+      dotProduct += normA[i] * normB[i];
     }
 
-    normA = Math.sqrt(normA);
-    normB = Math.sqrt(normB);
-
-    if (normA === 0 || normB === 0) {
-      return 0;
-    }
-
-    return dotProduct / (normA * normB);
+    return dotProduct;
   }
 
   /**
@@ -698,9 +699,6 @@ export class EmbeddingService {
         }))
       });
 
-      // Implement soft thresholding with statistical filtering
-      const allSorted = results.sort((a, b) => b.similarity - a.similarity);
-
       // Apply soft statistical threshold to avoid empty results
       let filteredResults = allSorted.filter(result => result.similarity >= threshold);
 
@@ -745,6 +743,21 @@ export class EmbeddingService {
     } catch (error) {
       this.loggerService.log(`Fast vector search failed: ${error}`, 'error');
       throw error;
+    }
+  }
+
+  /**
+   * Get all embeddings for BM25 index initialization
+   */
+  async getAllEmbeddings(): Promise<MemoryEmbedding[]> {
+    try {
+      const index = await this.loadIndex();
+      return index.embeddings;
+    } catch (error) {
+      this.loggerService.error('Failed to get all embeddings', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return [];
     }
   }
 
