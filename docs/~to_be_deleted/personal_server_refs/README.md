@@ -295,7 +295,7 @@ npm test
 
 ```bash
 # SSH to server
-ssh igoram2@vps34824.dreamhostps.com
+ssh user@server
 
 # Navigate to app
 cd /home/igoram2/your-server.com/brainxchange
