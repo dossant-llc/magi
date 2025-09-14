@@ -9,6 +9,11 @@ export type AIProvider = 'ollama' | 'openai' | 'gemini';
 
 export type SynthesisMode = 'raw' | 'local' | 'hybrid';
 
+export interface SearchConfig {
+  similarityThreshold: number;
+  maxResults: number;
+}
+
 export interface AIConfig {
   provider: AIProvider;
   chatModel: string;
@@ -17,6 +22,7 @@ export interface AIConfig {
   ollamaPort?: string;
   openaiApiKey?: string;
   geminiApiKey?: string;
+  search: SearchConfig;
 }
 
 export interface ClientServiceConfig {
@@ -42,6 +48,10 @@ export class AIConfigService {
       provider: aiSettings.provider as AIProvider,
       chatModel: aiSettings.chatModel,
       embeddingModel: aiSettings.embeddingModel,
+      search: {
+        similarityThreshold: aiSettings.search?.similarityThreshold || 0.5,
+        maxResults: aiSettings.search?.maxResults || 5
+      }
     };
 
     // Ollama configuration
@@ -147,6 +157,19 @@ export class AIConfigService {
 
   getChatGPTForceMode(): boolean {
     return this.clientServiceConfig.chatgptForceMode;
+  }
+
+  // Search Configuration Methods
+  getSearchConfig(): SearchConfig {
+    return { ...this.config.search };
+  }
+
+  getSimilarityThreshold(): number {
+    return this.config.search.similarityThreshold;
+  }
+
+  getMaxResults(): number {
+    return this.config.search.maxResults;
   }
 }
 

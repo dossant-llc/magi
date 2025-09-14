@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧙 Magi Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #e8e8e8;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #64b5f6, #42a5f5, #1e88e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4caf50;
+        }
+
+        .status-dot.disconnected {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: rgba(100, 181, 246, 0.2);
+            border: 1px solid #64b5f6;
+            border-radius: 8px;
+            color: #64b5f6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: rgba(100, 181, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: #64b5f6;
+            color: #1a1a2e;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #e8e8e8;
+            font-family: inherit;
+        }
+
+        .filter-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            height: 70vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry.info {
+            border-left-color: #64b5f6;
+            background: rgba(100, 181, 246, 0.1);
+        }
+
+        .log-entry.warn {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .log-entry.error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .log-entry.success {
+            border-left-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .log-timestamp {
+            color: #888;
+            font-size: 0.85em;
+            margin-right: 10px;
+        }
+
+        .log-level {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .log-level.info {
+            background: #64b5f6;
+            color: white;
+        }
+
+        .log-level.warn {
+            background: #ff9800;
+            color: white;
+        }
+
+        .log-level.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .log-message {
+            word-wrap: break-word;
+        }
+
+        .log-metadata {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 4px;
+            padding-left: 20px;
+            font-style: italic;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #64b5f6;
+        }
+
+        .stat-label {
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        /* Scrollbar styling */
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: rgba(100, 181, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 181, 246, 0.8);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧙 Magi Dashboard</h1>
+            <p>Real-time logs and system monitoring</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot" id="connectionStatus"></div>
+                <span id="connectionText">Connecting...</span>
+            </div>
+            <div class="status-item">
+                <span>📊 Total Logs: <span id="logCount">0</span></span>
+            </div>
+            <div class="status-item">
+                <span>⏰ Last Update: <span id="lastUpdate">Never</span></span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn active" id="btnAll">All</button>
+            <button class="btn" id="btnInfo">Info</button>
+            <button class="btn" id="btnWarn">Warnings</button>
+            <button class="btn" id="btnError">Errors</button>
+            <button class="btn" id="btnClear">Clear</button>
+            <button class="btn" id="btnPause">Pause</button>
+            <button class="btn" id="btnTest">Add Test Log</button>
+            <input type="text" class="filter-input" id="filterInput" placeholder="Filter logs...">
+        </div>
+
+        <div class="log-container" id="logContainer">
+            <div class="loading">
+                <div>🔄 Starting log stream...</div>
+                <p>Connecting to magi logs...</p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="infoCount">0</div>
+                <div class="stat-label">Info</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="warnCount">0</div>
+                <div class="stat-label">Warnings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="errorCount">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uptime">0s</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MagiDashboard {
+            constructor() {
+                this.logs = [];
+                this.filteredLogs = [];
+                this.currentFilter = 'all';
+                this.isPaused = false;
+                this.startTime = Date.now();
+                this.stats = { info: 0, warn: 0, error: 0 };
+
+                this.initializeElements();
+                this.setupEventListeners();
+                this.startLogPolling();
+                this.startUptimeCounter();
+            }
+
+            initializeElements() {
+                this.logContainer = document.getElementById('logContainer');
+                this.connectionStatus = document.getElementById('connectionStatus');
+                this.connectionText = document.getElementById('connectionText');
+                this.logCount = document.getElementById('logCount');
+                this.lastUpdate = document.getElementById('lastUpdate');
+                this.filterInput = document.getElementById('filterInput');
+
+                this.btnAll = document.getElementById('btnAll');
+                this.btnInfo = document.getElementById('btnInfo');
+                this.btnWarn = document.getElementById('btnWarn');
+                this.btnError = document.getElementById('btnError');
+                this.btnClear = document.getElementById('btnClear');
+                this.btnPause = document.getElementById('btnPause');
+                this.btnTest = document.getElementById('btnTest');
+
+                this.infoCount = document.getElementById('infoCount');
+                this.warnCount = document.getElementById('warnCount');
+                this.errorCount = document.getElementById('errorCount');
+                this.uptime = document.getElementById('uptime');
+            }
+
+            setupEventListeners() {
+                this.btnAll.addEventListener('click', () => this.setFilter('all'));
+                this.btnInfo.addEventListener('click', () => this.setFilter('info'));
+                this.btnWarn.addEventListener('click', () => this.setFilter('warn'));
+                this.btnError.addEventListener('click', () => this.setFilter('error'));
+                this.btnClear.addEventListener('click', () => this.clearLogs());
+                this.btnPause.addEventListener('click', () => this.togglePause());
+                this.btnTest.addEventListener('click', () => this.addTestLog());
+
+                this.filterInput.addEventListener('input', (e) => {
+                    this.searchFilter = e.target.value.toLowerCase();
+                    this.filterLogs();
+                });
+            }
+
+            async startLogPolling() {
+                try {
+                    this.connectToLogStream();
+                } catch (error) {
+                    this.setConnectionStatus(false);
+                    console.error('Failed to start log polling:', error);
+                }
+            }
+
+            connectToLogStream() {
+                console.log('Connecting to log stream...');
+
+                // Use full URL to support cross-origin requests
+                const streamUrl = 'http://localhost:3002/logs/stream';
+                const eventSource = new EventSource(streamUrl);
+
+                eventSource.onopen = () => {
+                    console.log('Connected to log stream');
+                    this.setConnectionStatus(true);
+                };
+
+                eventSource.onmessage = (event) => {
+                    console.log('Received SSE message:', event.data);
+
+                    if (this.isPaused) {
+                        console.log('Paused, skipping message');
+                        return;
+                    }
+
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Parsed data:', data);
+
+                        if (data.type === 'connected') {
+                            console.log('Log stream connected:', data.message);
+                            return;
+                        }
+
+                        if (data.type === 'log') {
+                            // Clean up the message - extract just the meaningful part
+                            let cleanMessage = data.message;
+
+                            // If the message starts with the emoji format, extract just the actual message
+                            const messageMatch = cleanMessage.match(/💡\s*[\d-T:.-]+\s*│\s*\[[\w\s]+\]\s*│\s*(.+?)(?:\s*│|$)/);
+                            if (messageMatch) {
+                                cleanMessage = messageMatch[1].trim();
+                                console.log('Cleaned message:', cleanMessage);
+                            }
+
+                            const logEntry = {
+                                level: data.level,
+                                message: cleanMessage,
+                                timestamp: new Date(data.timestamp),
+                                time: data.time,
+                                metadata: data.metadata
+                            };
+
+                            console.log('Adding log entry:', logEntry);
+                            console.log('Current logs count before adding:', this.logs.length);
+                            this.addLog(logEntry);
+                            console.log('Current logs count after adding:', this.logs.length);
+                            this.lastUpdate.textContent = new Date().toLocaleTimeString();
+                        }
+                    } catch (error) {
+                        console.error('Error parsing log data:', error, 'Raw data:', event.data);
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    console.error('Log stream error:', error);
+                    this.setConnectionStatus(false);
+
+                    // Try to reconnect after 5 seconds
+                    setTimeout(() => {
+                        if (eventSource.readyState === EventSource.CLOSED) {
+                            console.log('Attempting to reconnect...');
+                            this.connectToLogStream();
+                        }
+                    }, 5000);
+                };
+
+                this.eventSource = eventSource;
+            }
+
+            async fetchLogs() {
+                // This method is no longer needed as we're using Server-Sent Events
+                // Keeping for compatibility but not using it
+            }
+
+            generateSampleLogs() {
+                // This method is no longer needed as we're getting real logs
+                // Keeping for compatibility but not using it
+            }
+
+            addLog(logEntry) {
+                console.log('addLog called with:', logEntry);
+                console.log('Current logs array length before:', this.logs.length);
+
+                this.logs.push(logEntry);
+                console.log('Current logs array length after push:', this.logs.length);
+
+                // Check if level exists in stats
+                if (!this.stats[logEntry.level]) {
+                    console.log('Unknown log level:', logEntry.level, 'initializing to 0');
+                    this.stats[logEntry.level] = 0;
+                }
+
+                this.stats[logEntry.level]++;
+                console.log('Updated stats:', this.stats);
+
+                this.updateStats();
+                console.log('About to call filterLogs...');
+                this.filterLogs();
+                console.log('filterLogs completed');
+
+                // Keep only last 1000 logs
+                if (this.logs.length > 1000) {
+                    this.logs = this.logs.slice(-1000);
+                }
+            }
+
+            setFilter(filter) {
+                this.currentFilter = filter;
+
+                // Update button states
+                document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`btn${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+
+                this.filterLogs();
+            }
+
+            filterLogs() {
+                console.log('filterLogs called');
+                console.log('Total logs:', this.logs.length);
+                console.log('Current filter:', this.currentFilter);
+                console.log('Search filter:', this.searchFilter);
+
+                this.filteredLogs = this.logs.filter(log => {
+                    const matchesLevel = this.currentFilter === 'all' || log.level === this.currentFilter;
+                    const matchesSearch = !this.searchFilter || log.message.toLowerCase().includes(this.searchFilter);
+                    return matchesLevel && matchesSearch;
+                });
+
+                console.log('Filtered logs count:', this.filteredLogs.length);
+                console.log('About to call renderLogs...');
+                this.renderLogs();
+                console.log('renderLogs completed');
+            }
+
+            renderLogs() {
+                console.log('renderLogs called');
+                console.log('Filtered logs length:', this.filteredLogs.length);
+                console.log('Total logs length:', this.logs.length);
+
+                if (this.filteredLogs.length === 0) {
+                    if (this.logs.length === 0) {
+                        console.log('No logs at all, showing waiting message');
+                        this.logContainer.innerHTML = '<div class="loading">🔄 Waiting for logs...</div>';
+                    } else {
+                        console.log('Logs exist but filtered out, showing filter message');
+                        this.logContainer.innerHTML = '<div class="loading">No logs match current filter</div>';
+                    }
+                    return;
+                }
+
+                console.log('Creating HTML for', this.filteredLogs.length, 'filtered logs');
+                const logsHtml = this.filteredLogs.slice(-100).map(log => {
+                    const timestamp = log.timestamp.toLocaleTimeString();
+                    const emoji = this.getLogEmoji(log.level);
+
+                    // Show metadata if it's an object with useful info
+                    let metadataHtml = '';
+                    if (log.metadata && typeof log.metadata === 'object') {
+                        if (log.metadata.question) {
+                            metadataHtml = `<div class="log-metadata">💭 "${log.metadata.question}"</div>`;
+                        } else if (log.metadata.memoriesFound !== undefined) {
+                            metadataHtml = `<div class="log-metadata">📚 Found ${log.metadata.memoriesFound} memories</div>`;
+                        } else if (log.metadata.route) {
+                            metadataHtml = `<div class="log-metadata">🔗 Route: ${log.metadata.route}</div>`;
+                        }
+                    }
+
+                    return `
+                        <div class="log-entry ${log.level}">
+                            <span class="log-timestamp">${timestamp}</span>
+                            <span class="log-level ${log.level}">${log.level.toUpperCase()}</span>
+                            <span class="log-message">${emoji} ${log.message}</span>
+                            ${metadataHtml}
+                        </div>
+                    `;
+                }).join('');
+
+                console.log('Generated HTML length:', logsHtml.length);
+                console.log('Setting innerHTML...');
+                this.logContainer.innerHTML = logsHtml;
+                console.log('innerHTML set');
+
+                // Auto-scroll to bottom
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                console.log('Scrolled to bottom');
+
+                this.logCount.textContent = this.logs.length;
+                console.log('Updated log count to:', this.logs.length);
+            }
+
+            getLogEmoji(level) {
+                const emojis = {
+                    info: '💙',
+                    warn: '⚠️',
+                    error: '🚨',
+                    success: '✅'
+                };
+                return emojis[level] || '📝';
+            }
+
+            clearLogs() {
+                this.logs = [];
+                this.filteredLogs = [];
+                this.stats = { info: 0, warn: 0, error: 0 };
+                this.updateStats();
+                this.renderLogs();
+            }
+
+            togglePause() {
+                this.isPaused = !this.isPaused;
+                this.btnPause.textContent = this.isPaused ? 'Resume' : 'Pause';
+                this.btnPause.classList.toggle('active', this.isPaused);
+            }
+
+            setConnectionStatus(connected) {
+                this.connectionStatus.className = `status-dot ${connected ? 'connected' : 'disconnected'}`;
+                this.connectionText.textContent = connected ? 'Connected' : 'Disconnected';
+            }
+
+            updateStats() {
+                this.infoCount.textContent = this.stats.info;
+                this.warnCount.textContent = this.stats.warn;
+                this.errorCount.textContent = this.stats.error;
+            }
+
+            addTestLog() {
+                console.log('Adding test log...');
+                const testLog = {
+                    level: 'info',
+                    message: 'Test log entry - ' + new Date().toLocaleTimeString(),
+                    timestamp: new Date(),
+                    time: new Date().toLocaleTimeString()
+                };
+                this.addLog(testLog);
+            }
+
+            startUptimeCounter() {
+                setInterval(() => {
+                    const seconds = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const hours = Math.floor(minutes / 60);
+
+                    if (hours > 0) {
+                        this.uptime.textContent = `${hours}h ${minutes % 60}m`;
+                    } else if (minutes > 0) {
+                        this.uptime.textContent = `${minutes}m ${seconds % 60}s`;
+                    } else {
+                        this.uptime.textContent = `${seconds}s`;
+                    }
+                }, 1000);
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing Magi Dashboard...');
+            const dashboard = new MagiDashboard();
+            console.log('Dashboard initialized:', dashboard);
+            // Make dashboard accessible for debugging
+            window.dashboard = dashboard;
+        });
+    </script>
+</body>
+</html>

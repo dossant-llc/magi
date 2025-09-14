@@ -89,6 +89,35 @@ export class EmbeddingService {
   }
 
   /**
+   * Check if indexing/embedding is currently in progress
+   */
+  async isIndexingInProgress(): Promise<{ inProgress: boolean; lockAge?: number; lockInfo?: string }> {
+    try {
+      const lockStat = await fs.stat(this.lockPath);
+      const lockAge = Date.now() - lockStat.mtime.getTime();
+
+      // Read lock content to get process info
+      let lockInfo = '';
+      try {
+        const lockContent = await fs.readFile(this.lockPath, 'utf8');
+        const [pid, timestamp] = lockContent.split('-');
+        lockInfo = `PID ${pid} (started ${Math.round(lockAge / 1000)}s ago)`;
+      } catch (e) {
+        lockInfo = `Lock age: ${Math.round(lockAge / 1000)}s`;
+      }
+
+      return {
+        inProgress: true,
+        lockAge,
+        lockInfo
+      };
+    } catch (error) {
+      // Lock file doesn't exist - no indexing in progress
+      return { inProgress: false };
+    }
+  }
+
+  /**
    * Generate embedding for text content
    */
   async generateEmbedding(content: string): Promise<number[]> {
@@ -656,10 +685,48 @@ export class EmbeddingService {
         };
       });
 
-      const filteredResults = results.filter(result => result.similarity >= threshold);
-      const finalResults = filteredResults
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, limit);
+      // Debug logging for similarity analysis - show top candidates regardless of threshold
+      const allSorted = results.sort((a, b) => b.similarity - a.similarity);
+      const topCandidates = allSorted.slice(0, 5);
+      this.loggerService.debug('Similarity analysis for realistic query', {
+        query: query.substring(0, 80),
+        threshold,
+        topCandidates: topCandidates.map(r => ({
+          similarity: Math.round(r.similarity * 1000) / 1000,
+          title: r.title?.substring(0, 40) || 'untitled',
+          belowThreshold: r.similarity < threshold
+        }))
+      });
+
+      // Implement soft thresholding with statistical filtering
+      const allSorted = results.sort((a, b) => b.similarity - a.similarity);
+
+      // Apply soft statistical threshold to avoid empty results
+      let filteredResults = allSorted.filter(result => result.similarity >= threshold);
+
+      // If hard threshold yields no results, use soft statistical filtering
+      if (filteredResults.length === 0 && allSorted.length > 0) {
+        const scores = allSorted.map(r => r.similarity);
+        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const std = Math.sqrt(scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length) || 1;
+        const softThreshold = Math.max(0.1, mean - 0.5 * std); // More permissive fallback
+
+        filteredResults = allSorted.filter(result => result.similarity >= softThreshold);
+        this.loggerService.debug('Applied soft statistical threshold', {
+          hardThreshold: threshold,
+          softThreshold: Math.round(softThreshold * 1000) / 1000,
+          originalCount: allSorted.length,
+          filteredCount: filteredResults.length
+        });
+      }
+
+      // Ensure we have at least top 3 candidates if any exist
+      if (filteredResults.length === 0 && allSorted.length > 0) {
+        filteredResults = allSorted.slice(0, Math.min(3, allSorted.length));
+        this.loggerService.debug('Using emergency top-3 fallback');
+      }
+
+      const finalResults = filteredResults.slice(0, limit);
 
       this.loggerService.endTimer('fast_vector_search', { 
         results: finalResults.length,

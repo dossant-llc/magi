@@ -86,6 +86,18 @@ module.exports = {
       // Force override requested mode (for demos)
       forceMode: process.env.CHATGPT_FORCE_MODE === 'true'
     },
+
+    // Search Configuration
+    search: {
+      // Vector similarity threshold for memory search (0.0-1.0)
+      // Lower = more results, higher = more precise results
+      // Soft threshold for initial filtering - much more permissive
+      similarityThreshold: parseFloat(process.env.AI_SEARCH_SIMILARITY_THRESHOLD) || 0.15,
+      // Increased top-K for better recall on natural language queries
+      maxResults: parseInt(process.env.AI_SEARCH_MAX_RESULTS) || 10,
+      // Top-K for vector search before ranking and filtering
+      vectorTopK: parseInt(process.env.AI_SEARCH_VECTOR_TOPK) || 15
+    },
     
     // Model configurations by provider
     // AI_PROVIDER is the ONLY selector - keeps models consistent
@@ -203,6 +215,10 @@ module.exports = {
         provider: synthesisProvider,
         mode: this.ai.synthesis.mode,
         preferPerformance: this.ai.synthesis.preferPerformance
+      },
+      search: {
+        similarityThreshold: this.ai.search.similarityThreshold,
+        maxResults: this.ai.search.maxResults
       }
     };
 

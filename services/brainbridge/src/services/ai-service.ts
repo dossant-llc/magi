@@ -293,21 +293,56 @@ ${content}
     tags?: string;
     relevanceScore: number;
   }>> {
-    this.loggerService.trace('Starting fast memory search (index-only)', { query, maxPrivacy, limit });
-    
+    this.loggerService.trace('Starting fast memory search (index-only)', {
+      query,
+      maxPrivacy,
+      limit,
+      method: 'searchMemoriesFast',
+      callStack: 'ai-service.searchMemoriesFast'
+    });
+
     try {
-      // Use the new fast search method
-      const fastResults = await this.embeddingService.searchSimilarFast(query, limit, 0.2);
+      // Use the configured similarity threshold and top-K from AI config
+      const similarityThreshold = aiConfig.getSimilarityThreshold();
+      const vectorTopK = aiConfig.getSearchConfig().vectorTopK || 15;
+      this.loggerService.trace('Vector search parameters', {
+        query,
+        limit,
+        vectorTopK,
+        similarityThreshold,
+        embeddingService: 'searchSimilarFast'
+      });
+
+      const fastResults = await this.embeddingService.searchSimilarFast(query, vectorTopK, similarityThreshold);
       
-      if (fastResults && fastResults.length > 0) {
-        this.loggerService.trace('Using fast vector similarity search', { foundResults: fastResults.length });
-        
+      // Check if we have high-quality vector results (similarity > 0.25) or fallback to keyword search
+      const highQualityResults = fastResults?.filter(r => r.similarity > 0.25) || [];
+
+      if (highQualityResults.length > 0) {
+        this.loggerService.trace('Vector search results before filtering', {
+          foundResults: fastResults.length,
+          highQualityResults: highQualityResults.length,
+          results: highQualityResults.map(r => ({
+            file: r.filePath.split('/').pop(),
+            similarity: r.similarity,
+            privacy: r.privacy
+          })),
+          callStack: 'ai-service.searchMemoriesFast.beforePrivacyFilter'
+        });
+
         // Filter by privacy level
         const privacyLevels = ['public', 'team', 'personal', 'private', 'sensitive'];
         const maxLevel = privacyLevels.indexOf(maxPrivacy);
         const allowedLevels = privacyLevels.slice(0, maxLevel + 1);
-        
-        return fastResults
+
+        this.loggerService.trace('Privacy filtering parameters', {
+          maxPrivacy,
+          maxLevel,
+          allowedLevels,
+          callStack: 'ai-service.searchMemoriesFast.privacyFilter'
+        });
+
+        const filteredResults = highQualityResults
           .filter(result => allowedLevels.includes(result.privacy))
           .map(result => ({
             filename: result.filePath.split('/').pop() || 'unknown',
@@ -317,15 +352,40 @@ ${content}
             relevanceScore: Math.round(result.similarity * 100) // Convert to 0-100 scale
           }))
           .slice(0, limit);
+
+        this.loggerService.trace('Final search results after filtering', {
+          finalResults: filteredResults.length,
+          results: filteredResults.map(r => ({
+            filename: r.filename,
+            relevanceScore: r.relevanceScore,
+            category: r.category,
+            contentPreview: r.content.substring(0, 100)
+          })),
+          threshold: similarityThreshold,
+          originalVectorResults: fastResults.length,
+          callStack: 'ai-service.searchMemoriesFast.final'
+        });
+
+        return filteredResults;
       }
       
+      this.loggerService.trace('Vector search returned no high-quality results, falling back to keyword search', {
+        query,
+        maxPrivacy,
+        limit,
+        vectorResults: fastResults?.length || 0,
+        highQualityThreshold: 0.25,
+        similarityThreshold,
+        callStack: 'ai-service.searchMemoriesFast.noResults'
+      });
       return [];
     } catch (error) {
       this.loggerService.error('Fast vector search failed', {
         error: error instanceof Error ? error.message : String(error),
         searchQuery: query,
         searchLimit: limit,
-        privacy: maxPrivacy
+        privacy: maxPrivacy,
+        callStack: 'ai-service.searchMemoriesFast.error'
       });
       return [];
     }
@@ -635,9 +695,23 @@ Guidelines:
       });
       
       if (memories.length === 0) {
+        // Check if indexing is in progress - this could explain why no memories were found
+        const indexingStatus = await this.embeddingService.isIndexingInProgress();
+
+        let answer = "I couldn't find any relevant memories in your knowledge base for that question.";
+
+        if (indexingStatus.inProgress) {
+          answer += "\n\n⏳ **Note**: Memory indexing is currently in progress " +
+                   `(${indexingStatus.lockInfo}). Recent memories may not be searchable yet. ` +
+                   "Please try again in a few moments once indexing is complete.";
+        } else {
+          // Check for recent memory files that might not be indexed yet
+          answer += "\n\n*No relevant memories found in your knowledge base.*";
+        }
+
         return {
           success: true,
-          answer: "I couldn't find any relevant memories in your knowledge base for that question.",
+          answer,
           sources: [],
           memoryCount: 0
         };
@@ -830,7 +904,7 @@ Guidelines:
     
     try {
       // Try vector search first (if embeddings are available)
-      const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.2);
+      const vectorResults = await this.embeddingService.searchSimilar(query, limit, 0.6);
       
       if (vectorResults && vectorResults.length > 0) {
         this.loggerService.trace('Using vector similarity search', { foundResults: vectorResults.length });
