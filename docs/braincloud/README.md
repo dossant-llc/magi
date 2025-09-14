@@ -1,12 +1,12 @@
 # BrainCloud Platform
 
 > 🔨 **EXPERIMENTAL** - Working but not production-ready. Needs polish before public release.
-> 
+>
 > **Status**: Functional core, rough edges, security hardening needed
 
 **The unified platform for AI-powered P2P communication and collaboration.**
 
-BrainCloud is the latest evolution of our brain-sharing ecosystem, consolidating all services into a single, robust platform. It replaces the individual BrainXchange and Brain Proxy deployments with a unified architecture.
+BrainCloud is the latest evolution of our brain-sharing ecosystem, consolidating all services into a unified platform for Brain Proxy and BrainXchange functionality.
 
 ## 🏗️ Architecture
 
@@ -18,192 +18,91 @@ BrainCloud Platform (Port 8082)
 │   ├── Expert Consultation
 │   └── WebSocket Connections
 ├── 🔗 Brain Proxy Service (/bp/)
-│   ├── Custom GPT Integration (/bp/connect)
-│   ├── MCP Protocol Bridge (/bp/health)
-│   └── OpenAPI Spec (/bp/openapi.json)
-└── 📊 System APIs (/api/)
-    ├── Status Monitoring (/api/status)
-    └── Service Statistics (/api/stats)
+│   ├── ChatGPT Integration
+│   ├── Route Management
+│   └── Security Layer
+└── 📊 Analytics & Monitoring
 ```
 
-## 🚀 Deployment
+## 🚀 Local Development
 
-### Production Deployment
+### Prerequisites
+- Node.js 22+
+- Port 8082 available
+
+### Start Development Server
 ```bash
-cd /Users/igor/Documents/code/agiforme/services/braincloud
-./deploy.sh
+# From project root
+npm run braincloud:dev
+
+# Or manually
+cd services/braincloud
+npm install
+npm start
 ```
 
-The deployment script:
-- ✅ Creates clean deployment package using rsync
-- ✅ Handles proper service lifecycle (stop → start → verify)
-- ✅ Installs dependencies on remote server
-- ✅ Provides comprehensive logging and monitoring
-- ✅ Verifies successful startup with health checks
-- ✅ Automatically loads NVM environment for Node.js
-
-### Deployment Verification
-After deployment, verify all services are working:
+### Health Check
 ```bash
-# Check system status
-curl -s https://your-server.com/api/status | jq '.status'
-
-# Check Brain Proxy health
-curl -s https://your-server.com/bp/health | jq '.status'
-
-# Verify dashboard is accessible
-curl -s https://your-server.com/ | head -n 3
-
-# Confirm service is running
-ssh igoram2@vps34824.dreamhostps.com 'pgrep -f "node server.js" && echo "✅ Running" || echo "❌ Stopped"'
+curl http://localhost:8082/health
 ```
 
-### Service URLs (Production)
-- **Dashboard**: `https://your-server.com/`
-- **BrainXchange WebSocket**: `wss://your-server.com/bx`
-- **Brain Proxy WebSocket**: `wss://your-server.com/bp/connect`
-- **System Status**: `https://your-server.com/api/status`
-- **Brain Proxy Health**: `https://your-server.com/bp/health`
+## 🌐 Production Deployment
 
-### DreamHost Proxy Configuration
-The service runs internally on port 8082 but is automatically proxied by DreamHost:
-- **Internal**: `localhost:8082` (server-side only)
-- **External**: Standard HTTP/HTTPS ports (80/443)
-- **SSL Termination**: Handled by DreamHost proxy layer
-
-**Working Services:**
-- `https://your-server.com/` ✅ (Dashboard)
-- `https://your-server.com/api/status` ✅ (System Status API)
-- `https://your-server.com/bp/health` ✅ (Brain Proxy Health API)
-
-**⚠️ DreamHost WebSocket Proxy Limitation:**
-Per DreamHost's official policy: *"WebSockets can be used on a VPS or Dedicated Server using a non-privileged port as a local app. However, running websockets using a Proxy Server that is available to the public is not supported."*
-
-This means public WebSocket URLs are not supported:
-- `wss://your-server.com/bx` ❌ (DreamHost doesn't proxy WebSockets)
-- `wss://your-server.com/bp/connect` ❌ (DreamHost doesn't proxy WebSockets)
-
-**Workaround for Development:**
-For WebSocket connections, use direct port access (if available) or configure local development:
+### Environment Setup
 ```bash
-# Local development with deployed APIs
-BRAINXCHANGE_SERVER=ws://localhost:8082/bx  # Local BrainCloud instance
-BRAIN_PROXY_URL=ws://localhost:8082/bp/connect  # Local BrainCloud instance
+# Required environment variables
+export NODE_ENV=production
+export PORT=8082
+export BRAINCLOUD_SECRET=your-secure-secret
+export ALLOWED_ORIGINS=https://your-domain.com
 ```
 
-## 📊 Service Management
-
-### Monitor Service
+### Process Management
 ```bash
-# Check if service is running
-ssh igoram2@vps34824.dreamhostps.com 'pgrep -f "node server.js" && echo "Running" || echo "Stopped"'
+# Using PM2 (recommended)
+pm2 start ecosystem.config.js --only braincloud
+pm2 status
+pm2 logs braincloud
+
+# Manual start
+node server.js
+```
+
+### Monitoring
+```bash
+# Check service status
+curl http://your-server.com:8082/health
 
 # View logs
-ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/your-server.com/braincloud/braincloud.log'
+pm2 logs braincloud --lines 100
 
-# Check service health
-curl -s https://your-server.com/api/status | jq
+# Monitor resources
+pm2 monit
 ```
 
-### Manual Service Control
-```bash
-# Start service
-ssh igoram2@vps34824.dreamhostps.com 'cd /home/igoram2/your-server.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
+## 🔧 Configuration
 
-# Stop service
-ssh igoram2@vps34824.dreamhostps.com 'pkill -f "node server.js"'
+### Security Settings
+- Enable HTTPS in production
+- Configure CORS for allowed origins
+- Set secure session secrets
+- Implement rate limiting
 
-# Restart service
-ssh igoram2@vps34824.dreamhostps.com 'pkill -f "node server.js"; sleep 2; cd /home/igoram2/your-server.com/braincloud && nohup node server.js > braincloud.log 2>&1 &'
-```
+### Service Endpoints
+- **Dashboard**: `http://localhost:8082/`
+- **BrainXchange**: `http://localhost:8082/bx`
+- **Brain Proxy**: `http://localhost:8082/bp`
+- **Health Check**: `http://localhost:8082/health`
 
-## 🔄 Migration from Legacy Services
+## 🛠️ Development Notes
 
-### ⚠️ Deprecated Services
-- **❌ BrainXchange Standalone**: `services/brainxchange/` - Now integrated into BrainCloud
-- **❌ Individual Brain Proxy**: Separate deployments - Now part of unified platform
+This is an experimental platform combining multiple AI communication services. For production use, consider:
 
-### ✅ Current Architecture
-All functionality is now consolidated in **BrainCloud Platform**:
-
-| Legacy Service | New Location | URL |
-|---|---|---|
-| BrainXchange Server | BrainCloud `/bx` | `wss://your-server.com/bx` |
-| Brain Proxy | BrainCloud `/bp/connect` | `wss://your-server.com/bp/connect` |
-| Dashboard | BrainCloud `/` | `https://your-server.com/` |
-
-### Configuration Updates
-Update your client configurations:
-
-**Before (Deprecated)**:
-```bash
-BRAINXCHANGE_SERVER=ws://your-server.com:8082
-BRAIN_PROXY_URL=ws://your-server.com:8082/bp/connect
-```
-
-**After (BrainCloud)**:
-```bash
-BRAINXCHANGE_SERVER=wss://your-server.com/bx
-BRAIN_PROXY_URL=wss://your-server.com/bp/connect
-```
-
-## 🧠 Services Overview
-
-### BrainXchange Service (`/bx`)
-- **Purpose**: P2P memory sharing and expert consultation
-- **Protocol**: WebSocket with JSON messaging
-- **Features**:
-  - User identification and friend discovery
-  - Invitation-based connections
-  - Real-time knowledge sharing
-  - "magi ask @friend" commands
-
-### Brain Proxy Service (`/bp/`)
-- **Purpose**: Custom GPT integration and MCP protocol bridging
-- **Protocol**: WebSocket + HTTP APIs
-- **Features**:
-  - Route-based connections (`/bp/connect`)
-  - Health monitoring (`/bp/health`)
-  - OpenAPI specification (`/bp/openapi.json`)
-  - Secure proxy tunneling
-
-### System APIs (`/api/`)
-- **Purpose**: Platform monitoring and statistics
-- **Features**:
-  - Real-time connection counts
-  - Service health status
-  - Performance metrics
-  - Operational logs
-
-## 🛠️ Development
-
-### Local Development
-For local development, individual services can still be run separately:
-```bash
-# Run legacy BrainXchange for testing
-cd services/brainxchange/server && npm start
-
-# Run BrainCloud platform
-cd services/braincloud && node server.js
-```
-
-### Environment Configuration
-```bash
-# BrainCloud Production
-BRAINXCHANGE_SERVER=wss://your-server.com/bx
-BRAIN_PROXY_URL=wss://your-server.com/bp/connect
-
-# Local Development (if needed)
-BRAINXCHANGE_SERVER=ws://localhost:8082/bx
-BRAIN_PROXY_URL=ws://localhost:8082/bp/connect
-```
+1. **Security hardening** - Add authentication, encryption
+2. **Load balancing** - Multiple instances for high availability
+3. **Monitoring** - Comprehensive logging and alerting
+4. **Documentation** - API documentation and user guides
 
 ---
 
-## 🎯 Quick Start
-
-1. **Deploy**: `./deploy.sh`
-2. **Verify**: `curl https://your-server.com/api/status`
-3. **Monitor**: `ssh igoram2@vps34824.dreamhostps.com 'tail -f /home/igoram2/your-server.com/braincloud/braincloud.log'`
-
-**Welcome to BrainCloud - The unified brain-sharing platform! 🌥️🧠**
+*For detailed deployment instructions, see [DEPLOYMENT_AND_CONNECTIVITY_GUIDE.md](../deployment/DEPLOYMENT_AND_CONNECTIVITY_GUIDE.md)*
