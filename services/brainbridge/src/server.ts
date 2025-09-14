@@ -574,8 +574,27 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
         ],
       };
     }
-    
+
     throw new Error(`Resource not found: ${uri}`);
+  }
+
+  async handleEmbeddingRemoval(filePath: string) {
+    try {
+      const success = await this.embeddingService.removeEmbedding(filePath);
+      return {
+        success,
+        message: success ? 'Embedding removed successfully' : 'No embedding found for file'
+      };
+    } catch (error) {
+      this.loggerService.error('Failed to remove embedding', {
+        filePath,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   async handleToolCall(name: string, args: any) {

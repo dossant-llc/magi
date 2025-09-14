@@ -29,6 +29,9 @@ export class McpRoutes {
           case 'resources/read':
             response = this.serverInstance.readResource(request.params.uri);
             break;
+          case 'embedding/remove':
+            response = await this.serverInstance.handleEmbeddingRemoval(request.params.filePath);
+            break;
           default:
             return res.status(400).json({ error: `Unknown method: ${request.method}` });
         }

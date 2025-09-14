@@ -10,6 +10,11 @@ const fs = require('fs');
 const path = require('path');
 const { getProjectRoot } = require('./path-utils');
 
+// Get memories directory function
+function getMemoriesDir() {
+  return path.join(getProjectRoot(), 'data', 'memories', 'profiles', 'default');
+}
+
 console.log('🏆 GOLD STANDARD Random Facts Search Test - GO/NOGO Decision Tool');
 console.log('================================================================\n');
 
@@ -646,6 +651,28 @@ async function cleanupTestMemory(results) {
     if (fs.existsSync(targetFile)) {
       fs.unlinkSync(targetFile);
       console.log(`🗑️  Deleted test memory: ${path.relative(getProjectRoot(), targetFile)}`);
+
+      // Clean up embedding index to prevent stale references
+      try {
+        const relativePath = path.relative(getMemoriesDir(), targetFile);
+        const normalizedPath = `memories/${relativePath}`;
+
+        const cleanupRequest = {
+          method: 'embedding/remove',
+          params: { filePath: normalizedPath }
+        };
+
+        // Create server object for HTTP request
+        const httpServer = { isExistingServer: true };
+        const cleanupResponse = await sendMCPRequest(httpServer, cleanupRequest);
+        if (cleanupResponse.success) {
+          console.log(`🧠 Cleaned up embedding index: ${normalizedPath}`);
+        } else {
+          console.log(`✅ Embedding cleanup: ${cleanupResponse.message || 'No embedding found'} (expected for quick test)`);
+        }
+      } catch (embeddingError) {
+        console.log(`⚠️  Could not clean up embedding: ${embeddingError.message}`);
+      }
 
       // Verify it's actually gone
       if (!fs.existsSync(targetFile)) {

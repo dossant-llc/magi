@@ -762,6 +762,40 @@ export class EmbeddingService {
   }
 
   /**
+   * Remove embedding from index by file path
+   */
+  async removeEmbedding(filePath: string): Promise<boolean> {
+    this.loggerService.trace('Removing embedding from index', { filePath });
+
+    try {
+      const index = await this.loadIndex();
+      const initialCount = index.embeddings.length;
+
+      // Remove embedding with matching file path
+      index.embeddings = index.embeddings.filter(e => e.filePath !== filePath);
+      const finalCount = index.embeddings.length;
+
+      if (initialCount > finalCount) {
+        await this.saveIndex(index);
+        this.loggerService.trace('Successfully removed embedding from index', {
+          filePath,
+          removedCount: initialCount - finalCount
+        });
+        return true;
+      } else {
+        this.loggerService.trace('No embedding found to remove', { filePath });
+        return false;
+      }
+    } catch (error) {
+      this.loggerService.error('Failed to remove embedding from index', {
+        error: error instanceof Error ? error.message : String(error),
+        filePath
+      });
+      return false;
+    }
+  }
+
+  /**
    * Generate a content preview for quick display
    */
   private generateContentPreview(content: string, title?: string): string {

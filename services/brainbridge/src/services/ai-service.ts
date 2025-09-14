@@ -699,8 +699,8 @@ Guidelines:
       // Performance tracking for search
       this.loggerService.startTimer('memory_search');
 
-      // Search for relevant memories (simplified version)
-      let memories = await this.searchMemories(question, maxPrivacy, limit);
+      // Search for relevant memories using hybrid search (Vector + BM25 + RRF)
+      let memories = await this.searchMemoriesFast(question, maxPrivacy, limit);
 
       // Apply temporal weighting if query is temporally sensitive
       if (queryClassification.temporalSensitive && memories.length > 1) {

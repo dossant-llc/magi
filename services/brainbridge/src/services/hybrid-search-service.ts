@@ -204,45 +204,96 @@ export class HybridSearchService {
       finalResults = 10
     } = options;
 
-    this.loggerService.trace('Starting hybrid search', {
+    this.loggerService.trace('🔍 EXTREME TRACE: Starting hybrid search', {
       query,
       vectorTopK,
       bm25TopK,
       fusedTopK,
-      finalResults
+      finalResults,
+      bm25ServiceExists: !!this.bm25Service,
+      bm25Stats: this.bm25Service?.getStats()
     });
 
     try {
       // Run vector search and BM25 search
+      this.loggerService.trace('🔍 EXTREME TRACE: Calling vector search function', { vectorTopK });
       const vectorResults = await vectorSearchFn(query, vectorTopK);
+
+      this.loggerService.trace('🔍 EXTREME TRACE: Calling BM25 search', {
+        bm25TopK,
+        bm25ServiceAvailable: !!this.bm25Service,
+        bm25Stats: this.bm25Service?.getStats()
+      });
       const bm25Results = this.bm25Service?.search(query, bm25TopK) || [];
 
-      this.loggerService.trace('Individual search results', {
+      this.loggerService.trace('🔍 EXTREME TRACE: Individual search results', {
+        query,
         vectorResults: vectorResults.length,
         bm25Results: bm25Results.length,
         topVectorScore: vectorResults[0]?.similarity || 0,
-        topBM25Score: bm25Results[0]?.score || 0
+        topBM25Score: bm25Results[0]?.score || 0,
+        vectorSample: vectorResults.slice(0, 2).map(r => ({
+          id: r.id,
+          title: r.title?.substring(0, 30),
+          similarity: r.similarity
+        })),
+        bm25Sample: bm25Results.slice(0, 2).map(r => ({
+          id: r.id,
+          title: r.title?.substring(0, 30),
+          score: r.score
+        }))
       });
 
       // Apply RRF fusion
+      this.loggerService.trace('🔍 EXTREME TRACE: Starting RRF fusion');
       const fusedResults = this.rrfFusion(vectorResults, bm25Results);
+
+      this.loggerService.trace('🔍 EXTREME TRACE: RRF fusion completed', {
+        fusedResultsCount: fusedResults.length,
+        topFusedScores: fusedResults.slice(0, 3).map(r => ({
+          id: r.id,
+          title: r.title?.substring(0, 30),
+          rrfScore: r.score,
+          vectorScore: r.vectorScore,
+          bm25Score: r.bm25Score
+        }))
+      });
 
       // Take top candidates for re-ranking
       const candidatesForRerank = fusedResults.slice(0, fusedTopK);
 
+      this.loggerService.trace('🔍 EXTREME TRACE: Candidates for re-ranking', {
+        candidatesCount: candidatesForRerank.length,
+        fusedTopK
+      });
+
       // Apply coverage-based re-ranking
+      this.loggerService.trace('🔍 EXTREME TRACE: Starting coverage-based re-ranking');
       const rerankedResults = this.applyCoverageBonus(candidatesForRerank, query);
+
+      this.loggerService.trace('🔍 EXTREME TRACE: Coverage re-ranking completed', {
+        rerankedCount: rerankedResults.length,
+        topRerankedScores: rerankedResults.slice(0, 3).map(r => ({
+          id: r.id,
+          title: r.title?.substring(0, 30),
+          finalScore: r.score,
+          coverageBonus: r.coverageBonus
+        }))
+      });
 
       // Return final results
       const finalHybridResults = rerankedResults.slice(0, finalResults);
 
-      this.loggerService.trace('Hybrid search completed', {
+      this.loggerService.trace('🔍 EXTREME TRACE: FINAL hybrid search results', {
         query,
+        vectorResults: vectorResults.length,
+        bm25Results: bm25Results.length,
         fusedResults: fusedResults.length,
         candidatesForRerank: candidatesForRerank.length,
         finalResults: finalHybridResults.length,
         topFinalScore: finalHybridResults[0]?.score || 0,
-        scoreBreakdown: finalHybridResults.slice(0, 3).map(r => ({
+        completeScoreBreakdown: finalHybridResults.slice(0, 3).map(r => ({
+          id: r.id,
           title: r.title?.substring(0, 40),
           totalScore: Math.round(r.score * 1000) / 1000,
           vectorScore: r.vectorScore ? Math.round(r.vectorScore * 1000) / 1000 : undefined,

@@ -134,13 +134,34 @@ export class BM25Service {
    */
   search(query: string, limit: number = 50): BM25SearchResult[] {
     try {
-      this.loggerService.trace('Starting BM25 search', { query, limit });
+      this.loggerService.trace('🔍 EXTREME TRACE: Starting BM25 search', {
+        query,
+        limit,
+        documentsInIndex: this.documents.size,
+        searchEngineExists: !!this.searchEngine
+      });
 
       // Expand query for better recall
       const expandedQuery = this.expandQuery(query);
 
+      this.loggerService.trace('🔍 EXTREME TRACE: Query expansion completed', {
+        originalQuery: query,
+        expandedQuery: expandedQuery.substring(0, 200),
+        expansionLength: expandedQuery.length
+      });
+
       // Perform BM25 search
+      this.loggerService.trace('🔍 EXTREME TRACE: Executing BM25 search engine');
       const results = this.searchEngine.search(expandedQuery, limit);
+
+      this.loggerService.trace('🔍 EXTREME TRACE: Raw BM25 search results', {
+        rawResultsCount: results.length,
+        rawResults: results.slice(0, 3).map((r: any) => ({
+          docId: r[0],
+          score: r[1],
+          hasDocument: this.documents.has(r[0])
+        }))
+      });
 
       // Convert results to our format
       const searchResults: BM25SearchResult[] = results.map((result: any) => {
@@ -161,13 +182,20 @@ export class BM25Service {
         };
       }).filter(Boolean) as BM25SearchResult[];
 
-      this.loggerService.trace('BM25 search completed', {
+      this.loggerService.trace('🔍 EXTREME TRACE: BM25 search completed', {
         query,
-        resultsFound: searchResults.length,
+        originalQuery: query,
+        expandedQuery: expandedQuery.substring(0, 100),
+        rawResultsCount: results.length,
+        processedResultsCount: searchResults.length,
+        documentsInIndex: this.documents.size,
         topScore: searchResults[0]?.score || 0,
-        topResults: searchResults.slice(0, 3).map(r => ({
+        detailedResults: searchResults.slice(0, 3).map(r => ({
+          id: r.id,
           title: r.title?.substring(0, 40),
-          score: Math.round(r.score * 100) / 100
+          score: Math.round(r.score * 100) / 100,
+          privacy: r.privacy,
+          contentLength: r.content?.length || 0
         }))
       });
 
