@@ -1033,11 +1033,15 @@ For access to your personal memories and knowledge base, please ensure your loca
         }
         
         this.stats.totalRequests++;
-        
+
+        // Enhanced logging for ChatGPT/MCP requests
         this.logMessage('info', `🤖 Brain Proxy MCP request`, {
           Route: extractedRoute,
           Method: request.method,
-          ID: request.id ? request.id.toString().substring(0, 8) : 'none'
+          ID: request.id ? request.id.toString().substring(0, 8) : 'none',
+          RequestPayload: JSON.stringify(request, null, 2),
+          Timestamp: new Date().toISOString(),
+          Source: 'ChatGPT-MCP'
         });
         
         const connector = this.connectors.get(extractedRoute);
@@ -1090,9 +1094,21 @@ For access to your personal memories and knowledge base, please ensure your loca
           resolve: (response) => {
             clearTimeout(timeout);
             this.pendingRequests.delete(requestId);
-            
+
+            // Enhanced response logging for ChatGPT/MCP requests
+            this.logMessage('info', `🤖 Brain Proxy MCP response`, {
+              Route: extractedRoute,
+              ID: request.id ? request.id.toString().substring(0, 8) : 'none',
+              ResponsePayload: JSON.stringify(response, null, 2),
+              Timestamp: new Date().toISOString(),
+              Source: 'BrainBridge-to-ChatGPT',
+              HasResult: !!response.result,
+              HasError: !!response.error,
+              ResponseSize: JSON.stringify(response).length + ' bytes'
+            });
+
             // Forward MCP response to Claude.ai
-            res.writeHead(200, { 
+            res.writeHead(200, {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
               'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -1103,8 +1119,19 @@ For access to your personal memories and knowledge base, please ensure your loca
           reject: (error) => {
             clearTimeout(timeout);
             this.pendingRequests.delete(requestId);
+
+            // Enhanced error logging for ChatGPT/MCP requests
+            this.logMessage('error', `🤖 Brain Proxy MCP error`, {
+              Route: extractedRoute,
+              ID: request.id ? request.id.toString().substring(0, 8) : 'none',
+              ErrorMessage: error.message || 'Internal error',
+              ErrorStack: error.stack,
+              Timestamp: new Date().toISOString(),
+              Source: 'BrainBridge-Error'
+            });
+
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ 
+            res.end(JSON.stringify({
               jsonrpc: '2.0',
               id: request.id || null,
               error: { code: -32000, message: error.message || 'Internal error' }
@@ -1114,10 +1141,20 @@ For access to your personal memories and knowledge base, please ensure your loca
         });
         
         // Send to BrainBridge via WebSocket
-        connector.ws.send(JSON.stringify({
+        const forwardedRequest = {
           ...request,
           id: requestId
-        }));
+        };
+
+        this.logMessage('info', `🤖 Brain Proxy forwarding to BrainBridge`, {
+          Route: extractedRoute,
+          ID: requestId.toString().substring(0, 8),
+          ForwardedPayload: JSON.stringify(forwardedRequest, null, 2),
+          Timestamp: new Date().toISOString(),
+          Source: 'ChatGPT-to-BrainBridge'
+        });
+
+        connector.ws.send(JSON.stringify(forwardedRequest));
         
       } catch (error) {
         this.logMessage('error', `❌ Brain Proxy MCP error`, { 

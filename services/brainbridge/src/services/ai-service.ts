@@ -569,7 +569,22 @@ Guidelines:
         stream: false,
       });
 
-      const classification = JSON.parse(response.content.trim());
+      // Extract JSON from response (handle markdown code blocks)
+      let jsonStr = response.content.trim();
+      if (jsonStr.includes('```json')) {
+        const codeBlockMatch = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch) {
+          jsonStr = codeBlockMatch[1].trim();
+        }
+      }
+
+      // Look for JSON object in the response
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+
+      const classification = JSON.parse(jsonStr);
       this.loggerService.trace('Query classified', { question, classification });
       return classification;
     } catch (error: any) {

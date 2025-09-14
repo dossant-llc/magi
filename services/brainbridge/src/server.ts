@@ -20,8 +20,10 @@ import { MemoryHandler, PatternHandler } from './handlers/index.js';
 import { McpRoutes, HealthRoutes } from './routes/index.js';
 import { brainXchangeIntegration } from './integrations/brainxchange-integration.js';
 import { BrainProxyConnector, BrainProxyConfig } from './services/brain-proxy-connector.js';
+import { NgrokConnector, NgrokConfig } from './services/ngrok-connector.js';
 import { ProviderDetectionService } from './services/provider-detection.js';
 import { getLogsDir } from './utils/magi-paths.js';
+import { aiConfig } from './config/ai-config.js';
 
 class BrainBridgeServer {
   private server: Server;
@@ -33,6 +35,8 @@ class BrainBridgeServer {
   private patternHandler: PatternHandler;
   private providerDetectionService: ProviderDetectionService;
   private brainProxyConnector: BrainProxyConnector | null = null;
+  private ngrokConnector: NgrokConnector | null = null;
+  private aiConfig = aiConfig;
 
   constructor() {
     // Initialize services with environment configuration
@@ -95,6 +99,7 @@ class BrainBridgeServer {
       console.log('🔇 BrainXchange disabled via BRAINXCHANGE_ENABLED=false');
     }
     this.initializeBrainProxy();
+    await this.initializeNgrok();
   }
 
   private async initializeProviderDetection() {
@@ -239,6 +244,65 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       });
       console.error('⚠️  Brain Proxy initialization failed:', errorMessage);
       console.error('   Continuing without Brain Proxy support...');
+    }
+  }
+
+  private async initializeNgrok() {
+    // Load ngrok configuration from config.js
+    const appConfig = require('../../../config.js');
+    const ngrokConfig: NgrokConfig = {
+      enabled: appConfig.server.ngrok.enabled,
+      region: appConfig.server.ngrok.region,
+      port: appConfig.server.ngrok.port,
+      subdomain: appConfig.server.ngrok.subdomain,
+      staticDomain: appConfig.server.ngrok.staticDomain,
+      basicAuth: appConfig.server.ngrok.basicAuth,
+      authToken: process.env.NGROK_AUTH_TOKEN
+    };
+
+    if (!ngrokConfig.enabled) {
+      this.loggerService.winston.info('Ngrok tunnel disabled via configuration', {
+        component: 'BrainBridgeServer',
+        action: 'ngrok_disabled'
+      });
+      return;
+    }
+
+    try {
+      this.loggerService.winston.info('Initializing ngrok tunnel', {
+        component: 'BrainBridgeServer',
+        action: 'initialize_ngrok',
+        port: ngrokConfig.port,
+        region: ngrokConfig.region
+      });
+
+      this.ngrokConnector = new NgrokConnector(ngrokConfig, this.loggerService);
+
+      // Start the tunnel
+      const status = await this.ngrokConnector.start();
+
+      if (status.connected && status.url) {
+        console.error('🌐 Ngrok tunnel established');
+        console.error(`   Public URL: ${status.url}`);
+        console.error(`   Local Port: ${ngrokConfig.port}`);
+        console.error(`   Region: ${ngrokConfig.region}`);
+        console.error('');
+        console.error('🤖 ChatGPT Configuration:');
+        console.error(`   Use this URL in ChatGPT: ${status.url}/mcp`);
+        console.error('');
+      } else {
+        throw new Error(status.error || 'Failed to establish tunnel');
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.loggerService.winston.warn('Ngrok initialization failed - continuing without', {
+        component: 'BrainBridgeServer',
+        action: 'ngrok_failed',
+        error: errorMessage
+      });
+      console.error('⚠️  Ngrok initialization failed:', errorMessage);
+      console.error('   Continuing without direct tunnel support...');
     }
   }
 
@@ -637,21 +701,39 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
   private async handleAIQueryMemories(args: any) {
     try {
       const { question, max_privacy = 'personal', limit = 5, synthesis_mode = 'local' } = args;
-      
+
+      // Get synthesis mode from config
+      const configSynthesisMode = this.aiConfig.getChatGPTSynthesisMode();
+      const forceMode = this.aiConfig.getChatGPTForceMode();
+      const effectiveSynthesisMode = forceMode ? configSynthesisMode : synthesis_mode;
+
       if (!question || typeof question !== 'string') {
         throw new Error('Question is required and must be a string');
       }
 
+      // Enhanced logging for expensive ChatGPT queries
       this.loggerService.winston.info('AI Query Memories request', {
         component: 'BrainBridgeServer',
         action: 'ai_query_memories',
         question,
-        synthesis_mode,
+        synthesis_mode: effectiveSynthesisMode,
+        requestedMode: synthesis_mode,
+        configMode: configSynthesisMode,
+        forceMode,
         max_privacy,
-        limit
+        limit,
+        fullRequestPayload: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'chatgpt-request',
+          method: 'ai_query_memories',
+          params: { question, synthesis_mode: effectiveSynthesisMode, max_privacy, limit }
+        }, null, 2),
+        timestamp: new Date().toISOString(),
+        source: 'ChatGPT-via-BrainProxy',
+        performanceMode: forceMode ? `FORCE_${configSynthesisMode.toUpperCase()}` : 'NORMAL'
       });
       
-      if (synthesis_mode === 'raw') {
+      if (effectiveSynthesisMode === 'raw') {
         // Fast mode: Just return the raw memories, let Claude do synthesis
         const rawResult = await this.aiService.searchMemoriesOnly(question, max_privacy, limit);
         
@@ -698,8 +780,8 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
         
         response += `*Question: "${question}"*\n\n`;
         response += `**IMPORTANT:** Please provide a direct, clean answer to the question by synthesizing the information from the memories above. Don't just list the raw content - give me a clear, conversational response.`;
-        
-        return {
+
+        const responsePayload = {
           content: [
             {
               type: 'text',
@@ -707,6 +789,21 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
             }
           ]
         };
+
+        // Enhanced response logging for ChatGPT queries (raw mode)
+        this.loggerService.winston.info('AI Query Memories response (raw mode)', {
+          component: 'BrainBridgeServer',
+          action: 'ai_query_memories_response',
+          question,
+          memoriesFound: rawResult.memories.length,
+          responsePayload: JSON.stringify(responsePayload, null, 2),
+          responseTextLength: response.length,
+          synthesis_mode,
+          timestamp: new Date().toISOString(),
+          source: 'BrainBridge-to-ChatGPT'
+        });
+
+        return responsePayload;
         
       } else {
       // Full mode: Use local AI synthesis (slow but private)
@@ -723,8 +820,8 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
         } else {
           response += `*No relevant memories found in your knowledge base.*`;
         }
-        
-        return {
+
+        const fullResponsePayload = {
           content: [
             {
               type: 'text',
@@ -732,6 +829,26 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
             }
           ]
         };
+
+        // Enhanced response logging for ChatGPT queries (hybrid/full mode)
+        this.loggerService.winston.info('AI Query Memories response (hybrid mode)', {
+          component: 'BrainBridgeServer',
+          action: 'ai_query_memories_response',
+          question,
+          memoriesFound: result.memoryCount,
+          aiAnswer: result.answer,
+          responsePayload: JSON.stringify(fullResponsePayload, null, 2),
+          responseTextLength: response.length,
+          synthesis_mode: effectiveSynthesisMode,
+          requestedMode: synthesis_mode,
+          configMode: configSynthesisMode,
+          forceMode,
+          timestamp: new Date().toISOString(),
+          source: 'BrainBridge-to-ChatGPT',
+          performanceMode: forceMode ? `FORCE_${configSynthesisMode.toUpperCase()}` : 'NORMAL'
+        });
+
+        return fullResponsePayload;
       } else {
         throw new Error(`Failed to query memories: ${result.error}`);
       }
@@ -812,7 +929,36 @@ Ollama connection: http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT}`
       response += `❌ No ${status.index.provider?.toUpperCase() || 'provider'} vector index found\n`;
       response += '   💡 Run `magic index` to build initial index\n';
     }
-    
+
+    // Connection status
+    response += '\n**Connection Options:**\n';
+
+    // Brain Proxy status
+    if (this.brainProxyConnector) {
+      const bpStatus = this.brainProxyConnector.getConnectionStatus();
+      if (bpStatus.connected) {
+        response += `✅ Brain Proxy: Connected (route: ${bpStatus.route})\n`;
+      } else {
+        response += `❌ Brain Proxy: Disconnected\n`;
+      }
+    } else {
+      response += `⚪ Brain Proxy: Disabled\n`;
+    }
+
+    // Ngrok tunnel status
+    if (this.ngrokConnector) {
+      const ngrokStatus = this.ngrokConnector.getStatus();
+      if (ngrokStatus.connected && ngrokStatus.url) {
+        response += `✅ Ngrok Tunnel: Active\n`;
+        response += `   🌐 Public URL: ${ngrokStatus.url}\n`;
+        response += `   🤖 ChatGPT URL: ${ngrokStatus.url}/mcp\n`;
+      } else {
+        response += `❌ Ngrok Tunnel: ${ngrokStatus.error || 'Not connected'}\n`;
+      }
+    } else {
+      response += `⚪ Ngrok Tunnel: Disabled\n`;
+    }
+
     response += '\n**Available Commands:**\n';
     response += '- `ai_save_memory` - Save content with AI categorization\n';
     response += '- `ai_query_memories` - Ask questions about your knowledge\n';

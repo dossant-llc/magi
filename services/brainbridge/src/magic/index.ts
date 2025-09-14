@@ -17,6 +17,9 @@ import { queryCommand } from './commands/query';
 import { statusCommand } from './commands/status';
 import { indexCommand } from './commands/index';
 import { napCommand } from './commands/nap';
+import { metricsCommand } from './commands/metrics';
+import { recategorizeCommand } from './commands/recategorize';
+import { logsCommand } from './commands/logs';
 
 const program = new Command();
 
@@ -54,16 +57,47 @@ program
   .action(indexCommand);
 
 program
+  .command('metrics')
+  .description('📊 Show effectiveness dashboard with real performance metrics')
+  .option('-d, --days <number>', 'Days of metrics to analyze', '7')
+  .option('--json', 'Output raw JSON data')
+  .option('--backfill', 'Generate historical metrics from existing memory files')
+  .action((options) => metricsCommand({ ...options, days: parseInt(options.days || '7') }));
+
+program
+  .command('recategorize')
+  .description('🔄 Fix privacy level categorization of existing memories')
+  .option('--from <privacy>', 'Only analyze files from this privacy level')
+  .option('--to <privacy>', 'Suggest moving files to this privacy level')
+  .option('--preview', 'Show detailed reasoning for suggestions')
+  .option('--apply', 'Actually move the files (high confidence only)')
+  .action(recategorizeCommand);
+
+program
   .command('nap [subcommand]')
   .description('🧠💤 Analyze and consolidate memories (v0.1.2 "Nap")')
   .option('--deep', 'Perform deep analysis with recommendations')
+  .option('--preview', 'Show proposed consolidated file contents')
+  .option('--apply', 'Actually consolidate scattered memory files')
   .action((subcommand, options) => {
     if (subcommand === 'status') {
       napCommand({ status: true });
+    } else if (subcommand === 'preview') {
+      napCommand({ ...options, preview: true });
+    } else if (subcommand === 'apply') {
+      napCommand({ ...options, apply: true });
     } else {
       napCommand(options);
     }
   });
+
+program
+  .command('logs')
+  .description('📋 Show recent mAGIc system logs')
+  .option('-n, --lines <number>', 'Number of lines to show', '50')
+  .option('-f, --follow', 'Follow logs in real-time (like tail -f)')
+  .option('--errors', 'Show only errors and warnings')
+  .action(logsCommand);
 
 // Parse arguments
 program.parse(process.argv);

@@ -47,6 +47,8 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log('            Options: --force (rebuild all)');
   console.log('  nap       Analyze and consolidate memories (v0.1.2 "Nap")');
   console.log('            Options: --deep (full analysis), status (show insights)');
+  console.log('  metrics   Show effectiveness dashboard with real performance data');
+  console.log('            Options: --days N (days to analyze), --json (raw output), --backfill (generate historical data)');
   console.log('  install   Install integrations');
   console.log('    claude  Install Claude Code MCP server');
   console.log('  remove    Remove integrations');
@@ -313,6 +315,31 @@ switch (command) {
     }
     break;
 
+  case 'metrics':
+    // Show effectiveness dashboard
+    const daysArg = args.find(arg => arg.startsWith('--days'));
+    const days = daysArg ? parseInt(daysArg.split('=')[1] || args[args.indexOf(daysArg) + 1] || '7') : 7;
+    const jsonOutput = args.includes('--json');
+    const backfill = args.includes('--backfill');
+
+    console.log(`${colors.info}📊 mAGIc Effectiveness Dashboard${colors.reset}`);
+
+    try {
+      const metricsArgs = [];
+      if (jsonOutput) metricsArgs.push('--json');
+      if (backfill) metricsArgs.push('--backfill');
+      if (days !== 7) metricsArgs.push('--days', days.toString());
+
+      execSync(`npm run magic --workspace=services/brainbridge -- metrics ${metricsArgs.join(' ')}`, {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, '..')
+      });
+    } catch (error) {
+      console.log(`${colors.error}❌ Metrics dashboard failed${colors.reset}`);
+      console.log(`${colors.hint}💡 Try running some magi operations first to generate metrics data${colors.reset}`);
+    }
+    break;
+
   case 'register':
     // Brain Proxy registration
     console.log(`${colors.info}🧙 mAgi Brain Proxy Registration${colors.reset}`);
@@ -503,7 +530,58 @@ BRAIN_PROXY_LOCAL_MCP_URL=http://localhost:8147/mcp
       process.exit(1);
     }
     break;
-    
+
+  case 'tunnel':
+    // Ngrok tunnel management
+    const tunnelAction = args[1] || 'status';
+    console.log(`${colors.info}🌐 Ngrok Tunnel Manager${colors.reset}`);
+
+    if (!isBrainBridgeRunning()) {
+      console.log(`${colors.warning}⚠️ BrainBridge is not running${colors.reset}`);
+      console.log(`${colors.hint}Start BrainBridge first: ${colors.prompt}magi start${colors.reset}`);
+      process.exit(1);
+    }
+
+    try {
+      // Import and run tunnel command
+      const { tunnelCommand } = require('./services/brainbridge/src/magic/commands/tunnel.js');
+      const { LoggerService } = require('./services/brainbridge/src/services/logger-service.js');
+
+      const loggerService = new LoggerService(path.join(__dirname, '..', 'logs', 'tunnel.log'));
+      tunnelCommand([tunnelAction], loggerService).then(() => {
+        process.exit(0);
+      }).catch((error) => {
+        console.log(`${colors.error}❌ Tunnel command failed: ${error.message}${colors.reset}`);
+        console.log(`${colors.hint}Make sure BrainBridge is running and ngrok is installed${colors.reset}`);
+        process.exit(1);
+      });
+    } catch (error) {
+      console.log(`${colors.error}❌ Tunnel command failed: ${error.message}${colors.reset}`);
+      console.log(`${colors.hint}Make sure BrainBridge is running and ngrok is installed${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+
+  case 'toggle':
+    // Toggle connection methods (ngrok, bp, bx)
+    const toggleMethod = args[1];
+    console.log(`${colors.info}🔧 Connection Methods Toggle${colors.reset}`);
+
+    try {
+      // Import and run toggle command
+      const { toggleCommand } = require(path.join(__dirname, '..', 'services', 'brainbridge', 'dist', 'toggle.js'));
+      toggleCommand(toggleMethod).then(() => {
+        process.exit(0);
+      }).catch((error) => {
+        console.log(`${colors.error}❌ Toggle command failed: ${error.message}${colors.reset}`);
+        process.exit(1);
+      });
+    } catch (error) {
+      console.log(`${colors.error}❌ Toggle command failed: ${error.message}${colors.reset}`);
+      process.exit(1);
+    }
+    break;
+
   default:
     // Default behavior: Launch interactive REPL
     console.log(`${colors.info}🧙 Launching MAGI Interactive Mode...${colors.reset}`);

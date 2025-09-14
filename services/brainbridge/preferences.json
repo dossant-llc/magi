@@ -1,0 +1,18 @@
+{
+  "connectionMethods": {
+    "ngrok": {
+      "enabled": true,
+      "description": "Direct ChatGPT connection via ngrok tunnel"
+    },
+    "brainProxy": {
+      "enabled": true,
+      "description": "Connection via Brain Proxy (bp)"
+    },
+    "brainXchange": {
+      "enabled": false,
+      "description": "P2P Memory Sharing (bx)"
+    }
+  },
+  "lastUpdated": "2025-09-14T14:37:56.666Z",
+  "updatedBy": "magi-repl"
+}

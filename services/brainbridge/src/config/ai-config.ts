@@ -7,6 +7,8 @@ const appConfig = require('../../../../config.js');
 
 export type AIProvider = 'ollama' | 'openai' | 'gemini';
 
+export type SynthesisMode = 'raw' | 'local' | 'hybrid';
+
 export interface AIConfig {
   provider: AIProvider;
   chatModel: string;
@@ -17,11 +19,18 @@ export interface AIConfig {
   geminiApiKey?: string;
 }
 
+export interface ClientServiceConfig {
+  chatgptSynthesisMode: SynthesisMode;
+  chatgptForceMode: boolean;
+}
+
 export class AIConfigService {
   private config: AIConfig;
+  private clientServiceConfig: ClientServiceConfig;
 
   constructor() {
     this.config = this.loadConfig();
+    this.clientServiceConfig = this.loadClientServiceConfig();
     this.validateConfig();
   }
 
@@ -52,6 +61,13 @@ export class AIConfigService {
     }
 
     return config;
+  }
+
+  private loadClientServiceConfig(): ClientServiceConfig {
+    return {
+      chatgptSynthesisMode: (appConfig.ai.chatgpt.synthesisMode || 'hybrid') as SynthesisMode,
+      chatgptForceMode: appConfig.ai.chatgpt.forceMode || false,
+    };
   }
 
   private determineChatModel(provider: AIProvider): string {
@@ -118,6 +134,19 @@ export class AIConfigService {
 
   getIndexPath(baseIndexPath: string): string {
     return `${baseIndexPath}/${this.config.provider}`;
+  }
+
+  // Client Service Configuration Methods
+  getClientServiceConfig(): ClientServiceConfig {
+    return { ...this.clientServiceConfig };
+  }
+
+  getChatGPTSynthesisMode(): SynthesisMode {
+    return this.clientServiceConfig.chatgptSynthesisMode;
+  }
+
+  getChatGPTForceMode(): boolean {
+    return this.clientServiceConfig.chatgptForceMode;
   }
 }
 
