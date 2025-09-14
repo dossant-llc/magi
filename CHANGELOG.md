@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-01-09
+
+### 🧠💤 "Nap" - Smart Memory Synthesis & Consolidation
+
+This release transforms mAgi from simple memory search into an intelligent synthesis system. When mAgi "takes a nap," it processes and consolidates your memories, providing coherent, temporally-aware responses instead of raw file dumps.
+
+### ✨ Features
+
+#### 🎯 Smart Memory Synthesis
+- **Intelligent Query Classification**: Automatically determines response style (conversational, analytical, technical)
+- **Temporal Intelligence**: Recent memories weighted higher, evolution of thoughts tracked over time
+- **Conflict Detection**: Identifies and gracefully handles contradictory information
+- **Context-Aware Responses**: No more raw file dumps - all responses are synthesized and coherent
+
+#### 💤 "Nap" Command Suite
+- **`magi nap`**: Quick memory analysis and insights about your knowledge base
+- **`magi nap --deep`**: Comprehensive consolidation analysis with recommendations
+- **`magi nap status`**: Memory health check showing conflicts and fragmentation
+- **Smart Consolidation**: AI identifies fragmented topics and suggests consolidation
+
+#### 📊 Enhanced Monitoring & Debugging
+- **`magi logs`**: Enhanced log viewing with filtering and formatting
+- **`magi metrics`**: Memory system performance and usage statistics
+- **Improved REPL**: New commands for memory analysis and consolidation
+- **Enhanced Diagnostics**: Better system health monitoring
+
+#### 🤖 AI Service Improvements
+- **Enhanced Prompts**: Smarter synthesis instructions for coherent responses
+- **Provider Optimization**: Better OpenAI integration for fast, high-quality synthesis
+- **Response Classification**: Tailored responses based on query type and intent
+- **Streaming Support**: Real-time synthesis results for better UX
+
+### 🏗️ Technical Improvements
+
+#### Memory Processing Pipeline
+```javascript
+// Before: Raw file dumps
+searchMemories(query) → [memory1.md, memory2.md] → raw dump
+
+// After: Intelligent synthesis
+searchMemories(query) → temporalAnalysis() → conflictDetection() → synthesize() → coherent_response
+```
+
+#### Temporal Weighting Algorithm
+- Exponential decay scoring prioritizes recent memories
+- Conflict penalty reduces weight of contradictory information
+- Smart relevance scoring combines semantic similarity with temporal context
+
+#### Enhanced Command Infrastructure
+- New MCP endpoints for nap functionality
+- Improved error handling and user feedback
+- Better command parsing and validation
+
+### 📚 Documentation Updates
+
+- **Updated Command Reference**: Complete documentation of new nap commands
+- **Architecture Updates**: Enhanced diagrams showing synthesis pipeline
+- **User Guides**: Clear examples of before/after query responses
+
+### 🔧 Development Experience
+
+- **Enhanced REPL**: New memory analysis commands (`conflicts`, `consolidate`, `timeline`)
+- **Better Logging**: Structured logging throughout synthesis pipeline
+- **Improved Testing**: Comprehensive tests for synthesis and nap functionality
+
+### 🎭 Demo-Ready Examples
+
+**Before v0.1.2:**
+```bash
+magi "What's my favorite beer?"
+→ [dumps 4 markdown files about beer preferences]
+```
+
+**After v0.1.2:**
+```bash
+magi "What's my favorite beer?"
+→ "Your beer preferences have evolved. Initially you loved IPAs (2023),
+   but by early 2024 you found them too bitter and discovered pilsners..."
+```
+
+### 🚀 What's Next
+
+This release establishes the foundation for truly intelligent personal AI that understands context evolution and provides coherent insights. Future releases will build on this synthesis capability for collaborative AI features.
+
+---
+
 ## [0.1.1] - 2025-01-07
 
 ### 🌉 Brain Proxy Integration Release

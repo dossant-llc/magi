@@ -27,3 +27,6 @@ build/
 config.js.local
 *.backup
 *.secret
+
+# Private folders
+private/

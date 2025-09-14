@@ -1,6 +1,6 @@
 # mAgi
 [![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.1.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.1.2-green.svg)](CHANGELOG.md)
 [![Node](https://img.shields.io/badge/Node.js-22+-green.svg)](package.json)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](docs/integrations/CLAUDE.md)
 
@@ -30,10 +30,11 @@ That's what pushed me to build **mAgi** — your personal AI that remembers what
 → Generic troubleshooting steps
 
 # Personal AI with mAgi
-"magi help me debug this React component"  
-→ Remembers your past React debugging patterns
-→ Knows your preferred debugging tools and approaches
-→ Recalls similar issues you've solved before
+"magi help me debug this React component"
+→ Remembers your past debugging experiences
+→ Knows your preferred approaches and tools
+→ Provides contextual guidance based on your history
+→ "Based on your debugging patterns, you typically start with..."
 ```
 
 ## 🏗️ Architecture Overview
@@ -73,23 +74,23 @@ graph TB
 | **Privacy Engine** | Smart categorization & consent | Local LLM, Rule-based |
 | **Multi-Provider AI** | OpenAI, Gemini, Local models | OpenAI SDK, Ollama |
 
-## 🚀 Quick Start
+## 🚀 Installation & Quick Start
 
 ### Prerequisites
 - **Node.js 22+** - `node --version`
-- **Git** - `git --version`  
-- **8GB+ RAM** (for local AI models)
+- **Git** - `git --version`
+- **8GB+ RAM** (recommended for local AI models)
 
 ### One-Command Install
 ```bash
-git clone https://github.com/your-org/mAgi.git
-cd mAgi
+git clone https://github.com/dossant-llc/magi.git
+cd magi
 npm run magi
 ```
 
 **That's it!** The `magi` command handles:
 - ✅ Dependency installation
-- ✅ AI model setup (Ollama)  
+- ✅ AI model setup (Ollama)
 - ✅ Memory structure creation
 - ✅ Service startup and health checks
 
@@ -122,10 +123,13 @@ magi how do I debug Node.js memory leaks?
 
 ### 🛠️ System Management
 ```bash
-magi start     # Start background service
-magi status    # Health check with diagnostics
-magi logs      # View service logs  
-magi stop      # Stop background service
+magi start      # Start background service
+magi status     # Health check with diagnostics
+magi logs       # View service logs with filtering
+magi stop       # Stop background service
+magi nap        # Quick memory analysis and insights
+magi nap status # Memory health check showing conflicts
+magi metrics    # Memory system performance statistics
 ```
 
 ## 🔒 Privacy by Design
@@ -142,7 +146,7 @@ memories/
 
 ### 🧠 Smart Categorization
 - **Automatic Classification**: AI analyzes content and suggests privacy levels
-- **Confidence Scoring**: High-confidence auto-categorization, low-confidence asks user
+- **Intelligent Processing**: Contextual responses based on your knowledge base
 - **Learning System**: Improves suggestions based on your corrections
 - **Privacy Bias**: When uncertain, chooses more restrictive privacy level
 
@@ -184,12 +188,18 @@ mAgi automatically switches between providers based on availability:
 magi start                    # Start service
 magi save "Today's insight"   # Quick knowledge capture
 magi help with code review    # Contextual assistance
+magi nap                      # Analyze memory health
 magi stop                     # End of day
 
-# Troubleshooting workflow  
-magi status                   # Identify issues
-magi logs                     # View diagnostics
-magi restart                  # Reset if needed
+# Memory management workflow
+magi nap status              # Check for conflicts and fragmentation
+magi nap --deep              # Deep consolidation analysis
+magi metrics                 # System performance stats
+
+# Troubleshooting workflow
+magi status                  # Identify issues
+magi logs                    # View diagnostics with filtering
+magi restart                 # Reset if needed
 ```
 
 ## 📊 Performance & Scale
@@ -225,8 +235,8 @@ graph TD
 
 ### Development Setup
 ```bash
-git clone https://github.com/your-org/mAgi.git
-cd mAgi
+git clone https://github.com/dossant-llc/magi.git
+cd magi
 npm install
 npm run dev                   # Start development server
 npm run test                  # Run test suite
@@ -234,7 +244,7 @@ npm run test                  # Run test suite
 
 ### Contributing
 - 📖 **Documentation**: [Contributing Guide](docs/project-management/CONTRIBUTING.md)
-- 🏗️ **Architecture**: [System Design](docs/architecture/ARCHITECTURE.md)
+- 🏗️ **Architecture**: [System Design](docs/architecture/ARCHITECTURE_SUMMARY.md)
 - 🔐 **Privacy**: [Privacy Design](docs/architecture/PRIVACY_DESIGN.md)
 
 ## 📖 Documentation
@@ -249,6 +259,7 @@ npm run test                  # Run test suite
 - 🔧 **[Configuration](docs/user-guides/WAKE_WORD_CONFIG.md)** - Customization options
 
 ### Architecture
+- 🎨 **[Interactive Architecture Viewer](docs/architecture-viewer.html)** - Visual system overview
 - 🏗️ **[System Architecture](docs/architecture/ARCHITECTURE.md)** - Technical deep-dive
 - 🔒 **[Privacy Design](docs/architecture/PRIVACY_DESIGN.md)** - Privacy-first principles
 - 🗺️ **[Roadmap](docs/architecture/ROADMAP.md)** - Future development
@@ -257,12 +268,12 @@ npm run test                  # Run test suite
 
 ### For Developers
 - **Local-First**: Your code insights stay private
-- **Context-Aware**: Remembers your debugging patterns, preferred solutions
+- **Context-Aware**: Remembers your debugging patterns and preferred solutions
 - **Tool Integration**: Works with your existing development workflow
 
 ### For Knowledge Workers
-- **Meeting Memory**: Captures and recalls team decisions, preferences
-- **Project Context**: Maintains continuity across long-term projects  
+- **Meeting Memory**: Captures and recalls team decisions and preferences
+- **Project Context**: Maintains continuity across long-term projects
 - **Learning Acceleration**: Builds on your accumulated expertise
 
 ### For Privacy-Conscious Users

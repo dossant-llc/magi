@@ -165,7 +165,8 @@ class MagiREPL {
   completer(line) {
     const commands = [
       'help', 'exit', 'quit', 'clear', 'status', 'cd', 'pwd', 'ls',
-      'save', 'search', 'recent', 'stats', 'history'
+      'save', 'search', 'recent', 'stats', 'history', 'nap',
+      'toggle', 'ng', 'ngrok', 'bp', 'brainproxy', 'bx', 'brainxchange'
     ];
     
     // Add persona-specific commands
@@ -275,7 +276,30 @@ class MagiREPL {
       case 'history':
         this.showHistory();
         break;
-        
+
+      case 'nap':
+        await this.runNapCommand(args);
+        break;
+
+      case 'toggle':
+        await this.runToggleCommand(args[0]);
+        break;
+
+      case 'ng':
+      case 'ngrok':
+        await this.runToggleCommand('ngrok');
+        break;
+
+      case 'bp':
+      case 'brainproxy':
+        await this.runToggleCommand('brainproxy');
+        break;
+
+      case 'bx':
+      case 'brainxchange':
+        await this.runToggleCommand('brainxchange');
+        break;
+
       default:
         // Check if it's a persona-specific command
         const persona = personas[this.currentPersona];
@@ -325,10 +349,17 @@ class MagiREPL {
     console.log('');
     console.log(`${colors.success}🛠 System Commands:${colors.reset}`);
     console.log(`  ${colors.prompt}status${colors.reset}          Check system health`);
+    console.log(`  ${colors.prompt}nap${colors.reset}             🧠💤 Analyze and consolidate memories (v0.1.2)`);
     console.log(`  ${colors.prompt}clear${colors.reset}           Clear screen`);
     console.log(`  ${colors.prompt}history${colors.reset}         Show command history`);
     console.log(`  ${colors.prompt}help${colors.reset}            Show this help`);
     console.log(`  ${colors.prompt}exit${colors.reset}            Exit REPL`);
+    console.log('');
+    console.log(`${colors.success}🔧 Connection Commands:${colors.reset}`);
+    console.log(`  ${colors.prompt}toggle [method]${colors.reset} Toggle connection methods (ngrok, bp, bx)`);
+    console.log(`  ${colors.prompt}ng${colors.reset} | ${colors.prompt}ngrok${colors.reset}      Toggle ngrok tunnel`);
+    console.log(`  ${colors.prompt}bp${colors.reset} | ${colors.prompt}brainproxy${colors.reset}  Toggle Brain Proxy`);
+    console.log(`  ${colors.prompt}bx${colors.reset} | ${colors.prompt}brainxchange${colors.reset} Toggle BrainXchange`);
     
     if (persona && persona.commands && persona.commands.length > 0) {
       console.log('');
@@ -569,6 +600,93 @@ class MagiREPL {
     console.log(`${colors.hint}📋 (Implementation pending)${colors.reset}`);
   }
   
+  /**
+   * Run nap command for memory consolidation
+   */
+  async runNapCommand(args) {
+    try {
+      console.log(`${colors.system}🧠💤 Running memory consolidation analysis...${colors.reset}`);
+
+      const { spawn } = require('child_process');
+      const projectRoot = getProjectRoot();
+
+      // Build the command arguments
+      const napArgs = ['run', 'magic', 'nap'];
+      if (args.includes('--deep')) {
+        napArgs.push('--deep');
+      }
+      if (args.includes('status')) {
+        napArgs.push('status');
+      }
+
+      // Spawn the nap command
+      const napProcess = spawn('npm', napArgs, {
+        cwd: projectRoot,
+        stdio: 'inherit'
+      });
+
+      napProcess.on('close', (code) => {
+        if (code === 0) {
+          console.log(`${colors.success}✅ Memory consolidation complete${colors.reset}`);
+        } else {
+          console.log(`${colors.error}❌ Memory consolidation failed with code ${code}${colors.reset}`);
+        }
+      });
+
+      napProcess.on('error', (error) => {
+        console.log(`${colors.error}❌ Failed to run nap command: ${error.message}${colors.reset}`);
+      });
+
+    } catch (error) {
+      console.log(`${colors.error}❌ Nap command failed: ${error.message}${colors.reset}`);
+    }
+  }
+
+  /**
+   * Run toggle command for connection methods
+   */
+  async runToggleCommand(method) {
+    try {
+      const { spawn } = require('child_process');
+      const projectRoot = getProjectRoot();
+
+      if (!method) {
+        console.log(`${colors.system}🔧 Connection Methods Status${colors.reset}`);
+      } else {
+        console.log(`${colors.system}🔧 Toggling ${method}...${colors.reset}`);
+      }
+
+      // Build the command arguments
+      const toggleArgs = ['magi', 'toggle'];
+      if (method) {
+        toggleArgs.push(method);
+      }
+
+      // Spawn the toggle command
+      const toggleProcess = spawn('node', [path.join(projectRoot, 'bin', 'magi'), 'toggle', method || ''].filter(Boolean), {
+        cwd: projectRoot,
+        stdio: 'inherit'
+      });
+
+      toggleProcess.on('close', (code) => {
+        if (code === 0) {
+          if (method) {
+            console.log(`${colors.success}✅ Toggle command complete${colors.reset}`);
+          }
+        } else {
+          console.log(`${colors.error}❌ Toggle command failed with code ${code}${colors.reset}`);
+        }
+      });
+
+      toggleProcess.on('error', (error) => {
+        console.log(`${colors.error}❌ Failed to run toggle command: ${error.message}${colors.reset}`);
+      });
+
+    } catch (error) {
+      console.log(`${colors.error}❌ Toggle command failed: ${error.message}${colors.reset}`);
+    }
+  }
+
   /**
    * Show command history
    */

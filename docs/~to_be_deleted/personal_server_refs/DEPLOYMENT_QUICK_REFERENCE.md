@@ -2,7 +2,7 @@
 
 ## Current Production Setup
 
-**Server**: `igoram2@vps34824.dreamhostps.com`  
+**Server**: `user@server`  
 **Directory**: `/home/igoram2/your-server.com/braincloud`  
 **Public URLs**: 
 - 🌥️ **Dashboard**: https://your-server.com/
@@ -21,12 +21,12 @@ cd services/braincloud
 
 **Check Status:**
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "ps aux | grep -v grep | grep 'node.*server'"
+ssh user@server "ps aux | grep -v grep | grep 'node.*server'"
 ```
 
 **Restart Service:**
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   # Stop old process
   pkill -f 'node.*server.js'
   
@@ -39,12 +39,12 @@ ssh igoram2@vps34824.dreamhostps.com "
 
 **View Logs:**
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "tail -f /home/igoram2/your-server.com/braincloud/braincloud.log"
+ssh user@server "tail -f /home/igoram2/your-server.com/braincloud/braincloud.log"
 ```
 
 **Install Dependencies (if needed):**
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   cd /home/igoram2/your-server.com/braincloud && 
   npm install
@@ -55,7 +55,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 
 ### Install PM2
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   npm install -g pm2
 "
@@ -64,14 +64,14 @@ ssh igoram2@vps34824.dreamhostps.com "
 ### PM2 Service Management
 ```bash
 # Start with PM2
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   cd /home/igoram2/your-server.com/braincloud && 
   pm2 start server.js --name braincloud
 "
 
 # Common PM2 commands
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   pm2 list              # List all processes
   pm2 restart braincloud # Restart BrainCloud
@@ -83,7 +83,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 
 ### Auto-restart on Reboot
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   pm2 startup && 
   pm2 save
@@ -146,7 +146,7 @@ curl -s https://your-server.com/bp/openapi.json | jq '.openapi'
 ### Old Service Still Running
 ```bash
 # Find and kill old processes
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   ps aux | grep node
   pkill -f 'node.*server'
 "
@@ -154,7 +154,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 
 ### Dependencies Missing
 ```bash
-ssh igoram2@vps34824.dreamhostps.com "
+ssh user@server "
   source ~/.nvm/nvm.sh && 
   cd /home/igoram2/your-server.com/braincloud && 
   npm install
@@ -164,7 +164,7 @@ ssh igoram2@vps34824.dreamhostps.com "
 ### Can't Access NVM/Node
 ```bash
 # Always source NVM first
-ssh igoram2@vps34824.dreamhostps.com "source ~/.nvm/nvm.sh && node --version"
+ssh user@server "source ~/.nvm/nvm.sh && node --version"
 ```
 
 ---

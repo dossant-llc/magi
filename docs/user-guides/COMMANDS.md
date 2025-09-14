@@ -46,6 +46,8 @@
 | `npm run magi` | Internal: calls ./bin/magi | Legacy compatibility |
 | `npm run magic save "content"` | Internal: Save to memories | Command-line quick saves |
 | `npm run magic index` | Rebuild search index | After adding many memories |
+| `npm run magic nap` | **🧠💤 Comprehensive system maintenance** | **Auto-housekeeping & optimization** |
+| `npm run magic metrics` | View effectiveness dashboard | Performance monitoring |
 | `npm run ai:status` | Check AI models | Verify AI setup |
 | `npm run ai:pull` | Download AI models | Initial setup |
 
@@ -67,12 +69,67 @@
 | `npm run mem:path documents` | Use Documents folder | Store in ~/Documents/memories/ |
 | `edit .env` | Edit simple configuration | Tweak AI settings |
 
-### Memory Management  
+### Memory Management
 | Command | Description | Example |
 |---------|-------------|---------|
 | `npm run mem:stats` | Show memory statistics | Check knowledge base size |
 | `npm run mem:backup` | Backup memories | Before major changes |
 | `npm run mem:clean` | Clean up old memories | Maintenance |
+
+## 🧠💤 Comprehensive Maintenance (NAP)
+
+**mAgi Nap** - The intelligent system maintenance command that performs "all sort of house keeping" including synthesis, recategorization, indexing, and metrics.
+
+### Core Nap Commands
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `magi nap` | **Analyze & suggest improvements** | **Weekly memory health check** |
+| `magi nap status` | Show last analysis results | Check previous nap findings |
+| `magi nap preview` | Preview proposed changes | See what nap would fix |
+| `magi nap apply` | **Apply all optimizations** | **Complete system housekeeping** |
+| `magi nap --deep` | Deep analysis with AI insights | Monthly comprehensive review |
+
+### What Nap Does Automatically
+- **🔄 Recategorization**: Moves miscategorized files (personal → team, etc.)
+- **📄 Consolidation**: Merges fragmented topics into single files
+- **🔍 Index Rebuild**: Refreshes search index for optimal performance
+- **📊 Metrics Update**: Recalculates effectiveness metrics
+- **🧹 Cleanup**: Removes empty files and broken references
+- **🏥 System Health**: Monitors disk usage and system integrity
+
+### Nap Workflow Example
+```bash
+# 1. Weekly health check
+magi nap                    # Analyze and get recommendations
+
+# 2. Review proposed changes
+magi nap preview           # See what would be fixed
+
+# 3. Apply comprehensive maintenance
+magi nap apply             # Fix everything automatically
+```
+
+### Nap Analysis Output
+```
+📊 Found 96 memories to analyze
+🔄 Found 56 files in wrong privacy levels
+  • 56 files should move to 'team' folder
+📄 Consider consolidating 3 fragmented topics
+  • "authentication" scattered across 2 files
+  • "API best practices" scattered across 3 files
+🔍 Search index needs rebuilding (currently: missing)
+```
+
+### After Nap Apply
+```
+✅ Memory issues fixed: 60
+🔍 Index health: missing → excellent
+📊 Metrics: updated
+💾 Disk usage: 4MB
+
+🎉 Your mAGIc system is now fully optimized!
+💡 All housekeeping complete: synthesis, recategorization, indexing, and metrics.
+```
 
 ## 🏗️ Development & Advanced
 
